@@ -67,3 +67,6 @@ checkpoints/
 *.pth
 *.pt
 runs/
+
+# MCP (Model Context Protocol)
+.mcp.json
