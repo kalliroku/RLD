@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RL Dungeon - 강화학습 던전</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>RL Dungeon</h1>
+            <p class="subtitle">강화학습 던전 탐험</p>
+        </header>
+
+        <main>
+            <div class="game-area">
+                <canvas id="game-canvas"></canvas>
+
+                <div class="game-ui">
+                    <div class="stats">
+                        <div class="stat">
+                            <span class="stat-label">HP</span>
+                            <div class="hp-bar">
+                                <div class="hp-fill" id="hp-fill"></div>
+                            </div>
+                            <span class="stat-value" id="hp-text">100/100</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Steps</span>
+                            <span class="stat-value" id="steps-text">0</span>
+                        </div>
+                        <div class="stat">
+                            <span class="stat-label">Reward</span>
+                            <span class="stat-value" id="reward-text">0.0</span>
+                        </div>
+                    </div>
+
+                    <div class="message" id="message"></div>
+                </div>
+            </div>
+
+            <div class="controls">
+                <div class="control-section">
+                    <h3>Dungeon</h3>
+                    <select id="dungeon-select">
+                        <option value="level_01_easy">Level 1 - Easy (5x5)</option>
+                        <option value="level_02_trap">Level 2 - Trap (7x7)</option>
+                        <option value="level_03_maze">Level 3 - Maze (9x9)</option>
+                    </select>
+                    <button id="btn-reset">Reset (R)</button>
+                </div>
+
+                <div class="control-section">
+                    <h3>AI Training</h3>
+                    <button id="btn-train" class="btn-train">Train AI (500 ep)</button>
+                    <button id="btn-play-ai" class="btn-secondary" disabled>AI Play</button>
+                    <div class="train-progress" id="train-progress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-text" id="progress-text">0%</div>
+                    </div>
+                    <div class="train-stats" id="train-stats"></div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Visualization</h3>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-qvalues"> Show Q-Values
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-policy"> Show Policy
+                    </label>
+                </div>
+
+                <div class="control-section">
+                    <h3>Controls</h3>
+                    <div class="key-hints">
+                        <span class="key">↑↓←→</span> Move
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Legend</h3>
+                    <div class="legend">
+                        <div class="legend-item"><span class="tile-preview start"></span> Start</div>
+                        <div class="legend-item"><span class="tile-preview goal"></span> Goal (+100)</div>
+                        <div class="legend-item"><span class="tile-preview trap"></span> Trap (-10 HP)</div>
+                        <div class="legend-item"><span class="tile-preview heal"></span> Heal (+10 HP)</div>
+                        <div class="legend-item"><span class="tile-preview wall"></span> Wall</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+
+        <footer>
+            <p>Arrow keys to move | R to reset | Reach the green goal!</p>
+        </footer>
+    </div>
+
+    <script type="module" src="js/main.js"></script>
+</body>
+</html>
