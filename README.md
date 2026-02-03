@@ -16,9 +16,9 @@ AI 모험가를 훈련시켜 던전을 공략하거나, 자신만의 던전을 �
 | Phase 0 | 프로젝트 셋업 | ✅ 완료 |
 | Phase 1 | 그리드 월드 (타일, 던전, 렌더링) | ✅ 완료 |
 | Phase 2 | 에이전트 (이동, HP, 보상) | ✅ 완료 |
-| Phase 3 | 게임 로직 (Gymnasium 환경) | 🔄 부분 완료 |
+| Phase 3 | 게임 로직 (Gymnasium 환경) | ✅ 완료 |
 | Phase 4 | Q-Learning | ✅ 완료 |
-| Phase 5 | 웹 UI | ⏳ 예정 |
+| Phase 5 | 웹 UI | ✅ 완료 |
 | Phase 6 | NPC 가차 시스템 | ⏳ 예정 |
 | Phase 7 | 던전 에디터 | ⏳ 예정 |
 | Phase 8 | 추가 알고리즘 (DQN, PPO) | ⏳ 예정 |
@@ -57,6 +57,22 @@ python train_agent.py assets/dungeons/level_01_easy.txt 500
 ```bash
 python run_viewer.py [던전파일]
 ```
+
+### Gymnasium 환경 데모
+```bash
+python run_gym_env.py
+```
+
+### 웹 버전 (브라우저)
+```bash
+cd web
+python -m http.server 8080
+# 브라우저에서 http://localhost:8080/ 접속
+```
+- 방향키/WASD: 이동
+- Train AI: Q-Learning 학습
+- AI Play: 학습된 AI 자동 플레이
+- Show Q-Values/Policy: 학습 시각화
 
 ## 샘플 던전
 
