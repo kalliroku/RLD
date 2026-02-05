@@ -319,7 +319,15 @@ button:active {
 .tile-preview.goal { background: #22c55e; }
 .tile-preview.trap { background: #ef4444; }
 .tile-preview.heal { background: #f472b6; }
+.tile-preview.pit { background: #18181b; border: 1px solid #333; }
+.tile-preview.gold { background: #fbbf24; }
 .tile-preview.wall { background: #374151; }
+
+/* Gold display */
+.gold-value {
+    color: #fbbf24 !important;
+    text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+}
 
 /* Footer */
 footer {

@@ -18,6 +18,9 @@ export class Renderer {
         this.showPolicy = false;
         this.qValues = null;  // 2D array of max Q-values
         this.policy = null;   // 2D array of best actions
+
+        // Fog of War
+        this.fogOfWar = false;
     }
 
     setGrid(grid) {
@@ -44,6 +47,31 @@ export class Renderer {
         for (let y = 0; y < this.grid.height; y++) {
             for (let x = 0; x < this.grid.width; x++) {
                 const tile = this.grid.getTile(x, y);
+
+                // Check fog of war visibility
+                let visibility = 1.0;
+                if (this.fogOfWar && this.agent) {
+                    visibility = this.agent.getVisibility(x, y);
+                }
+
+                if (visibility === 0) {
+                    // Complete fog - draw dark tile
+                    ctx.fillStyle = '#0a0a0f';
+                    ctx.fillRect(
+                        x * tileSize + 1,
+                        y * tileSize + 1,
+                        tileSize - 2,
+                        tileSize - 2
+                    );
+                    // Draw fog symbol
+                    ctx.font = `${tileSize * 0.3}px monospace`;
+                    ctx.fillStyle = '#333';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText('?', x * tileSize + tileSize / 2, y * tileSize + tileSize / 2);
+                    continue;
+                }
+
                 const color = getTileColor(tile);
 
                 // Draw tile background
@@ -66,6 +94,17 @@ export class Renderer {
 
                 // Draw special markers
                 this.drawTileMarker(x, y, tile);
+
+                // Apply fog overlay for partial visibility
+                if (visibility < 1.0) {
+                    ctx.fillStyle = `rgba(10, 10, 15, ${1 - visibility})`;
+                    ctx.fillRect(
+                        x * tileSize + 1,
+                        y * tileSize + 1,
+                        tileSize - 2,
+                        tileSize - 2
+                    );
+                }
             }
         }
     }
@@ -100,6 +139,23 @@ export class Renderer {
             case TileType.HEAL:
                 ctx.fillStyle = '#fff';
                 ctx.fillText('+', centerX, centerY);
+                break;
+            case TileType.PIT:
+                ctx.fillStyle = '#666';
+                ctx.fillText('X', centerX, centerY);
+                // Draw skull-like symbol
+                ctx.font = `${tileSize * 0.25}px monospace`;
+                ctx.fillText('PIT', centerX, centerY + tileSize * 0.25);
+                break;
+            case TileType.GOLD:
+                ctx.fillStyle = '#000';
+                ctx.fillText('$', centerX, centerY);
+                // Add shine effect
+                ctx.shadowColor = '#fbbf24';
+                ctx.shadowBlur = 8;
+                ctx.fillStyle = '#fbbf24';
+                ctx.fillText('$', centerX, centerY);
+                ctx.shadowBlur = 0;
                 break;
         }
     }

@@ -8,6 +8,20 @@ import { Renderer } from './game/renderer.js';
 import { TileType } from './game/tiles.js';
 import { QLearning } from './game/qlearning.js';
 
+// Dungeon config: cost to enter, first clear reward, repeat reward
+const DUNGEON_CONFIG = {
+    level_01_easy:     { cost: 0,  firstReward: 30,  repeatReward: 3 },
+    level_02_trap:     { cost: 5,  firstReward: 50,  repeatReward: 5 },
+    level_03_maze:     { cost: 10, firstReward: 80,  repeatReward: 8 },
+    level_04_pit:      { cost: 10, firstReward: 100, repeatReward: 10 },
+    level_05_gold:     { cost: 15, firstReward: 120, repeatReward: 12 },
+    level_06_risk:     { cost: 20, firstReward: 150, repeatReward: 15 },
+    level_07_gauntlet: { cost: 25, firstReward: 200, repeatReward: 20 },
+    level_08_deadly:   { cost: 30, firstReward: 250, repeatReward: 25 },
+    level_09_treasure: { cost: 40, firstReward: 350, repeatReward: 35 },
+    level_10_final:    { cost: 50, firstReward: 500, repeatReward: 50 }
+};
+
 class Game {
     constructor() {
         this.canvas = document.getElementById('game-canvas');
@@ -17,6 +31,11 @@ class Game {
         this.agent = null;
         this.steps = 0;
         this.done = false;
+        this.currentDungeon = 'level_01_easy';
+
+        // Gold system
+        this.gold = 100;
+        this.clearedDungeons = new Set(); // Track first clears
 
         // Q-Learning
         this.qlearning = null;
@@ -24,6 +43,7 @@ class Game {
         this.aiPlaying = false;
 
         // UI elements
+        this.goldText = document.getElementById('gold-text');
         this.hpFill = document.getElementById('hp-fill');
         this.hpText = document.getElementById('hp-text');
         this.stepsText = document.getElementById('steps-text');
@@ -41,6 +61,7 @@ class Game {
         this.trainStats = document.getElementById('train-stats');
 
         // Visualization checkboxes
+        this.fogOfWarCheck = document.getElementById('fog-of-war');
         this.showQValuesCheck = document.getElementById('show-qvalues');
         this.showPolicyCheck = document.getElementById('show-policy');
 
@@ -57,11 +78,17 @@ class Game {
             this.loadDungeon(e.target.value);
         });
 
-        this.resetBtn.addEventListener('click', () => this.reset());
+        this.resetBtn.addEventListener('click', () => this.tryEnterDungeon());
 
         // Training controls
         this.trainBtn.addEventListener('click', () => this.startTraining());
         this.playAiBtn.addEventListener('click', () => this.toggleAiPlay());
+
+        // Fog of War toggle
+        this.fogOfWarCheck.addEventListener('change', (e) => {
+            this.renderer.fogOfWar = e.target.checked;
+            this.render();
+        });
 
         // Visualization toggles
         this.showQValuesCheck.addEventListener('change', (e) => {
@@ -73,6 +100,9 @@ class Game {
             this.renderer.showPolicy = e.target.checked;
             this.updateVisualization();
         });
+
+        // Initialize fog of war state
+        this.renderer.fogOfWar = this.fogOfWarCheck.checked;
     }
 
     handleKeyDown(e) {
@@ -80,7 +110,7 @@ class Game {
 
         if (this.done) {
             if (e.key === 'r' || e.key === 'R') {
-                this.reset();
+                this.tryEnterDungeon();
             }
             return;
         }
@@ -110,7 +140,7 @@ class Game {
                 break;
             case 'r':
             case 'R':
-                this.reset();
+                this.tryEnterDungeon();
                 return;
         }
 
@@ -121,6 +151,7 @@ class Game {
     }
 
     loadDungeon(name) {
+        this.currentDungeon = name;
         this.grid = loadDungeon(name);
         this.renderer.setGrid(this.grid);
 
@@ -130,8 +161,31 @@ class Game {
         this.trainStats.innerHTML = '';
         this.renderer.setQData(null, null);
 
+        const config = DUNGEON_CONFIG[name];
+        this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G`, 'info');
+
         this.reset();
-        this.showMessage(`Loaded: ${name}`, 'info');
+    }
+
+    tryEnterDungeon() {
+        const config = DUNGEON_CONFIG[this.currentDungeon];
+
+        if (this.gold < config.cost) {
+            this.showMessage(`Not enough gold! Need ${config.cost}G`, 'danger');
+            this.renderer.flash('rgba(239, 68, 68, 0.3)');
+            return;
+        }
+
+        // Deduct entry cost
+        this.gold -= config.cost;
+        this.updateUI();
+        this.reset();
+
+        if (config.cost > 0) {
+            this.showMessage(`Paid ${config.cost}G to enter. Good luck!`, 'warning');
+        } else {
+            this.showMessage('Game Reset! Reach the green goal.', 'info');
+        }
     }
 
     reset() {
@@ -156,7 +210,6 @@ class Game {
 
         this.updateUI();
         this.render();
-        this.showMessage('Game Reset! Reach the green goal.', 'info');
     }
 
     handleAction(action) {
@@ -171,23 +224,51 @@ class Game {
             const tile = this.grid.getTile(this.agent.x, this.agent.y);
 
             if (tile === TileType.GOAL) {
-                this.showMessage(`GOAL! Steps: ${this.steps}, Reward: ${this.agent.totalReward.toFixed(1)}`, 'success');
+                this.handleVictory();
+            } else if (tile === TileType.PIT) {
+                this.showMessage(`FELL INTO PIT! Instant death...`, 'danger');
+                this.renderer.flash('rgba(0, 0, 0, 0.8)');
             } else {
-                this.showMessage(`DIED! Steps: ${this.steps}, Reward: ${this.agent.totalReward.toFixed(1)}`, 'danger');
+                this.showMessage(`DIED! Steps: ${this.steps}`, 'danger');
                 this.renderer.flash('rgba(239, 68, 68, 0.5)');
             }
         } else if (!result.success) {
             this.showMessage('Bump! (-1)', 'warning');
         } else if (result.tile === TileType.TRAP) {
-            this.showMessage(`TRAP! HP -10 (Reward: ${result.reward.toFixed(1)})`, 'danger');
+            this.showMessage(`TRAP! HP -10`, 'danger');
             this.renderer.flash('rgba(239, 68, 68, 0.3)');
         } else if (result.tile === TileType.HEAL) {
             this.showMessage(`HEAL! HP +10`, 'success');
             this.renderer.flash('rgba(244, 114, 182, 0.3)');
+        } else if (result.tile === TileType.PIT) {
+            // Already handled in done check
+        } else if (result.tile === TileType.GOLD) {
+            this.showMessage(`Found Gold! +10`, 'success');
+            this.renderer.flash('rgba(251, 191, 36, 0.3)');
         }
 
         this.updateUI();
         this.render();
+    }
+
+    handleVictory() {
+        const config = DUNGEON_CONFIG[this.currentDungeon];
+        const isFirstClear = !this.clearedDungeons.has(this.currentDungeon);
+
+        let reward;
+        if (isFirstClear) {
+            reward = config.firstReward;
+            this.clearedDungeons.add(this.currentDungeon);
+            this.gold += reward;
+            this.showMessage(`FIRST CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
+        } else {
+            reward = config.repeatReward;
+            this.gold += reward;
+            this.showMessage(`CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
+        }
+
+        this.renderer.flash('rgba(34, 197, 94, 0.4)');
+        this.updateUI();
     }
 
     async startTraining() {
@@ -197,6 +278,10 @@ class Game {
         this.trainBtn.disabled = true;
         this.playAiBtn.disabled = true;
         this.trainProgress.style.display = 'block';
+
+        // Disable fog of war during training visualization
+        const wasFogOn = this.renderer.fogOfWar;
+        this.renderer.fogOfWar = false;
 
         // Reset Q-Learning
         this.qlearning = new QLearning(this.grid, {
@@ -227,8 +312,7 @@ class Game {
         const testResult = this.qlearning.test(100);
 
         this.trainStats.innerHTML = `
-            <div>Success: ${(testResult.successRate * 100).toFixed(0)}%</div>
-            <div>Avg Reward: ${testResult.avgReward.toFixed(1)}</div>
+            <div>Clear Rate: ${(testResult.successRate * 100).toFixed(0)}%</div>
             <div>Avg Steps: ${testResult.avgSteps.toFixed(1)}</div>
         `;
 
@@ -237,8 +321,11 @@ class Game {
         this.playAiBtn.disabled = false;
         this.trainProgress.style.display = 'none';
 
+        // Restore fog of war state
+        this.renderer.fogOfWar = wasFogOn;
+
         this.updateVisualization();
-        this.showMessage(`Training complete! Success rate: ${(testResult.successRate * 100).toFixed(0)}%`, 'success');
+        this.showMessage(`Training done! Clear rate: ${(testResult.successRate * 100).toFixed(0)}%`, 'success');
     }
 
     updateVisualization() {
@@ -257,9 +344,13 @@ class Game {
             this.aiPlaying = false;
             this.playAiBtn.textContent = 'AI Play';
         } else {
+            // AI doesn't pay gold, just resets
             this.reset();
             this.aiPlaying = true;
             this.playAiBtn.textContent = 'Stop AI';
+
+            // Disable fog for AI play
+            this.renderer.fogOfWar = false;
             this.runAiStep();
         }
     }
@@ -268,6 +359,9 @@ class Game {
         if (!this.aiPlaying || this.done) {
             this.aiPlaying = false;
             this.playAiBtn.textContent = 'AI Play';
+            // Restore fog setting
+            this.renderer.fogOfWar = this.fogOfWarCheck.checked;
+            this.render();
             return;
         }
 
@@ -279,6 +373,9 @@ class Game {
     }
 
     updateUI() {
+        // Gold
+        this.goldText.textContent = this.gold;
+
         if (!this.agent) return;
 
         // HP
