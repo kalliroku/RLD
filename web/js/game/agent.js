@@ -2,7 +2,7 @@
  * Agent (Adventurer) for the dungeon
  */
 
-import { TileType, isPassable, getReward } from './tiles.js';
+import { TileType, isPassable, getReward, isLethal } from './tiles.js';
 
 export const Action = {
     UP: 0,
@@ -27,6 +27,31 @@ export class Agent {
         this.hp = hp;
         this.maxHp = maxHp;
         this.totalReward = 0;
+        this.turnCount = 0;
+        this.visitHistory = new Map(); // "x,y" -> last visit turn
+        this._recordVisit();
+    }
+
+    _recordVisit() {
+        const key = `${this.x},${this.y}`;
+        this.visitHistory.set(key, this.turnCount);
+    }
+
+    getVisibility(x, y) {
+        // Returns opacity (0-1) based on how recently the cell was visited
+        const key = `${x},${y}`;
+        if (!this.visitHistory.has(key)) {
+            return 0; // Never visited - fog
+        }
+        const lastVisit = this.visitHistory.get(key);
+        const turnsSince = this.turnCount - lastVisit;
+
+        if (turnsSince === 0) return 1.0;   // Current position
+        if (turnsSince === 1) return 0.8;
+        if (turnsSince === 2) return 0.6;
+        if (turnsSince === 3) return 0.4;
+        if (turnsSince === 4) return 0.2;
+        return 0; // 5+ turns ago - fog
     }
 
     get position() {
@@ -70,6 +95,8 @@ export class Agent {
         const next = this.getNextPosition(action);
         this.x = next.x;
         this.y = next.y;
+        this.turnCount++;
+        this._recordVisit();
 
         // Get tile at new position
         const tile = grid.getTile(this.x, this.y);
@@ -80,6 +107,10 @@ export class Agent {
 
         if (tile === TileType.GOAL) {
             done = true;
+        } else if (tile === TileType.PIT) {
+            // 즉사 함정
+            this.hp = 0;
+            done = true;
         } else if (tile === TileType.TRAP) {
             this.hp -= 10;
             if (this.hp <= 0) {
@@ -88,6 +119,8 @@ export class Agent {
             }
         } else if (tile === TileType.HEAL) {
             this.hp = Math.min(this.hp + 10, this.maxHp);
+        } else if (tile === TileType.GOLD) {
+            // 골드는 보상만 (나중에 골드 시스템에서 처리)
         }
 
         const totalStepReward = stepReward + tileReward;
@@ -101,6 +134,9 @@ export class Agent {
         this.y = y;
         this.hp = this.maxHp;
         this.totalReward = 0;
+        this.turnCount = 0;
+        this.visitHistory.clear();
+        this._recordVisit();
     }
 }
 

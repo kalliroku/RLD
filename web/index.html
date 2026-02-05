@@ -20,6 +20,10 @@
                 <div class="game-ui">
                     <div class="stats">
                         <div class="stat">
+                            <span class="stat-label">Gold</span>
+                            <span class="stat-value gold-value" id="gold-text">100</span>
+                        </div>
+                        <div class="stat">
                             <span class="stat-label">HP</span>
                             <div class="hp-bar">
                                 <div class="hp-fill" id="hp-fill"></div>
@@ -44,9 +48,16 @@
                 <div class="control-section">
                     <h3>Dungeon</h3>
                     <select id="dungeon-select">
-                        <option value="level_01_easy">Level 1 - Easy (5x5)</option>
-                        <option value="level_02_trap">Level 2 - Trap (7x7)</option>
-                        <option value="level_03_maze">Level 3 - Maze (9x9)</option>
+                        <option value="level_01_easy">Lv.1 Tutorial</option>
+                        <option value="level_02_trap">Lv.2 First Trap</option>
+                        <option value="level_03_maze">Lv.3 Maze</option>
+                        <option value="level_04_pit">Lv.4 Pit Danger</option>
+                        <option value="level_05_gold">Lv.5 Gold Rush</option>
+                        <option value="level_06_risk">Lv.6 Risk & Reward</option>
+                        <option value="level_07_gauntlet">Lv.7 Gauntlet</option>
+                        <option value="level_08_deadly">Lv.8 Deadly Maze</option>
+                        <option value="level_09_treasure">Lv.9 Treasure Hunt</option>
+                        <option value="level_10_final">Lv.10 Final</option>
                     </select>
                     <button id="btn-reset">Reset (R)</button>
                 </div>
@@ -62,6 +73,13 @@
                         <div class="progress-text" id="progress-text">0%</div>
                     </div>
                     <div class="train-stats" id="train-stats"></div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Game Mode</h3>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="fog-of-war" checked> Fog of War
+                    </label>
                 </div>
 
                 <div class="control-section">
@@ -88,6 +106,8 @@
                         <div class="legend-item"><span class="tile-preview goal"></span> Goal (+100)</div>
                         <div class="legend-item"><span class="tile-preview trap"></span> Trap (-10 HP)</div>
                         <div class="legend-item"><span class="tile-preview heal"></span> Heal (+10 HP)</div>
+                        <div class="legend-item"><span class="tile-preview pit"></span> Pit (Instant Death)</div>
+                        <div class="legend-item"><span class="tile-preview gold"></span> Gold (+10)</div>
                         <div class="legend-item"><span class="tile-preview wall"></span> Wall</div>
                     </div>
                 </div>
