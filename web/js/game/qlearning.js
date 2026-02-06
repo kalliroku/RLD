@@ -16,6 +16,10 @@ export class QLearning {
         this.epsilonMin = options.epsilonMin ?? 0.01;
         this.epsilonDecay = options.epsilonDecay ?? 0.995;
 
+        // HP-aware state option
+        this.useHpState = options.useHpState ?? false;
+        this.hpLevels = 5; // 0-4: 0-20, 21-40, 41-60, 61-80, 81-100
+
         // Initialize Q-table: state -> action -> value
         this.qTable = new Map();
         this.initQTable();
@@ -26,10 +30,15 @@ export class QLearning {
     }
 
     initQTable() {
+        const hpRange = this.useHpState ? this.hpLevels : 1;
         for (let y = 0; y < this.grid.height; y++) {
             for (let x = 0; x < this.grid.width; x++) {
-                const state = this.stateKey(x, y);
-                this.qTable.set(state, [0, 0, 0, 0]); // 4 actions
+                for (let hp = 0; hp < hpRange; hp++) {
+                    const state = this.useHpState ?
+                        this.stateKeyWithHp(x, y, hp) :
+                        this.stateKey(x, y);
+                    this.qTable.set(state, [0, 0, 0, 0]); // 4 actions
+                }
             }
         }
     }
@@ -38,24 +47,41 @@ export class QLearning {
         return `${x},${y}`;
     }
 
-    getQValues(x, y) {
-        const key = this.stateKey(x, y);
+    stateKeyWithHp(x, y, hpLevel) {
+        return `${x},${y},${hpLevel}`;
+    }
+
+    getHpLevel(hp) {
+        return Math.min(this.hpLevels - 1, Math.floor(hp / (100 / this.hpLevels)));
+    }
+
+    getStateKey(x, y, hp = 100) {
+        if (this.useHpState) {
+            return this.stateKeyWithHp(x, y, this.getHpLevel(hp));
+        }
+        return this.stateKey(x, y);
+    }
+
+    getQValues(x, y, hp = 100) {
+        const key = this.getStateKey(x, y, hp);
         return this.qTable.get(key) || [0, 0, 0, 0];
     }
 
-    getQValue(x, y, action) {
-        return this.getQValues(x, y)[action];
+    getQValue(x, y, action, hp = 100) {
+        return this.getQValues(x, y, hp)[action];
     }
 
-    setQValue(x, y, action, value) {
-        const key = this.stateKey(x, y);
-        const values = this.qTable.get(key) || [0, 0, 0, 0];
+    setQValue(x, y, action, value, hp = 100) {
+        const key = this.getStateKey(x, y, hp);
+        if (!this.qTable.has(key)) {
+            this.qTable.set(key, [0, 0, 0, 0]);
+        }
+        const values = this.qTable.get(key);
         values[action] = value;
-        this.qTable.set(key, values);
     }
 
-    getBestAction(x, y) {
-        const qValues = this.getQValues(x, y);
+    getBestAction(x, y, hp = 100) {
+        const qValues = this.getQValues(x, y, hp);
         let bestAction = 0;
         let bestValue = qValues[0];
 
@@ -69,29 +95,29 @@ export class QLearning {
         return bestAction;
     }
 
-    getMaxQValue(x, y) {
-        const qValues = this.getQValues(x, y);
+    getMaxQValue(x, y, hp = 100) {
+        const qValues = this.getQValues(x, y, hp);
         return Math.max(...qValues);
     }
 
-    chooseAction(x, y) {
+    chooseAction(x, y, hp = 100) {
         // Epsilon-greedy policy
         if (Math.random() < this.epsilon) {
             return randomAction();
         }
-        return this.getBestAction(x, y);
+        return this.getBestAction(x, y, hp);
     }
 
     learn(state, action, reward, nextState, done) {
-        const [x, y] = state;
-        const [nx, ny] = nextState;
+        const [x, y, hp] = state;
+        const [nx, ny, nhp] = nextState;
 
-        const currentQ = this.getQValue(x, y, action);
-        const maxNextQ = done ? 0 : this.getMaxQValue(nx, ny);
+        const currentQ = this.getQValue(x, y, action, hp);
+        const maxNextQ = done ? 0 : this.getMaxQValue(nx, ny, nhp);
 
         // Q-Learning update: Q(s,a) += α[r + γ·max Q(s',a') - Q(s,a)]
         const newQ = currentQ + this.alpha * (reward + this.gamma * maxNextQ - currentQ);
-        this.setQValue(x, y, action, newQ);
+        this.setQValue(x, y, action, newQ, hp);
     }
 
     decayEpsilon() {
@@ -106,12 +132,33 @@ export class QLearning {
         let totalReward = 0;
         let steps = 0;
 
+        // Track killed monsters for this episode (so they stay dead within episode)
+        const killedMonsters = new Set();
+
         while (steps < maxSteps) {
-            const state = [agent.x, agent.y];
-            const action = this.chooseAction(agent.x, agent.y);
+            const state = [agent.x, agent.y, agent.hp];
+            const action = this.chooseAction(agent.x, agent.y, agent.hp);
+
+            // Check if stepping onto a killed monster (treat as empty)
+            const nextPos = agent.getNextPosition(action);
+            const nextKey = `${nextPos.x},${nextPos.y}`;
+            const originalTile = this.grid.getTile(nextPos.x, nextPos.y);
+
+            // Temporarily remove monster if already killed
+            if (killedMonsters.has(nextKey) && originalTile === TileType.MONSTER) {
+                this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
+            }
 
             const result = agent.move(action, this.grid);
-            const nextState = [agent.x, agent.y];
+
+            // Track monster kills
+            if (result.tile === TileType.MONSTER && !killedMonsters.has(nextKey)) {
+                killedMonsters.add(nextKey);
+                // Keep monster removed for rest of episode
+                this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
+            }
+
+            const nextState = [agent.x, agent.y, agent.hp];
 
             this.learn(state, action, result.reward, nextState, result.done);
 
@@ -119,6 +166,12 @@ export class QLearning {
             steps++;
 
             if (result.done) break;
+        }
+
+        // Restore monsters after episode
+        for (const key of killedMonsters) {
+            const [x, y] = key.split(',').map(Number);
+            this.grid.tiles[y][x] = TileType.MONSTER;
         }
 
         this.decayEpsilon();
@@ -186,11 +239,26 @@ export class QLearning {
         for (let i = 0; i < nEpisodes; i++) {
             const startPos = this.grid.startPos;
             const agent = new Agent(startPos.x, startPos.y);
+            const killedMonsters = new Set();
             let steps = 0;
 
             while (steps < 200) {
-                const action = this.getBestAction(agent.x, agent.y);
+                const action = this.getBestAction(agent.x, agent.y, agent.hp);
+
+                // Handle killed monsters
+                const nextPos = agent.getNextPosition(action);
+                const nextKey = `${nextPos.x},${nextPos.y}`;
+                if (killedMonsters.has(nextKey)) {
+                    this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
+                }
+
                 const result = agent.move(action, this.grid);
+
+                if (result.tile === TileType.MONSTER && !killedMonsters.has(nextKey)) {
+                    killedMonsters.add(nextKey);
+                    this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
+                }
+
                 steps++;
 
                 if (result.done) {
@@ -199,6 +267,12 @@ export class QLearning {
                     }
                     break;
                 }
+            }
+
+            // Restore monsters
+            for (const key of killedMonsters) {
+                const [x, y] = key.split(',').map(Number);
+                this.grid.tiles[y][x] = TileType.MONSTER;
             }
 
             totalReward += agent.totalReward;

@@ -157,6 +157,17 @@ export class Renderer {
                 ctx.fillText('$', centerX, centerY);
                 ctx.shadowBlur = 0;
                 break;
+            case TileType.MONSTER:
+                // Draw monster with menacing look
+                ctx.fillStyle = '#fff';
+                ctx.font = `bold ${tileSize * 0.5}px monospace`;
+                ctx.fillText('M', centerX, centerY);
+                // Add purple glow
+                ctx.shadowColor = '#9333ea';
+                ctx.shadowBlur = 12;
+                ctx.fillText('M', centerX, centerY);
+                ctx.shadowBlur = 0;
+                break;
         }
     }
 

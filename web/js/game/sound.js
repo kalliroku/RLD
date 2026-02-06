@@ -174,6 +174,14 @@ export class SoundManager {
         this.playArpeggio([392, 494, 587, 784, 988], 0.08, 'sine', 0.25);
     }
 
+    // Monster defeat - attack sound
+    monster() {
+        this.playArpeggio([200, 250, 300], 0.05, 'sawtooth', 0.35);
+        setTimeout(() => {
+            this.playArpeggio([400, 500, 600], 0.06, 'square', 0.2);
+        }, 150);
+    }
+
     // UI click
     click() {
         this.playTone(660, 0.03, 'square', 0.15);
