@@ -67,6 +67,9 @@ class Game {
         this.isTraining = false;
         this.aiPlaying = false;
 
+        // Track killed monsters for restoration on reset
+        this.killedMonsters = new Set();
+
         // UI elements
         this.goldText = document.getElementById('gold-text');
         this.hpFill = document.getElementById('hp-fill');
@@ -321,6 +324,13 @@ class Game {
             return;
         }
 
+        // Restore killed monsters before reset
+        for (const key of this.killedMonsters) {
+            const [x, y] = key.split(',').map(Number);
+            this.grid.tiles[y][x] = TileType.MONSTER;
+        }
+        this.killedMonsters.clear();
+
         const { x, y } = this.grid.startPos;
 
         if (!this.agent) {
@@ -342,8 +352,17 @@ class Game {
     handleAction(action) {
         if (this.done) return;
 
+        // Learning from Demonstration: save state before action
+        const prevState = [this.agent.x, this.agent.y, this.agent.hp];
+
         const result = this.agent.move(action, this.grid);
         this.steps++;
+
+        // Learning from Demonstration: teach Q-learning from user play
+        if (this.qlearning && !this.aiPlaying) {
+            const nextState = [this.agent.x, this.agent.y, this.agent.hp];
+            this.qlearning.learn(prevState, action, result.reward, nextState, result.done);
+        }
 
         // Handle result
         if (result.done) {
@@ -380,7 +399,9 @@ class Game {
             this.renderer.flash('rgba(251, 191, 36, 0.3)');
         } else if (result.tile === TileType.MONSTER) {
             sound.monster();
-            // Monster defeated - remove from grid and give gold reward
+            // Monster defeated - track for restoration, remove from grid, give gold reward
+            const monsterKey = `${this.agent.x},${this.agent.y}`;
+            this.killedMonsters.add(monsterKey);
             this.grid.setTile(this.agent.x, this.agent.y, TileType.EMPTY);
             this.gold += 5; // Monster defeat reward
             this.showMessage(`MONSTER! HP -30, Defeated! +5G`, 'warning');
