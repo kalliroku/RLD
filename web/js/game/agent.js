@@ -2,7 +2,7 @@
  * Agent (Adventurer) for the dungeon
  */
 
-import { TileType, isPassable, getReward, isLethal } from './tiles.js';
+import { TileType, isPassable, getReward, isLethal, getTileDamage } from './tiles.js';
 
 export const Action = {
     UP: 0,
@@ -121,6 +121,14 @@ export class Agent {
             this.hp = Math.min(this.hp + 10, this.maxHp);
         } else if (tile === TileType.GOLD) {
             // 골드는 보상만 (나중에 골드 시스템에서 처리)
+        } else if (tile === TileType.MONSTER) {
+            // 몬스터: 높은 데미지, 처치 후 사라짐
+            const damage = getTileDamage(tile);
+            this.hp -= damage;
+            if (this.hp <= 0) {
+                this.hp = 0;
+                done = true;
+            }
         }
 
         const totalStepReward = stepReward + tileReward;

@@ -20,7 +20,9 @@ const DUNGEON_CONFIG = {
     level_07_gauntlet: { cost: 25, firstReward: 200, repeatReward: 20 },
     level_08_deadly:   { cost: 30, firstReward: 250, repeatReward: 25 },
     level_09_treasure: { cost: 40, firstReward: 350, repeatReward: 35 },
-    level_10_final:    { cost: 50, firstReward: 500, repeatReward: 50 }
+    level_10_final:    { cost: 50, firstReward: 500, repeatReward: 50 },
+    level_11_hp_test:  { cost: 0,  firstReward: 100, repeatReward: 10, useHpState: true },
+    level_12_hp_gauntlet: { cost: 0, firstReward: 200, repeatReward: 20, useHpState: true }
 };
 
 // Dungeon order for unlock progression
@@ -34,7 +36,9 @@ const DUNGEON_ORDER = [
     'level_07_gauntlet',
     'level_08_deadly',
     'level_09_treasure',
-    'level_10_final'
+    'level_10_final',
+    'level_11_hp_test',
+    'level_12_hp_gauntlet'
 ];
 
 const STORAGE_KEY = 'rld_save_data';
@@ -155,7 +159,9 @@ class Game {
             level_07_gauntlet: 'Gauntlet',
             level_08_deadly: 'Deadly Maze',
             level_09_treasure: 'Treasure Hunt',
-            level_10_final: 'Final'
+            level_10_final: 'Final',
+            level_11_hp_test: 'HP Test',
+            level_12_hp_gauntlet: 'HP Gauntlet'
         };
         return names[dungeonId] || dungeonId;
     }
@@ -272,13 +278,16 @@ class Game {
         this.renderer.setGrid(this.grid);
 
         // Reset Q-Learning for new dungeon
-        this.qlearning = new QLearning(this.grid);
+        const config = DUNGEON_CONFIG[name];
+        this.qlearning = new QLearning(this.grid, {
+            useHpState: config.useHpState ?? false
+        });
         this.playAiBtn.disabled = true;
         this.trainStats.innerHTML = '';
         this.renderer.setQData(null, null);
 
-        const config = DUNGEON_CONFIG[name];
-        this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G`, 'info');
+        const hpNote = config.useHpState ? ' [HP-Aware AI]' : '';
+        this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G${hpNote}`, 'info');
 
         this.reset();
     }
@@ -369,6 +378,13 @@ class Game {
             sound.gold();
             this.showMessage(`Found Gold! +10`, 'success');
             this.renderer.flash('rgba(251, 191, 36, 0.3)');
+        } else if (result.tile === TileType.MONSTER) {
+            sound.monster();
+            // Monster defeated - remove from grid and give gold reward
+            this.grid.setTile(this.agent.x, this.agent.y, TileType.EMPTY);
+            this.gold += 5; // Monster defeat reward
+            this.showMessage(`MONSTER! HP -30, Defeated! +5G`, 'warning');
+            this.renderer.flash('rgba(147, 51, 234, 0.4)');
         } else {
             sound.move();
         }
@@ -437,13 +453,15 @@ class Game {
         const wasFogOn = this.renderer.fogOfWar;
         this.renderer.fogOfWar = false;
 
-        // Reset Q-Learning
+        // Reset Q-Learning (preserve useHpState from config)
+        const config = DUNGEON_CONFIG[this.currentDungeon];
         this.qlearning = new QLearning(this.grid, {
             alpha: 0.1,
             gamma: 0.99,
             epsilon: 1.0,
             epsilonMin: 0.01,
-            epsilonDecay: 0.995
+            epsilonDecay: 0.995,
+            useHpState: config.useHpState ?? false
         });
 
         const nEpisodes = 500;
@@ -519,7 +537,7 @@ class Game {
             return;
         }
 
-        const action = this.qlearning.getBestAction(this.agent.x, this.agent.y);
+        const action = this.qlearning.getBestAction(this.agent.x, this.agent.y, this.agent.hp);
         this.handleAction(action);
 
         // Schedule next step

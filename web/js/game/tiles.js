@@ -10,7 +10,8 @@ export const TileType = {
     TRAP: 4,
     HEAL: 5,
     PIT: 6,      // 즉사 함정
-    GOLD: 7      // 골드 아이템
+    GOLD: 7,     // 골드 아이템
+    MONSTER: 8   // 몬스터 (일회용, 높은 데미지)
 };
 
 export const TileProperties = {
@@ -19,9 +20,10 @@ export const TileProperties = {
     [TileType.START]: { passable: true, reward: 0, char: 'S', name: 'Start', color: '#3b82f6', lethal: false },
     [TileType.GOAL]: { passable: true, reward: 100, char: 'G', name: 'Goal', color: '#22c55e', lethal: false },
     [TileType.TRAP]: { passable: true, reward: -10, char: 'T', name: 'Trap', color: '#ef4444', lethal: false },
-    [TileType.HEAL]: { passable: true, reward: 5, char: 'H', name: 'Heal', color: '#f472b6', lethal: false },
+    [TileType.HEAL]: { passable: true, reward: 0, char: 'H', name: 'Heal', color: '#f472b6', lethal: false },
     [TileType.PIT]: { passable: true, reward: -100, char: 'P', name: 'Pit', color: '#18181b', lethal: true },
-    [TileType.GOLD]: { passable: true, reward: 10, char: '$', name: 'Gold', color: '#fbbf24', lethal: false }
+    [TileType.GOLD]: { passable: true, reward: 10, char: '$', name: 'Gold', color: '#fbbf24', lethal: false },
+    [TileType.MONSTER]: { passable: true, reward: 5, char: 'M', name: 'Monster', color: '#9333ea', lethal: false, damage: 30 }
 };
 
 export function charToTile(char) {
@@ -51,4 +53,8 @@ export function getTileColor(tile) {
 
 export function isLethal(tile) {
     return TileProperties[tile]?.lethal ?? false;
+}
+
+export function getTileDamage(tile) {
+    return TileProperties[tile]?.damage ?? 0;
 }

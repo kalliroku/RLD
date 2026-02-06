@@ -330,6 +330,7 @@ button:active {
 .tile-preview.heal { background: #f472b6; }
 .tile-preview.pit { background: #18181b; border: 1px solid #333; }
 .tile-preview.gold { background: #fbbf24; }
+.tile-preview.monster { background: #9333ea; }
 .tile-preview.wall { background: #374151; }
 
 /* Gold display */
