@@ -7,6 +7,7 @@ import { Agent, Action } from './game/agent.js';
 import { Renderer } from './game/renderer.js';
 import { TileType } from './game/tiles.js';
 import { QLearning } from './game/qlearning.js';
+import { sound } from './game/sound.js';
 
 // Dungeon config: cost to enter, first clear reward, repeat reward
 const DUNGEON_CONFIG = {
@@ -160,6 +161,15 @@ class Game {
     }
 
     setupEventListeners() {
+        // Initialize sound on first interaction
+        const initSound = () => {
+            sound.init();
+            document.removeEventListener('keydown', initSound);
+            document.removeEventListener('click', initSound);
+        };
+        document.addEventListener('keydown', initSound);
+        document.addEventListener('click', initSound);
+
         // Keyboard controls
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
 
@@ -185,6 +195,15 @@ class Game {
         this.fogOfWarCheck.addEventListener('change', (e) => {
             this.renderer.fogOfWar = e.target.checked;
             this.render();
+        });
+
+        // Sound toggle
+        const soundToggle = document.getElementById('sound-toggle');
+        soundToggle.addEventListener('change', (e) => {
+            sound.enabled = e.target.checked;
+            if (e.target.checked) {
+                sound.click();
+            }
         });
 
         // Visualization toggles
@@ -279,6 +298,7 @@ class Game {
         this.updateUI();
         this.reset();
 
+        sound.start();
         if (config.cost > 0) {
             this.showMessage(`Paid ${config.cost}G to enter. Good luck!`, 'warning');
         } else {
@@ -324,25 +344,33 @@ class Game {
             if (tile === TileType.GOAL) {
                 this.handleVictory();
             } else if (tile === TileType.PIT) {
+                sound.pit();
                 this.showMessage(`FELL INTO PIT! Instant death...`, 'danger');
                 this.renderer.flash('rgba(0, 0, 0, 0.8)');
             } else {
+                sound.death();
                 this.showMessage(`DIED! Steps: ${this.steps}`, 'danger');
                 this.renderer.flash('rgba(239, 68, 68, 0.5)');
             }
         } else if (!result.success) {
+            sound.bump();
             this.showMessage('Bump! (-1)', 'warning');
         } else if (result.tile === TileType.TRAP) {
+            sound.trap();
             this.showMessage(`TRAP! HP -10`, 'danger');
             this.renderer.flash('rgba(239, 68, 68, 0.3)');
         } else if (result.tile === TileType.HEAL) {
+            sound.heal();
             this.showMessage(`HEAL! HP +10`, 'success');
             this.renderer.flash('rgba(244, 114, 182, 0.3)');
         } else if (result.tile === TileType.PIT) {
             // Already handled in done check
         } else if (result.tile === TileType.GOLD) {
+            sound.gold();
             this.showMessage(`Found Gold! +10`, 'success');
             this.renderer.flash('rgba(251, 191, 36, 0.3)');
+        } else {
+            sound.move();
         }
 
         this.updateUI();
@@ -372,15 +400,19 @@ class Game {
             }
 
             if (unlockedNext) {
+                sound.victory();
+                setTimeout(() => sound.unlock(), 600);
                 const nextName = this.getDungeonDisplayName(DUNGEON_ORDER[currentIndex + 1]);
                 this.showMessage(`FIRST CLEAR! +${reward}G 🔓 ${nextName} Unlocked!`, 'success');
             } else {
+                sound.victory();
                 this.showMessage(`FIRST CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
             }
 
             // Update dropdown to show new unlock
             this.updateDungeonSelect();
         } else {
+            sound.victory();
             reward = config.repeatReward;
             this.gold += reward;
             this.showMessage(`CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
