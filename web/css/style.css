@@ -184,6 +184,15 @@ select {
     color: var(--text-primary);
 }
 
+select option:disabled {
+    color: #666;
+    font-style: italic;
+}
+
+select option {
+    padding: 8px;
+}
+
 button {
     background: var(--accent);
     color: white;

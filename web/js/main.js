@@ -22,6 +22,22 @@ const DUNGEON_CONFIG = {
     level_10_final:    { cost: 50, firstReward: 500, repeatReward: 50 }
 };
 
+// Dungeon order for unlock progression
+const DUNGEON_ORDER = [
+    'level_01_easy',
+    'level_02_trap',
+    'level_03_maze',
+    'level_04_pit',
+    'level_05_gold',
+    'level_06_risk',
+    'level_07_gauntlet',
+    'level_08_deadly',
+    'level_09_treasure',
+    'level_10_final'
+];
+
+const STORAGE_KEY = 'rld_save_data';
+
 class Game {
     constructor() {
         this.canvas = document.getElementById('game-canvas');
@@ -33,9 +49,13 @@ class Game {
         this.done = false;
         this.currentDungeon = 'level_01_easy';
 
-        // Gold system
+        // Gold system & Progress
         this.gold = 100;
         this.clearedDungeons = new Set(); // Track first clears
+        this.unlockedDungeons = new Set(['level_01_easy']); // Start with only level 1 unlocked
+
+        // Load saved progress
+        this.loadProgress();
 
         // Q-Learning
         this.qlearning = null;
@@ -66,7 +86,77 @@ class Game {
         this.showPolicyCheck = document.getElementById('show-policy');
 
         this.setupEventListeners();
+        this.updateDungeonSelect();
         this.loadDungeon('level_01_easy');
+    }
+
+    loadProgress() {
+        try {
+            const saved = localStorage.getItem(STORAGE_KEY);
+            if (saved) {
+                const data = JSON.parse(saved);
+                this.gold = data.gold ?? 100;
+                this.clearedDungeons = new Set(data.clearedDungeons ?? []);
+                this.unlockedDungeons = new Set(data.unlockedDungeons ?? ['level_01_easy']);
+            }
+        } catch (e) {
+            console.warn('Failed to load save data:', e);
+        }
+    }
+
+    saveProgress() {
+        try {
+            const data = {
+                gold: this.gold,
+                clearedDungeons: Array.from(this.clearedDungeons),
+                unlockedDungeons: Array.from(this.unlockedDungeons)
+            };
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        } catch (e) {
+            console.warn('Failed to save progress:', e);
+        }
+    }
+
+    updateDungeonSelect() {
+        const options = this.dungeonSelect.querySelectorAll('option');
+        options.forEach(option => {
+            const dungeonId = option.value;
+            const isUnlocked = this.unlockedDungeons.has(dungeonId);
+            const isCleared = this.clearedDungeons.has(dungeonId);
+
+            option.disabled = !isUnlocked;
+
+            // Update display text with lock/clear status
+            const levelMatch = dungeonId.match(/level_(\d+)_(\w+)/);
+            if (levelMatch) {
+                const levelNum = parseInt(levelMatch[1]);
+                const levelName = this.getDungeonDisplayName(dungeonId);
+
+                if (!isUnlocked) {
+                    option.textContent = `🔒 Lv.${levelNum} ???`;
+                } else if (isCleared) {
+                    option.textContent = `✓ Lv.${levelNum} ${levelName}`;
+                } else {
+                    option.textContent = `Lv.${levelNum} ${levelName}`;
+                }
+            }
+        });
+    }
+
+    getDungeonDisplayName(dungeonId) {
+        const names = {
+            level_01_easy: 'Tutorial',
+            level_02_trap: 'First Trap',
+            level_03_maze: 'Maze',
+            level_04_pit: 'Pit Danger',
+            level_05_gold: 'Gold Rush',
+            level_06_risk: 'Risk & Reward',
+            level_07_gauntlet: 'Gauntlet',
+            level_08_deadly: 'Deadly Maze',
+            level_09_treasure: 'Treasure Hunt',
+            level_10_final: 'Final'
+        };
+        return names[dungeonId] || dungeonId;
     }
 
     setupEventListeners() {
@@ -75,7 +165,14 @@ class Game {
 
         // UI controls
         this.dungeonSelect.addEventListener('change', (e) => {
-            this.loadDungeon(e.target.value);
+            const selected = e.target.value;
+            if (!this.unlockedDungeons.has(selected)) {
+                // Revert to current dungeon if locked
+                e.target.value = this.currentDungeon;
+                this.showMessage('🔒 Clear previous dungeons first!', 'warning');
+                return;
+            }
+            this.loadDungeon(selected);
         });
 
         this.resetBtn.addEventListener('click', () => this.tryEnterDungeon());
@@ -178,6 +275,7 @@ class Game {
 
         // Deduct entry cost
         this.gold -= config.cost;
+        this.saveProgress(); // Save gold change
         this.updateUI();
         this.reset();
 
@@ -256,16 +354,40 @@ class Game {
         const isFirstClear = !this.clearedDungeons.has(this.currentDungeon);
 
         let reward;
+        let unlockedNext = false;
+
         if (isFirstClear) {
             reward = config.firstReward;
             this.clearedDungeons.add(this.currentDungeon);
             this.gold += reward;
-            this.showMessage(`FIRST CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
+
+            // Unlock next dungeon
+            const currentIndex = DUNGEON_ORDER.indexOf(this.currentDungeon);
+            if (currentIndex >= 0 && currentIndex < DUNGEON_ORDER.length - 1) {
+                const nextDungeon = DUNGEON_ORDER[currentIndex + 1];
+                if (!this.unlockedDungeons.has(nextDungeon)) {
+                    this.unlockedDungeons.add(nextDungeon);
+                    unlockedNext = true;
+                }
+            }
+
+            if (unlockedNext) {
+                const nextName = this.getDungeonDisplayName(DUNGEON_ORDER[currentIndex + 1]);
+                this.showMessage(`FIRST CLEAR! +${reward}G 🔓 ${nextName} Unlocked!`, 'success');
+            } else {
+                this.showMessage(`FIRST CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
+            }
+
+            // Update dropdown to show new unlock
+            this.updateDungeonSelect();
         } else {
             reward = config.repeatReward;
             this.gold += reward;
             this.showMessage(`CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
         }
+
+        // Save progress
+        this.saveProgress();
 
         this.renderer.flash('rgba(34, 197, 94, 0.4)');
         this.updateUI();
