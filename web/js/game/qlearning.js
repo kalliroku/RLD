@@ -311,4 +311,41 @@ export class QLearning {
         }
         return policy;
     }
+
+    // Serialize Q-Table and metadata to JSON string
+    serialize() {
+        const entries = [];
+        for (const [key, values] of this.qTable) {
+            entries.push([key, values]);
+        }
+        return JSON.stringify({
+            qTable: entries,
+            epsilon: this.epsilon,
+            episodeRewards: this.episodeRewards,
+            episodeSteps: this.episodeSteps,
+            alpha: this.alpha,
+            gamma: this.gamma,
+            epsilonMin: this.epsilonMin,
+            epsilonDecay: this.epsilonDecay,
+            useHpState: this.useHpState
+        });
+    }
+
+    // Restore Q-Table and metadata from JSON string
+    deserialize(json) {
+        const data = JSON.parse(json);
+        this.qTable = new Map(data.qTable);
+        this.epsilon = data.epsilon ?? this.epsilon;
+        this.episodeRewards = data.episodeRewards ?? [];
+        this.episodeSteps = data.episodeSteps ?? [];
+        if (data.alpha !== undefined) this.alpha = data.alpha;
+        if (data.gamma !== undefined) this.gamma = data.gamma;
+        if (data.epsilonMin !== undefined) this.epsilonMin = data.epsilonMin;
+        if (data.epsilonDecay !== undefined) this.epsilonDecay = data.epsilonDecay;
+    }
+
+    // Execute a single step for visual training - returns action chosen
+    stepAction(agentX, agentY, agentHp) {
+        return this.chooseAction(agentX, agentY, agentHp);
+    }
 }

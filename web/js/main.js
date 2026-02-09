@@ -43,6 +43,18 @@ const DUNGEON_ORDER = [
 
 const STORAGE_KEY = 'rld_save_data';
 
+// Training speed delays (ms per step)
+const SPEED_DELAYS = {
+    1: 1500,  // 1x - slow observation
+    2: 750,   // 2x
+    3: 500,   // 3x
+    0: 0      // Instant - no visualization
+};
+
+const MAX_EPISODES = 10000;
+const CONVERGENCE_WINDOW = 20;
+const CONVERGENCE_THRESHOLD = 0.95; // 95% success rate
+
 class Game {
     constructor() {
         this.canvas = document.getElementById('game-canvas');
@@ -65,10 +77,24 @@ class Game {
         // Q-Learning
         this.qlearning = null;
         this.isTraining = false;
-        this.aiPlaying = false;
+
+        // Training state
+        this.trainingSpeed = 1;    // 1, 2, 3, or 0 (instant)
+        this.trainingMode = 'until_success'; // 'until_success' or 'continuous'
+        this.trainingEpisode = 0;
+        this.trainingStepTimer = null;
+        this.recentResults = [];   // last N episode results for convergence check
+        this.trainingAgent = null; // separate agent for visual training
+        this.trainingKilledMonsters = new Set();
+        this.trainingTotalReward = 0;
+        this.trainingSteps = 0;
 
         // Track killed monsters for restoration on reset
         this.killedMonsters = new Set();
+
+        // Touch state
+        this.touchStartX = 0;
+        this.touchStartY = 0;
 
         // UI elements
         this.goldText = document.getElementById('gold-text');
@@ -81,8 +107,9 @@ class Game {
         this.resetBtn = document.getElementById('btn-reset');
 
         // Training UI
-        this.trainBtn = document.getElementById('btn-train');
-        this.playAiBtn = document.getElementById('btn-play-ai');
+        this.startTrainBtn = document.getElementById('btn-start-train');
+        this.stopTrainBtn = document.getElementById('btn-stop-train');
+        this.trainModeSelect = document.getElementById('train-mode');
         this.trainProgress = document.getElementById('train-progress');
         this.progressFill = document.getElementById('progress-fill');
         this.progressText = document.getElementById('progress-text');
@@ -123,6 +150,32 @@ class Game {
         } catch (e) {
             console.warn('Failed to save progress:', e);
         }
+    }
+
+    // Q-Table persistence
+    saveQTable() {
+        if (!this.qlearning) return;
+        try {
+            const key = `rld_qtable_${this.currentDungeon}`;
+            localStorage.setItem(key, this.qlearning.serialize());
+        } catch (e) {
+            console.warn('Failed to save Q-Table:', e);
+        }
+    }
+
+    loadQTable() {
+        if (!this.qlearning) return false;
+        try {
+            const key = `rld_qtable_${this.currentDungeon}`;
+            const saved = localStorage.getItem(key);
+            if (saved) {
+                this.qlearning.deserialize(saved);
+                return true;
+            }
+        } catch (e) {
+            console.warn('Failed to load Q-Table:', e);
+        }
+        return false;
     }
 
     updateDungeonSelect() {
@@ -175,12 +228,58 @@ class Game {
             sound.init();
             document.removeEventListener('keydown', initSound);
             document.removeEventListener('click', initSound);
+            document.removeEventListener('touchstart', initSound);
         };
         document.addEventListener('keydown', initSound);
         document.addEventListener('click', initSound);
+        document.addEventListener('touchstart', initSound);
 
         // Keyboard controls
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
+
+        // Touch controls - swipe on canvas
+        this.canvas.addEventListener('touchstart', (e) => {
+            this.touchStartX = e.touches[0].clientX;
+            this.touchStartY = e.touches[0].clientY;
+            e.preventDefault();
+        }, { passive: false });
+
+        this.canvas.addEventListener('touchend', (e) => {
+            if (this.isTraining) return;
+            const dx = e.changedTouches[0].clientX - this.touchStartX;
+            const dy = e.changedTouches[0].clientY - this.touchStartY;
+            const minSwipe = 30;
+
+            if (Math.abs(dx) < minSwipe && Math.abs(dy) < minSwipe) return;
+
+            let action;
+            if (Math.abs(dx) > Math.abs(dy)) {
+                action = dx > 0 ? Action.RIGHT : Action.LEFT;
+            } else {
+                action = dy > 0 ? Action.DOWN : Action.UP;
+            }
+
+            if (this.done) {
+                this.tryEnterDungeon();
+            } else {
+                this.handleAction(action);
+            }
+            e.preventDefault();
+        }, { passive: false });
+
+        // D-pad buttons
+        const dpadBtns = document.querySelectorAll('.dpad-btn[data-action]');
+        dpadBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (this.isTraining) return;
+                const action = parseInt(e.currentTarget.dataset.action);
+                if (this.done) {
+                    this.tryEnterDungeon();
+                } else {
+                    this.handleAction(action);
+                }
+            });
+        });
 
         // UI controls
         this.dungeonSelect.addEventListener('change', (e) => {
@@ -196,9 +295,19 @@ class Game {
 
         this.resetBtn.addEventListener('click', () => this.tryEnterDungeon());
 
+        // Speed buttons
+        const speedBtns = document.querySelectorAll('.btn-speed');
+        speedBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                speedBtns.forEach(b => b.classList.remove('active'));
+                e.currentTarget.classList.add('active');
+                this.trainingSpeed = parseInt(e.currentTarget.dataset.speed);
+            });
+        });
+
         // Training controls
-        this.trainBtn.addEventListener('click', () => this.startTraining());
-        this.playAiBtn.addEventListener('click', () => this.toggleAiPlay());
+        this.startTrainBtn.addEventListener('click', () => this.startTraining());
+        this.stopTrainBtn.addEventListener('click', () => this.stopTraining());
 
         // Fog of War toggle
         this.fogOfWarCheck.addEventListener('change', (e) => {
@@ -231,7 +340,7 @@ class Game {
     }
 
     handleKeyDown(e) {
-        if (this.isTraining || this.aiPlaying) return;
+        if (this.isTraining) return;
 
         if (this.done) {
             if (e.key === 'r' || e.key === 'R') {
@@ -276,21 +385,34 @@ class Game {
     }
 
     loadDungeon(name) {
+        // Stop any ongoing training
+        if (this.isTraining) {
+            this.stopTraining();
+        }
+
         this.currentDungeon = name;
         this.grid = loadDungeon(name);
         this.renderer.setGrid(this.grid);
 
-        // Reset Q-Learning for new dungeon
+        // Initialize Q-Learning for this dungeon
         const config = DUNGEON_CONFIG[name];
         this.qlearning = new QLearning(this.grid, {
             useHpState: config.useHpState ?? false
         });
-        this.playAiBtn.disabled = true;
+
+        // Try to load saved Q-Table
+        const loaded = this.loadQTable();
+
         this.trainStats.innerHTML = '';
         this.renderer.setQData(null, null);
 
         const hpNote = config.useHpState ? ' [HP-Aware AI]' : '';
-        this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G${hpNote}`, 'info');
+        const loadNote = loaded ? ' (Q-Table loaded)' : '';
+        this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G${hpNote}${loadNote}`, 'info');
+
+        if (loaded) {
+            this.updateVisualization();
+        }
 
         this.reset();
     }
@@ -342,8 +464,6 @@ class Game {
         this.renderer.setAgent(this.agent);
         this.steps = 0;
         this.done = false;
-        this.aiPlaying = false;
-        this.playAiBtn.textContent = 'AI Play';
 
         this.updateUI();
         this.render();
@@ -359,7 +479,7 @@ class Game {
         this.steps++;
 
         // Learning from Demonstration: teach Q-learning from user play
-        if (this.qlearning && !this.aiPlaying) {
+        if (this.qlearning && !this.isTraining) {
             const nextState = [this.agent.x, this.agent.y, this.agent.hp];
             this.qlearning.learn(prevState, action, result.reward, nextState, result.done);
         }
@@ -462,19 +582,21 @@ class Game {
         this.updateUI();
     }
 
-    async startTraining() {
+    // ========== Training System ==========
+
+    startTraining() {
         if (this.isTraining) return;
 
         this.isTraining = true;
-        this.trainBtn.disabled = true;
-        this.playAiBtn.disabled = true;
+        this.startTrainBtn.disabled = true;
+        this.stopTrainBtn.disabled = false;
         this.trainProgress.style.display = 'block';
+        this.trainingMode = this.trainModeSelect.value;
 
-        // Disable fog of war during training visualization
-        const wasFogOn = this.renderer.fogOfWar;
+        // Disable fog of war during training
         this.renderer.fogOfWar = false;
 
-        // Reset Q-Learning (preserve useHpState from config)
+        // Reset Q-Learning with fresh parameters
         const config = DUNGEON_CONFIG[this.currentDungeon];
         this.qlearning = new QLearning(this.grid, {
             alpha: 0.1,
@@ -485,41 +607,277 @@ class Game {
             useHpState: config.useHpState ?? false
         });
 
-        const nEpisodes = 500;
+        this.trainingEpisode = 0;
+        this.recentResults = [];
 
-        this.showMessage('Training AI...', 'info');
-
-        await this.qlearning.train(nEpisodes, {
-            onProgress: (stats) => {
-                const percent = (stats.episode / nEpisodes) * 100;
-                this.progressFill.style.width = `${percent}%`;
-                this.progressText.textContent = `${stats.episode}/${nEpisodes} (ε=${stats.epsilon.toFixed(2)})`;
-
-                // Update visualization during training
-                this.updateVisualization();
-            },
-            batchSize: 10
-        });
-
-        // Training complete
-        const testResult = this.qlearning.test(100);
-
-        this.trainStats.innerHTML = `
-            <div>Clear Rate: ${(testResult.successRate * 100).toFixed(0)}%</div>
-            <div>Avg Steps: ${testResult.avgSteps.toFixed(1)}</div>
-        `;
-
-        this.isTraining = false;
-        this.trainBtn.disabled = false;
-        this.playAiBtn.disabled = false;
-        this.trainProgress.style.display = 'none';
-
-        // Restore fog of war state
-        this.renderer.fogOfWar = wasFogOn;
-
-        this.updateVisualization();
-        this.showMessage(`Training done! Clear rate: ${(testResult.successRate * 100).toFixed(0)}%`, 'success');
+        if (this.trainingSpeed === 0) {
+            this.startInstantTraining();
+        } else {
+            this.startVisualTraining();
+        }
     }
+
+    // Visual training: one step at a time with rendering
+    startVisualTraining() {
+        this.showMessage('Visual training started...', 'info');
+        this.beginVisualEpisode();
+    }
+
+    beginVisualEpisode() {
+        if (!this.isTraining) return;
+
+        // Restore monsters from previous episode
+        for (const key of this.trainingKilledMonsters) {
+            const [x, y] = key.split(',').map(Number);
+            this.grid.tiles[y][x] = TileType.MONSTER;
+        }
+        this.trainingKilledMonsters.clear();
+
+        // Also restore the main killedMonsters
+        for (const key of this.killedMonsters) {
+            const [x, y] = key.split(',').map(Number);
+            this.grid.tiles[y][x] = TileType.MONSTER;
+        }
+        this.killedMonsters.clear();
+
+        // Create training agent at start position
+        const startPos = this.grid.startPos;
+        this.trainingAgent = new Agent(startPos.x, startPos.y);
+        this.trainingTotalReward = 0;
+        this.trainingSteps = 0;
+
+        // Set the training agent as the displayed agent
+        this.agent = this.trainingAgent;
+        this.renderer.setAgent(this.agent);
+        this.steps = 0;
+        this.done = false;
+
+        this.updateUI();
+        this.render();
+
+        // Start stepping
+        this.scheduleVisualStep();
+    }
+
+    scheduleVisualStep() {
+        if (!this.isTraining) return;
+        const delay = SPEED_DELAYS[this.trainingSpeed] || 1500;
+        this.trainingStepTimer = setTimeout(() => this.executeVisualStep(), delay);
+    }
+
+    executeVisualStep() {
+        if (!this.isTraining || !this.trainingAgent) return;
+
+        const agent = this.trainingAgent;
+        const maxSteps = 200;
+
+        if (this.trainingSteps >= maxSteps || this.done) {
+            // Episode ended
+            this.finishVisualEpisode(false);
+            return;
+        }
+
+        // Choose action
+        const state = [agent.x, agent.y, agent.hp];
+        const action = this.qlearning.stepAction(agent.x, agent.y, agent.hp);
+
+        // Handle killed monsters (treat as empty)
+        const nextPos = agent.getNextPosition(action);
+        const nextKey = `${nextPos.x},${nextPos.y}`;
+        const originalTile = this.grid.getTile(nextPos.x, nextPos.y);
+
+        if (this.trainingKilledMonsters.has(nextKey) && originalTile === TileType.MONSTER) {
+            this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
+        }
+
+        // Execute move
+        const result = agent.move(action, this.grid);
+        this.trainingSteps++;
+        this.steps = this.trainingSteps;
+
+        // Track monster kills
+        if (result.tile === TileType.MONSTER && !this.trainingKilledMonsters.has(nextKey)) {
+            this.trainingKilledMonsters.add(nextKey);
+            this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
+        }
+
+        const nextState = [agent.x, agent.y, agent.hp];
+
+        // Learn
+        this.qlearning.learn(state, action, result.reward, nextState, result.done);
+
+        this.trainingTotalReward += result.reward;
+
+        // Update display
+        this.updateUI();
+        this.render();
+
+        if (result.done) {
+            const success = agent.hp > 0 && this.grid.getTile(agent.x, agent.y) === TileType.GOAL;
+            this.finishVisualEpisode(success);
+            return;
+        }
+
+        // Schedule next step
+        this.scheduleVisualStep();
+    }
+
+    finishVisualEpisode(success) {
+        // Restore monsters
+        for (const key of this.trainingKilledMonsters) {
+            const [x, y] = key.split(',').map(Number);
+            this.grid.tiles[y][x] = TileType.MONSTER;
+        }
+        this.trainingKilledMonsters.clear();
+
+        // Decay epsilon
+        this.qlearning.decayEpsilon();
+        this.qlearning.episodeRewards.push(this.trainingTotalReward);
+        this.qlearning.episodeSteps.push(this.trainingSteps);
+
+        this.trainingEpisode++;
+        this.recentResults.push(success);
+        if (this.recentResults.length > CONVERGENCE_WINDOW) {
+            this.recentResults.shift();
+        }
+
+        // Calculate stats
+        const successCount = this.recentResults.filter(r => r).length;
+        const clearRate = this.recentResults.length > 0
+            ? (successCount / this.recentResults.length * 100).toFixed(0)
+            : 0;
+
+        // Update progress UI
+        this.updateTrainingUI(clearRate);
+
+        // Check termination conditions
+        if (this.trainingEpisode >= MAX_EPISODES) {
+            this.finishTraining(`Max episodes (${MAX_EPISODES}) reached. Clear: ${clearRate}%`);
+            return;
+        }
+
+        if (this.trainingMode === 'until_success' &&
+            this.recentResults.length >= CONVERGENCE_WINDOW &&
+            successCount / this.recentResults.length >= CONVERGENCE_THRESHOLD) {
+            this.finishTraining(`Converged! Clear: ${clearRate}% after ${this.trainingEpisode} episodes`);
+            return;
+        }
+
+        // Continue to next episode
+        this.beginVisualEpisode();
+    }
+
+    // Instant training: no visualization, fast execution
+    async startInstantTraining() {
+        this.showMessage('Instant training...', 'info');
+
+        const batchSize = 10;
+        let running = true;
+
+        while (running && this.isTraining && this.trainingEpisode < MAX_EPISODES) {
+            // Run a batch
+            for (let i = 0; i < batchSize && this.isTraining && this.trainingEpisode < MAX_EPISODES; i++) {
+                const result = this.qlearning.runEpisode();
+                this.trainingEpisode++;
+                this.recentResults.push(result.success);
+                if (this.recentResults.length > CONVERGENCE_WINDOW) {
+                    this.recentResults.shift();
+                }
+            }
+
+            // Calculate stats
+            const successCount = this.recentResults.filter(r => r).length;
+            const clearRate = this.recentResults.length > 0
+                ? (successCount / this.recentResults.length * 100).toFixed(0)
+                : 0;
+
+            this.updateTrainingUI(clearRate);
+
+            // Check convergence
+            if (this.trainingMode === 'until_success' &&
+                this.recentResults.length >= CONVERGENCE_WINDOW &&
+                successCount / this.recentResults.length >= CONVERGENCE_THRESHOLD) {
+                this.finishTraining(`Converged! Clear: ${clearRate}% after ${this.trainingEpisode} episodes`);
+                running = false;
+                break;
+            }
+
+            // Update visualization periodically
+            this.updateVisualization();
+
+            // Yield to UI
+            await new Promise(r => setTimeout(r, 0));
+        }
+
+        // If we hit max episodes
+        if (running && this.isTraining) {
+            const successCount = this.recentResults.filter(r => r).length;
+            const clearRate = this.recentResults.length > 0
+                ? (successCount / this.recentResults.length * 100).toFixed(0)
+                : 0;
+            this.finishTraining(`Max episodes reached. Clear: ${clearRate}%`);
+        }
+    }
+
+    updateTrainingUI(clearRate) {
+        const epsilon = this.qlearning.epsilon;
+        this.trainStats.innerHTML =
+            `Episode: ${this.trainingEpisode} | Clear: ${clearRate}% | ε: ${epsilon.toFixed(2)}`;
+
+        // Update progress bar (use episode count, cap at MAX_EPISODES)
+        const percent = Math.min(100, (this.trainingEpisode / MAX_EPISODES) * 100);
+        this.progressFill.style.width = `${percent}%`;
+        this.progressText.textContent =
+            `${this.trainingEpisode} ep (ε=${epsilon.toFixed(2)})`;
+    }
+
+    finishTraining(message) {
+        this.isTraining = false;
+        this.startTrainBtn.disabled = false;
+        this.stopTrainBtn.disabled = true;
+
+        if (this.trainingStepTimer) {
+            clearTimeout(this.trainingStepTimer);
+            this.trainingStepTimer = null;
+        }
+
+        // Save Q-Table
+        this.saveQTable();
+
+        // Restore fog of war
+        this.renderer.fogOfWar = this.fogOfWarCheck.checked;
+
+        // Reset display agent
+        this.reset();
+        this.updateVisualization();
+
+        this.showMessage(message, 'success');
+    }
+
+    stopTraining() {
+        if (!this.isTraining) return;
+
+        if (this.trainingStepTimer) {
+            clearTimeout(this.trainingStepTimer);
+            this.trainingStepTimer = null;
+        }
+
+        // Restore training killed monsters
+        for (const key of this.trainingKilledMonsters) {
+            const [x, y] = key.split(',').map(Number);
+            this.grid.tiles[y][x] = TileType.MONSTER;
+        }
+        this.trainingKilledMonsters.clear();
+
+        const successCount = this.recentResults.filter(r => r).length;
+        const clearRate = this.recentResults.length > 0
+            ? (successCount / this.recentResults.length * 100).toFixed(0)
+            : 0;
+
+        this.finishTraining(`Stopped at episode ${this.trainingEpisode}. Clear: ${clearRate}%`);
+    }
+
+    // ========== End Training System ==========
 
     updateVisualization() {
         if (this.qlearning) {
@@ -528,41 +886,6 @@ class Game {
             this.renderer.setQData(qValues, policy);
         }
         this.render();
-    }
-
-    toggleAiPlay() {
-        if (!this.qlearning) return;
-
-        if (this.aiPlaying) {
-            this.aiPlaying = false;
-            this.playAiBtn.textContent = 'AI Play';
-        } else {
-            // AI doesn't pay gold, just resets
-            this.reset();
-            this.aiPlaying = true;
-            this.playAiBtn.textContent = 'Stop AI';
-
-            // Disable fog for AI play
-            this.renderer.fogOfWar = false;
-            this.runAiStep();
-        }
-    }
-
-    runAiStep() {
-        if (!this.aiPlaying || this.done) {
-            this.aiPlaying = false;
-            this.playAiBtn.textContent = 'AI Play';
-            // Restore fog setting
-            this.renderer.fogOfWar = this.fogOfWarCheck.checked;
-            this.render();
-            return;
-        }
-
-        const action = this.qlearning.getBestAction(this.agent.x, this.agent.y, this.agent.hp);
-        this.handleAction(action);
-
-        // Schedule next step
-        setTimeout(() => this.runAiStep(), 300);
     }
 
     updateUI() {

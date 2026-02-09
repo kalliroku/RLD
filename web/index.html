@@ -17,6 +17,16 @@
             <div class="game-area">
                 <canvas id="game-canvas"></canvas>
 
+                <div class="dpad-container" id="dpad-container">
+                    <div class="dpad">
+                        <button class="dpad-btn dpad-up" data-action="0">&#9650;</button>
+                        <button class="dpad-btn dpad-left" data-action="2">&#9664;</button>
+                        <button class="dpad-btn dpad-center"></button>
+                        <button class="dpad-btn dpad-right" data-action="3">&#9654;</button>
+                        <button class="dpad-btn dpad-down" data-action="1">&#9660;</button>
+                    </div>
+                </div>
+
                 <div class="game-ui">
                     <div class="stats">
                         <div class="stat">
@@ -66,8 +76,24 @@
 
                 <div class="control-section">
                     <h3>AI Training</h3>
-                    <button id="btn-train" class="btn-train">Train AI (500 ep)</button>
-                    <button id="btn-play-ai" class="btn-secondary" disabled>AI Play</button>
+                    <div class="speed-buttons" id="speed-buttons">
+                        <span class="speed-label">Speed:</span>
+                        <button class="btn-speed active" data-speed="1">1x</button>
+                        <button class="btn-speed" data-speed="2">2x</button>
+                        <button class="btn-speed" data-speed="3">3x</button>
+                        <button class="btn-speed" data-speed="0">Instant</button>
+                    </div>
+                    <div class="train-mode-select">
+                        <span class="speed-label">Mode:</span>
+                        <select id="train-mode">
+                            <option value="until_success">Until Success</option>
+                            <option value="continuous">Continuous</option>
+                        </select>
+                    </div>
+                    <div class="train-buttons">
+                        <button id="btn-start-train" class="btn-train">Start Training</button>
+                        <button id="btn-stop-train" class="btn-stop" disabled>Stop</button>
+                    </div>
                     <div class="train-progress" id="train-progress" style="display: none;">
                         <div class="progress-bar">
                             <div class="progress-fill" id="progress-fill"></div>
