@@ -347,6 +347,149 @@ footer {
     font-size: 0.9rem;
 }
 
+/* Speed Buttons */
+.speed-buttons {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.speed-label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin-right: 4px;
+}
+
+.btn-speed {
+    width: auto;
+    padding: 5px 10px;
+    font-size: 0.8rem;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    border: 1px solid transparent;
+}
+
+.btn-speed.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #60a5fa;
+}
+
+.btn-speed:hover {
+    transform: none;
+    box-shadow: none;
+    background: #1e3a5f;
+    color: var(--text-primary);
+}
+
+.btn-speed.active:hover {
+    background: #2563eb;
+}
+
+/* Train Mode Select */
+.train-mode-select {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.train-mode-select select {
+    flex: 1;
+    margin-bottom: 0;
+    padding: 5px 8px;
+    font-size: 0.85rem;
+}
+
+/* Train Buttons */
+.train-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+.train-buttons button {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.btn-stop {
+    background: #dc2626;
+    color: white;
+    font-weight: bold;
+}
+
+.btn-stop:hover:not(:disabled) {
+    box-shadow: 0 4px 12px rgba(220, 38, 38, 0.4);
+}
+
+.btn-stop:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* D-Pad */
+.dpad-container {
+    display: none;
+    justify-content: center;
+    margin-top: 12px;
+}
+
+.dpad {
+    display: grid;
+    grid-template-columns: 50px 50px 50px;
+    grid-template-rows: 50px 50px 50px;
+    gap: 4px;
+}
+
+.dpad-btn {
+    width: 50px;
+    height: 50px;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid #334155;
+    border-radius: 8px;
+    user-select: none;
+    -webkit-user-select: none;
+    touch-action: manipulation;
+}
+
+.dpad-btn:hover {
+    transform: none;
+    box-shadow: none;
+}
+
+.dpad-btn:active {
+    background: var(--accent);
+    transform: scale(0.95);
+}
+
+.dpad-center {
+    background: transparent;
+    border: none;
+    cursor: default;
+}
+
+.dpad-center:active {
+    background: transparent;
+    transform: none;
+}
+
+.dpad-up    { grid-column: 2; grid-row: 1; }
+.dpad-left  { grid-column: 1; grid-row: 2; }
+.dpad-center{ grid-column: 2; grid-row: 2; }
+.dpad-right { grid-column: 3; grid-row: 2; }
+.dpad-down  { grid-column: 2; grid-row: 3; }
+
 /* Responsive */
 @media (max-width: 700px) {
     main {
@@ -357,5 +500,16 @@ footer {
     .controls {
         width: 100%;
         max-width: 400px;
+    }
+
+    .dpad-container {
+        display: flex;
+    }
+}
+
+/* Also show D-pad on touch devices */
+@media (pointer: coarse) {
+    .dpad-container {
+        display: flex;
     }
 }
