@@ -19,9 +19,12 @@ AI 모험가를 훈련시켜 던전을 공략하거나, 자신만의 던전을 �
 | Phase 3 | 게임 로직 (Gymnasium 환경) | ✅ 완료 |
 | Phase 4 | Q-Learning | ✅ 완료 |
 | Phase 5 | 웹 UI | ✅ 완료 |
-| Phase 6 | NPC 가차 시스템 | ⏳ 예정 |
-| Phase 7 | 던전 에디터 | ⏳ 예정 |
-| Phase 8 | 추가 알고리즘 (DQN, PPO) | ⏳ 예정 |
+| Phase 6 | 게임 확장 (이코노미, 전장의 안개) | ✅ 완료 |
+| Phase 7 | 던전 언락, 몬스터, LfD | ✅ 완료 |
+| Phase 8 | Q-Table 저장, 모바일 터치, AI 학습 시각화 | ✅ 완료 |
+| Phase 9 | NPC 가차 시스템 | ⏳ 예정 |
+| Phase 10 | 던전 에디터 | ⏳ 예정 |
+| Phase 11 | 추가 알고리즘 (DQN, PPO) | ⏳ 예정 |
 
 ## 설치
 
@@ -69,10 +72,13 @@ cd web
 python -m http.server 8080
 # 브라우저에서 http://localhost:8080/ 접속
 ```
-- 방향키/WASD: 이동
-- Train AI: Q-Learning 학습
-- AI Play: 학습된 AI 자동 플레이
+- 방향키/WASD: 이동 (모바일: 스와이프 또는 D-pad)
+- AI Training: 시각적 학습 (1x/2x/3x 속도) 또는 Instant 모드
+- Until Success: 95% 성공률 도달 시 자동 종료
+- Continuous: Stop 버튼으로 수동 정지 (최대 10,000 에피소드)
+- Q-Table 자동 저장/복원 (새로고침해도 학습 데이터 유지)
 - Show Q-Values/Policy: 학습 시각화
+- Fog of War: 전장의 안개 토글
 
 ## 샘플 던전
 
@@ -92,6 +98,9 @@ assets/dungeons/
 | `G` | 목표 | 클리어 (+100) |
 | `T` | 함정 | HP -10 |
 | `H` | 회복 | HP +10 |
+| `P` | 구덩이 | 즉사 |
+| `$` | 골드 | +10 보상 |
+| `M` | 몬스터 | HP -30, 처치 시 +5G |
 
 ## 프로젝트 구조
 
@@ -102,14 +111,20 @@ RLD/
 │   ├── agents/         # 에이전트 (모험가)
 │   ├── algorithms/     # RL 알고리즘 (Q-Learning)
 │   └── ui/             # Pygame 렌더러
+├── web/
+│   ├── index.html      # 웹 UI
+│   ├── css/style.css   # 스타일
+│   └── js/
+│       ├── main.js     # 게임 엔트리포인트
+│       └── game/       # 그리드, 에이전트, Q-Learning, 렌더러, 사운드
 ├── assets/
-│   └── dungeons/       # 던전 파일들
+│   └── dungeons/       # 던전 파일들 (12개)
 ├── tests/
 ├── docs/
 │   ├── GDD.md          # 게임 디자인 문서
 │   └── TASK_BREAKDOWN.md  # 세부 작업 계획
-├── play_game.py        # 직접 플레이
-├── train_agent.py      # AI 학습
+├── play_game.py        # Pygame 직접 플레이
+├── train_agent.py      # Pygame AI 학습
 └── run_viewer.py       # 던전 뷰어
 ```
 
@@ -137,15 +152,28 @@ RLD/
 - **Pygame**: 게임 렌더링
 - **Matplotlib**: 학습 시각화
 
+## 주요 기능
+
+- **12개 던전**: 튜토리얼부터 HP Gauntlet까지 난이도별 진행
+- **골드 이코노미**: 던전 입장비, 클리어 보상, 몬스터 처치 보상
+- **던전 언락**: 이전 던전 클리어 시 다음 던전 해금
+- **전장의 안개**: 방문한 칸만 보이는 탐험 시스템
+- **몬스터 시스템**: HP 데미지 + 처치 보상
+- **HP-aware Q-Learning**: HP 상태를 고려한 학습
+- **Learning from Demonstration**: 유저 플레이로 AI 학습 가속
+- **Q-Table 저장/복원**: localStorage로 학습 데이터 보존
+- **모바일 터치 컨트롤**: 스와이프 + D-pad
+- **AI 학습 시각화**: 4단계 속도로 학습 과정 실시간 관찰
+- **8비트 사운드**: Web Audio API 기반 효과음
+
 ## 향후 계획
 
-1. **웹 UI**: 브라우저에서 플레이 (FastAPI + Canvas)
-2. **NPC 가차**: 알고리즘 캐릭터화
+1. **NPC 가차**: 알고리즘 캐릭터화
    - Q군 (Common) - Q-Learning
    - 피피오 (Epic) - PPO
    - 삭 (Legendary) - SAC
-3. **던전 에디터**: 유저 던전 제작
-4. **DQN/PPO**: 신경망 기반 알고리즘
+2. **던전 에디터**: 유저 던전 제작
+3. **DQN/PPO**: 신경망 기반 알고리즘
 
 ## 참고 자료
 
