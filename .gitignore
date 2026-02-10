@@ -70,3 +70,6 @@ runs/
 
 # MCP (Model Context Protocol)
 .mcp.json
+
+# nul file
+nul
