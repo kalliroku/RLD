@@ -333,6 +333,48 @@ button:active {
 .tile-preview.monster { background: #9333ea; }
 .tile-preview.wall { background: #374151; }
 
+/* Character Select */
+.character-select {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-character {
+    flex: 1;
+    padding: 8px 6px;
+    font-size: 0.8rem;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    border: 2px solid transparent;
+    transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.btn-character.active {
+    background: var(--accent);
+    color: white;
+    border-color: #ff6b81;
+}
+
+.btn-character:hover {
+    transform: none;
+    box-shadow: none;
+    background: #1e3a5f;
+    color: var(--text-primary);
+}
+
+.btn-character.active:hover {
+    background: #d63851;
+}
+
+.character-desc {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-top: 8px;
+    line-height: 1.4;
+    font-style: italic;
+}
+
 /* Gold display */
 .gold-value {
     color: #fbbf24 !important;
