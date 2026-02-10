@@ -374,6 +374,35 @@
 - [x] 모바일 터치 컨트롤 (스와이프 + D-pad)
 - [x] AI 학습 시각화 모드 (1x/2x/3x/Instant 속도)
 - [x] 수렴 감지 (95% 성공률 자동 종료) + 수동 정지
+- [x] 캐릭터 시스템 (Q군/스카우트) + 캐릭터별 Q-Table 분리
+- [x] 관찰형 Q-Learning (LocalQLearning V12: 8방시야+거리)
+
+## Phase 7: 관찰형 Q-Learning 캐릭터 (스카우트) ✅ 완료
+
+### 7.0 구현된 기능
+- [x] LocalQLearning 클래스 (V12: 8방향 시야 + 골 거리)
+  - 상태: `tU_tD_tL_tR_tUL_tUR_tDL_tDR_goalDir_goalDist_hpLevel`
+  - 좌표 대신 로컬 관찰 기반 → 던전 간 전이학습 가능
+- [x] 캐릭터 선택 UI (Q군 암기형 / 스카우트 관찰형)
+- [x] 캐릭터별 Q-Table 독립 저장 (`rld_qtable_{character}_{dungeon}`)
+- [x] 스카우트 전이학습 (공유 Q-Table `rld_qtable_scout_shared`)
+- [x] 기존 Q-Table 마이그레이션 (구 키 → Q군 네임스페이스)
+- [x] test() 메서드 (greedy 평가 모드)
+
+### 7.1 성능 비교 결과 (5000ep 학습, 3회 평균)
+```
+클리어 던전 수: Q군 8/12 | 스카우트(V12) 9/12
+스카우트 우위:  Lv.11 HP Test (100% vs 33%), Lv.12 HP Gauntlet (67% vs 0%)
+Q군 우위:      Lv.7 Gauntlet (33% vs 0% - 불안정)
+동률:          Lv.1~4, 6, 9 (둘 다 100%)
+```
+
+### 7.2 버전 선정 과정
+- 원본 (4방향 + 골방향 + HP): perceptual aliasing으로 미로 실패
+- V1 (8방시야): 대각선 추가만으로는 효과 미미
+- V2 (거리추가): Lv.7 단독 클리어, 유망
+- V3 (메모리): 상태 폭발로 전멸
+- **V12 (8방+거리): 종합 최강 → 정식 채택**
 
 ---
 

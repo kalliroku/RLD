@@ -7,6 +7,7 @@ import { Agent, Action } from './game/agent.js';
 import { Renderer } from './game/renderer.js';
 import { TileType } from './game/tiles.js';
 import { QLearning } from './game/qlearning.js';
+import { LocalQLearning } from './game/local-qlearning.js';
 import { sound } from './game/sound.js';
 
 // Dungeon config: cost to enter, first clear reward, repeat reward
@@ -43,6 +44,11 @@ const DUNGEON_ORDER = [
 
 const STORAGE_KEY = 'rld_save_data';
 
+const CHARACTER_DESC = {
+    qkun: '좌표를 외워서 학습합니다. 던전별 전문가.',
+    scout: '주변을 관찰해서 학습합니다. 처음 보는 던전도 경험을 활용!'
+};
+
 // Training speed delays (ms per step)
 const SPEED_DELAYS = {
     1: 1500,  // 1x - slow observation
@@ -65,6 +71,7 @@ class Game {
         this.steps = 0;
         this.done = false;
         this.currentDungeon = 'level_01_easy';
+        this.currentCharacter = 'qkun'; // 'qkun' | 'scout'
 
         // Gold system & Progress
         this.gold = 100;
@@ -73,6 +80,7 @@ class Game {
 
         // Load saved progress
         this.loadProgress();
+        this.migrateOldQTables();
 
         // Q-Learning
         this.qlearning = null;
@@ -115,6 +123,9 @@ class Game {
         this.progressText = document.getElementById('progress-text');
         this.trainStats = document.getElementById('train-stats');
 
+        // Character UI
+        this.characterDesc = document.getElementById('character-desc');
+
         // Visualization checkboxes
         this.fogOfWarCheck = document.getElementById('fog-of-war');
         this.showQValuesCheck = document.getElementById('show-qvalues');
@@ -152,12 +163,22 @@ class Game {
         }
     }
 
-    // Q-Table persistence
+    // Q-Table persistence (keyed by character + dungeon)
+    getQTableKey() {
+        return `rld_qtable_${this.currentCharacter}_${this.currentDungeon}`;
+    }
+
     saveQTable() {
         if (!this.qlearning) return;
         try {
-            const key = `rld_qtable_${this.currentDungeon}`;
-            localStorage.setItem(key, this.qlearning.serialize());
+            const key = this.getQTableKey();
+            const serialized = this.qlearning.serialize();
+            localStorage.setItem(key, serialized);
+
+            // Scout: also save to shared key for transfer learning
+            if (this.currentCharacter === 'scout') {
+                localStorage.setItem('rld_qtable_scout_shared', serialized);
+            }
         } catch (e) {
             console.warn('Failed to save Q-Table:', e);
         }
@@ -166,16 +187,46 @@ class Game {
     loadQTable() {
         if (!this.qlearning) return false;
         try {
-            const key = `rld_qtable_${this.currentDungeon}`;
+            const key = this.getQTableKey();
             const saved = localStorage.getItem(key);
             if (saved) {
                 this.qlearning.deserialize(saved);
                 return true;
             }
+
+            // Scout: try shared Q-Table for transfer learning
+            if (this.currentCharacter === 'scout') {
+                const shared = localStorage.getItem('rld_qtable_scout_shared');
+                if (shared) {
+                    this.qlearning.deserialize(shared);
+                    // Reset epsilon for new dungeon exploration
+                    this.qlearning.epsilon = 0.5;
+                    this.qlearning.episodeRewards = [];
+                    this.qlearning.episodeSteps = [];
+                    return true;
+                }
+            }
         } catch (e) {
             console.warn('Failed to load Q-Table:', e);
         }
         return false;
+    }
+
+    // Migrate old Q-Table keys (pre-character era) to qkun
+    migrateOldQTables() {
+        try {
+            for (const dungeon of DUNGEON_ORDER) {
+                const oldKey = `rld_qtable_${dungeon}`;
+                const newKey = `rld_qtable_qkun_${dungeon}`;
+                const old = localStorage.getItem(oldKey);
+                if (old && !localStorage.getItem(newKey)) {
+                    localStorage.setItem(newKey, old);
+                    localStorage.removeItem(oldKey);
+                }
+            }
+        } catch (e) {
+            console.warn('Q-Table migration failed:', e);
+        }
     }
 
     updateDungeonSelect() {
@@ -222,6 +273,45 @@ class Game {
         return names[dungeonId] || dungeonId;
     }
 
+    createQLearning(config, overrides = {}) {
+        const opts = {
+            alpha: overrides.alpha ?? 0.1,
+            gamma: overrides.gamma ?? 0.99,
+            epsilon: overrides.epsilon ?? 1.0,
+            epsilonMin: overrides.epsilonMin ?? 0.01,
+            epsilonDecay: overrides.epsilonDecay ?? 0.995
+        };
+
+        if (this.currentCharacter === 'scout') {
+            return new LocalQLearning(this.grid, opts);
+        }
+
+        return new QLearning(this.grid, {
+            ...opts,
+            useHpState: config.useHpState ?? false
+        });
+    }
+
+    switchCharacter(charName) {
+        if (charName === this.currentCharacter) return;
+
+        // Stop training if running
+        if (this.isTraining) {
+            this.stopTraining();
+        }
+
+        this.currentCharacter = charName;
+
+        // Update UI
+        document.querySelectorAll('.btn-character').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.char === charName);
+        });
+        this.characterDesc.textContent = CHARACTER_DESC[charName];
+
+        // Reload dungeon with new character's algorithm
+        this.loadDungeon(this.currentDungeon);
+    }
+
     setupEventListeners() {
         // Initialize sound on first interaction
         const initSound = () => {
@@ -233,6 +323,13 @@ class Game {
         document.addEventListener('keydown', initSound);
         document.addEventListener('click', initSound);
         document.addEventListener('touchstart', initSound);
+
+        // Character select buttons
+        document.querySelectorAll('.btn-character').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchCharacter(e.currentTarget.dataset.char);
+            });
+        });
 
         // Keyboard controls
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
@@ -394,11 +491,9 @@ class Game {
         this.grid = loadDungeon(name);
         this.renderer.setGrid(this.grid);
 
-        // Initialize Q-Learning for this dungeon
+        // Initialize Q-Learning for this dungeon (based on character)
         const config = DUNGEON_CONFIG[name];
-        this.qlearning = new QLearning(this.grid, {
-            useHpState: config.useHpState ?? false
-        });
+        this.qlearning = this.createQLearning(config);
 
         // Try to load saved Q-Table
         const loaded = this.loadQTable();
@@ -406,9 +501,10 @@ class Game {
         this.trainStats.innerHTML = '';
         this.renderer.setQData(null, null);
 
-        const hpNote = config.useHpState ? ' [HP-Aware AI]' : '';
+        const hpNote = config.useHpState ? ' [HP-Aware]' : '';
+        const charNote = this.currentCharacter === 'scout' ? ' [Scout]' : '';
         const loadNote = loaded ? ' (Q-Table loaded)' : '';
-        this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G${hpNote}${loadNote}`, 'info');
+        this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G${hpNote}${charNote}${loadNote}`, 'info');
 
         if (loaded) {
             this.updateVisualization();
@@ -596,15 +692,14 @@ class Game {
         // Disable fog of war during training
         this.renderer.fogOfWar = false;
 
-        // Reset Q-Learning with fresh parameters
+        // Reset Q-Learning with fresh parameters (based on character)
         const config = DUNGEON_CONFIG[this.currentDungeon];
-        this.qlearning = new QLearning(this.grid, {
+        this.qlearning = this.createQLearning(config, {
             alpha: 0.1,
             gamma: 0.99,
             epsilon: 1.0,
             epsilonMin: 0.01,
-            epsilonDecay: 0.995,
-            useHpState: config.useHpState ?? false
+            epsilonDecay: 0.995
         });
 
         this.trainingEpisode = 0;
