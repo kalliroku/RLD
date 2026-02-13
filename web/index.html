@@ -57,12 +57,38 @@
             <div class="controls">
                 <div class="control-section">
                     <h3>Character</h3>
-                    <div class="character-select">
-                        <button class="btn-character active" data-char="qkun">
-                            Q군 (암기형)
+                    <div class="character-grid">
+                        <button class="char-card active" data-char="qkun">
+                            <span class="char-name">Q군</span>
+                            <span class="char-algo">Q-Learning</span>
                         </button>
-                        <button class="btn-character" data-char="scout">
-                            스카우트 (관찰형)
+                        <button class="char-card" data-char="scout">
+                            <span class="char-name">스카우트</span>
+                            <span class="char-algo">Local Q</span>
+                        </button>
+                        <button class="char-card" data-char="sarsa">
+                            <span class="char-name">사르사</span>
+                            <span class="char-algo">SARSA</span>
+                        </button>
+                        <button class="char-card" data-char="monte">
+                            <span class="char-name">몬테</span>
+                            <span class="char-algo">Monte Carlo</span>
+                        </button>
+                        <button class="char-card" data-char="tracer">
+                            <span class="char-name">트레이서</span>
+                            <span class="char-algo">SARSA(λ)</span>
+                        </button>
+                        <button class="char-card" data-char="dyna">
+                            <span class="char-name">다이나</span>
+                            <span class="char-algo">Dyna-Q</span>
+                        </button>
+                        <button class="char-card" data-char="gradi">
+                            <span class="char-name">그래디</span>
+                            <span class="char-algo">REINFORCE</span>
+                        </button>
+                        <button class="char-card" data-char="critic">
+                            <span class="char-name">크리틱</span>
+                            <span class="char-algo">Actor-Critic</span>
                         </button>
                     </div>
                     <p class="character-desc" id="character-desc">
@@ -85,6 +111,11 @@
                         <option value="level_10_final">Lv.10 Final</option>
                         <option value="level_11_hp_test">Lv.11 HP Test</option>
                         <option value="level_12_hp_gauntlet">Lv.12 HP Gauntlet</option>
+                        <option value="level_13_cliff">Lv.13 Cliff Walk</option>
+                        <option value="level_14_long_hall">Lv.14 Long Hall</option>
+                        <option value="level_15_multi_room">Lv.15 Multi Room</option>
+                        <option value="level_16_open_field">Lv.16 Open Field</option>
+                        <option value="level_17_two_paths">Lv.17 Two Paths</option>
                     </select>
                     <button id="btn-reset">Reset (R)</button>
                 </div>
