@@ -259,6 +259,46 @@
                     <button class="btn-play-dungeon" id="btn-play-dungeon">Play This Dungeon</button>
                 </div>
 
+                <div class="control-section" id="quick-test-section">
+                    <h3>Quick Test</h3>
+                    <div class="quick-test-char-select">
+                        <span class="speed-label">Character:</span>
+                        <select id="qt-character">
+                            <option value="qkun">Q군 (Q-Learning)</option>
+                            <option value="scout">스카우트 (Local Q)</option>
+                            <option value="sarsa">사르사 (SARSA)</option>
+                            <option value="monte">몬테 (Monte Carlo)</option>
+                            <option value="tracer">트레이서 (SARSA(λ))</option>
+                            <option value="dyna">다이나 (Dyna-Q)</option>
+                            <option value="gradi">그래디 (REINFORCE)</option>
+                            <option value="critic">크리틱 (Actor-Critic)</option>
+                        </select>
+                    </div>
+                    <div class="quick-test-episodes">
+                        <span class="speed-label">Episodes:</span>
+                        <select id="qt-episodes">
+                            <option value="500">500</option>
+                            <option value="1000" selected>1000</option>
+                            <option value="3000">3000</option>
+                            <option value="5000">5000</option>
+                        </select>
+                    </div>
+                    <div class="quick-test-buttons">
+                        <button class="btn-train" id="btn-quick-test">Quick Test</button>
+                        <button class="btn-stop" id="btn-quick-test-stop" disabled>Stop</button>
+                    </div>
+                    <div class="quick-test-progress" id="qt-progress" style="display: none;">
+                        <div class="progress-bar">
+                            <div class="progress-fill" id="qt-progress-fill"></div>
+                        </div>
+                        <div class="progress-text" id="qt-progress-text"></div>
+                    </div>
+                    <div class="quick-test-results" id="qt-results"></div>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="qt-show-policy"> Show learned policy
+                    </label>
+                </div>
+
                 <div class="control-section">
                     <div class="editor-message" id="editor-message"></div>
                 </div>

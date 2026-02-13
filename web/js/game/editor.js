@@ -11,11 +11,12 @@ const MIN_SIZE = 3;
 const MAX_SIZE = 25;
 
 export class DungeonEditor {
-    constructor(canvas, renderer, onPlayDungeon) {
+    constructor(canvas, renderer, onPlayDungeon, onQuickTest) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.renderer = renderer;
         this.onPlayDungeon = onPlayDungeon; // callback(grid, name)
+        this.onQuickTest = onQuickTest; // callback(grid, character, maxEpisodes, onProgress, onComplete, shouldAbort)
 
         this.grid = null;
         this.activeTile = TileType.WALL;
@@ -27,6 +28,13 @@ export class DungeonEditor {
         this.lastPaintedCell = null;
 
         this.active = false;
+
+        // Quick Test state
+        this.quickTestRunning = false;
+        this.quickTestAbort = false;
+        this._showingTestPolicy = false;
+        this._lastTestValueGrid = null;
+        this._lastTestPolicyGrid = null;
 
         // Bound event handlers (for add/remove)
         this._onMouseDown = (e) => this.handleCanvasMouseDown(e);
@@ -66,6 +74,10 @@ export class DungeonEditor {
     deactivate() {
         if (!this.active) return;
         this.active = false;
+
+        if (this.quickTestRunning) {
+            this.stopQuickTest();
+        }
 
         this.canvas.removeEventListener('mousedown', this._onMouseDown);
         this.canvas.removeEventListener('mousemove', this._onMouseMove);
@@ -179,6 +191,7 @@ export class DungeonEditor {
     }
 
     applyGridToRenderer() {
+        this._showingTestPolicy = false;
         this.renderer.setGrid(this.grid);
         this.renderer.setAgent(null);
         this.renderer.fogOfWar = false;
@@ -612,11 +625,16 @@ export class DungeonEditor {
     render() {
         if (!this.active || !this.grid) return;
 
-        // Use renderer for base grid drawing (no agent, no fog, no Q-values)
+        // Use renderer for base grid drawing (no agent, no fog)
         this.renderer.setAgent(null);
         this.renderer.fogOfWar = false;
-        this.renderer.showQValues = false;
-        this.renderer.showPolicy = false;
+        if (this._showingTestPolicy) {
+            this.renderer.showQValues = true;
+            this.renderer.showPolicy = true;
+        } else {
+            this.renderer.showQValues = false;
+            this.renderer.showPolicy = false;
+        }
         this.renderer.render();
 
         // Draw hover cursor highlight
@@ -693,6 +711,77 @@ export class DungeonEditor {
         document.querySelectorAll('.btn-tool').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.tool === this.activeTool);
         });
+    }
+
+    // ========== Quick Test ==========
+
+    startQuickTest(character, maxEpisodes) {
+        if (this.quickTestRunning) return { success: false, errors: ['Test already running'] };
+
+        const result = this.validate();
+        if (!result.valid) {
+            return { success: false, errors: result.errors };
+        }
+
+        if (!this.onQuickTest) {
+            return { success: false, errors: ['Quick test not configured'] };
+        }
+
+        this.quickTestRunning = true;
+        this.quickTestAbort = false;
+        this.clearTestPolicy();
+
+        this.onQuickTest(
+            this.grid,
+            character,
+            maxEpisodes,
+            // onProgress
+            (progress) => {
+                this._onQuickTestProgress(progress);
+            },
+            // onComplete
+            (result) => {
+                this._onQuickTestComplete(result);
+            },
+            // shouldAbort
+            () => this.quickTestAbort
+        );
+
+        return { success: true };
+    }
+
+    stopQuickTest() {
+        this.quickTestAbort = true;
+    }
+
+    _onQuickTestProgress(progress) {
+        // UI updates handled by main.js via DOM
+    }
+
+    _onQuickTestComplete(result) {
+        this.quickTestRunning = false;
+        this.quickTestAbort = false;
+        if (result && result.valueGrid && result.policyGrid) {
+            this._lastTestValueGrid = result.valueGrid;
+            this._lastTestPolicyGrid = result.policyGrid;
+        }
+    }
+
+    showTestPolicy(valueGrid, policyGrid) {
+        if (!valueGrid || !policyGrid) {
+            valueGrid = this._lastTestValueGrid;
+            policyGrid = this._lastTestPolicyGrid;
+        }
+        if (!valueGrid || !policyGrid) return;
+        this._showingTestPolicy = true;
+        this.renderer.setQData(valueGrid, policyGrid);
+        this.render();
+    }
+
+    clearTestPolicy() {
+        this._showingTestPolicy = false;
+        this.renderer.setQData(null, null);
+        this.render();
     }
 
     // ========== Play Integration ==========
