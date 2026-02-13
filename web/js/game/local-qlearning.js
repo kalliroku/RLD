@@ -188,6 +188,7 @@ export class LocalQLearning {
         let steps = 0;
 
         const killedMonsters = new Set();
+        const collectedGold = new Set();
 
         while (steps < maxSteps) {
             const state = [agent.x, agent.y, agent.hp];
@@ -200,11 +201,18 @@ export class LocalQLearning {
             if (killedMonsters.has(nextKey) && originalTile === TileType.MONSTER) {
                 this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
             }
+            if (collectedGold.has(nextKey) && originalTile === TileType.GOLD) {
+                this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
+            }
 
             const result = agent.move(action, this.grid);
 
             if (result.tile === TileType.MONSTER && !killedMonsters.has(nextKey)) {
                 killedMonsters.add(nextKey);
+                this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
+            }
+            if (result.tile === TileType.GOLD && !collectedGold.has(nextKey)) {
+                collectedGold.add(nextKey);
                 this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
             }
 
@@ -222,6 +230,11 @@ export class LocalQLearning {
         for (const key of killedMonsters) {
             const [x, y] = key.split(',').map(Number);
             this.grid.tiles[y][x] = TileType.MONSTER;
+        }
+        // Restore gold after episode
+        for (const key of collectedGold) {
+            const [x, y] = key.split(',').map(Number);
+            this.grid.tiles[y][x] = TileType.GOLD;
         }
 
         this.decayEpsilon();
@@ -283,6 +296,7 @@ export class LocalQLearning {
             const startPos = this.grid.startPos;
             const agent = new Agent(startPos.x, startPos.y);
             const killedMonsters = new Set();
+            const collectedGold = new Set();
             let steps = 0;
 
             while (steps < 200) {
@@ -293,11 +307,18 @@ export class LocalQLearning {
                 if (killedMonsters.has(nextKey)) {
                     this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
                 }
+                if (collectedGold.has(nextKey)) {
+                    this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
+                }
 
                 const result = agent.move(action, this.grid);
 
                 if (result.tile === TileType.MONSTER && !killedMonsters.has(nextKey)) {
                     killedMonsters.add(nextKey);
+                    this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
+                }
+                if (result.tile === TileType.GOLD && !collectedGold.has(nextKey)) {
+                    collectedGold.add(nextKey);
                     this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
                 }
 
@@ -314,6 +335,10 @@ export class LocalQLearning {
             for (const key of killedMonsters) {
                 const [x, y] = key.split(',').map(Number);
                 this.grid.tiles[y][x] = TileType.MONSTER;
+            }
+            for (const key of collectedGold) {
+                const [x, y] = key.split(',').map(Number);
+                this.grid.tiles[y][x] = TileType.GOLD;
             }
 
             totalReward += agent.totalReward;
