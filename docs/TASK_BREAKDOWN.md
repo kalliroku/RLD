@@ -406,15 +406,126 @@ Q군 우위:      Lv.7 Gauntlet (33% vs 0% - 불안정)
 
 ---
 
-## Phase 9: NPC 가차 시스템 (알고리즘 캐릭터화)
+## Phase 8: David Silver RL 알고리즘 캐릭터 시스템 ✅ 완료
 
-### 6.1 알고리즘 NPC 정의
-- [ ] **6.1.1** `AlgorithmNPC` 클래스 생성
+### 8.0 구현된 기능
+- [x] SARSA (사르사) - On-policy TD, 신중한 안전 경로 학습
+- [x] Monte Carlo (몬테) - First-visit MC Control, 에피소드 단위 역방향 리턴
+- [x] SARSA(λ) (트레이서) - Eligibility trace로 먼 과거 선택도 업데이트
+- [x] Dyna-Q (다이나) - Q-Learning + 환경 모델 + planning step 10회
+- [x] REINFORCE (그래디) - Softmax 정책 경사법, running-average baseline
+- [x] Actor-Critic (크리틱) - Actor(theta) + Critic(V) 이중 테이블, TD error
+- [x] 8캐릭터 그리드 UI (2열×4행 카드 레이아웃)
+- [x] CHARACTERS 레지스트리 + createAlgorithm() 팩토리 패턴
+- [x] 5개 쇼케이스 던전 (Lv.13 Cliff Walk ~ Lv.17 Two Paths) → Phase 9에서 6개 추가
+- [x] 전체 알고리즘 serialize/deserialize + localStorage 저장
+- [x] Q-Values 히트맵 / Policy 화살표 시각화 호환
+
+### 8.1 알고리즘 파일 구조
+```
+web/js/game/
+├── sarsa.js          # SARSA (On-policy TD)
+├── monte-carlo.js    # First-visit Monte Carlo Control
+├── sarsa-lambda.js   # SARSA(λ) with eligibility traces
+├── dyna-q.js         # Dyna-Q (model-based planning)
+├── reinforce.js      # REINFORCE (policy gradient)
+└── actor-critic.js   # TD Actor-Critic
+```
+
+### 8.2 공통 알고리즘 인터페이스
+```
+chooseAction(x, y, hp)          // epsilon-greedy 또는 softmax
+learn(state, action, reward, nextState, done)
+runEpisode(maxSteps) / train(nEpisodes, options) / test(nEpisodes)
+stepAction(x, y, hp)            // visual training용
+serialize() / deserialize(json) // 저장/복원
+getValueGrid() / getPolicyGrid() // 시각화
+getBestAction(x, y, hp) / getMaxQValue(x, y, hp) / getQValues(x, y, hp)
+```
+
+### 8.3 쇼케이스 던전 목록
+| 던전 | 대상 알고리즘 | 설계 의도 |
+|------|-------------|----------|
+| Lv.13 Cliff Walk | SARSA | 구덩이 바로 위 최적경로 vs 안전 우회 |
+| Lv.14 Long Hall | Monte Carlo | 30+ 스텝, 중간 보상 없는 장거리 |
+| Lv.15 Multi Room | SARSA(λ) | 3개 방, eligibility trace 전파 효과 |
+| Lv.16 Open Field | Dyna-Q | 넓은 개방 공간, 모델 기반 계획 효과 |
+| Lv.17 Two Paths | REINFORCE | 상하 대칭 경로, 확률적 정책 학습 |
+
+### 8.4 알고리즘 핵심 수식
+```
+Q-Learning:   Q(s,a) += α[r + γ·max Q(s',a') - Q(s,a)]       (off-policy)
+SARSA:        Q(s,a) += α[r + γ·Q(s',a'_next) - Q(s,a)]      (on-policy)
+Monte Carlo:  G = Σγ^t·r_t, Q(s,a) += α[G - Q(s,a)]          (에피소드 단위)
+SARSA(λ):     e(s,a)+=1, ∀: Q+=α·δ·e, e*=γλ                  (eligibility trace)
+Dyna-Q:       Q-Learning + model[s][a] + N회 planning           (모델 기반)
+REINFORCE:    θ(s,a) += α·G·(1-π(a|s))                         (policy gradient)
+Actor-Critic: V+=α_c·δ, θ+=α_a·δ·(I-π)                        (TD actor-critic)
+```
+
+---
+
+## Phase 9: 알고리즘 쇼케이스 스테이지 확장 + 골드 소비 메커니즘 ✅ 완료
+
+### 9.0 구현된 기능
+- [x] 6개 신규 쇼케이스 던전 (Lv.18-23) 추가
+- [x] 골드 소비 메커니즘 (에피소드 내 최초 방문 시에만 보상, 이후 사라짐)
+- [x] 8개 알고리즘 전체에 collectedGold Set 패턴 적용
+- [x] Node.js 테스트 스크립트 (test-stages.mjs)
+
+### 9.1 신규 던전 목록
+| 던전 | 크기 | 대상 알고리즘 | 설계 의도 |
+|------|------|-------------|----------|
+| Lv.18 Dead End Labyrinth | 15×11 | TD > MC/PG | 미로+타임아웃, TD 점진 학습 vs MC 실패 |
+| Lv.19 Narrow Bridge | 17×9 | SARSA > QL | 양쪽 구덩이 다리, on-policy 안전 우회 |
+| Lv.20 Cliff Walking | 17×10 | SARSA > QL | 클래식 절벽 걷기, 신중한 탐험 빠른 수렴 |
+| Lv.21 Desert Crossing | 19×13 | Dyna-Q >> 전체 | 초대형 개방 공간, 모델 기반 10배 빠른 수렴 |
+| Lv.22 Monster Arena | 13×7 | HP 관리 | 몬스터+힐 필수 통과, useHpState 학습 |
+| Lv.23 The Mirage | 15×7 | MC > TD | 골드+구덩이 함정, MC 1회 사망 즉시 학습 |
+
+### 9.2 알고리즘 수렴 테스트 결과 (Node.js, 2000ep)
+```
+Lv.18: 다이나@54, Q군@102, 몬테 FAIL(0.1%)     — TD > MC 확인
+Lv.19: 사르사@126, Q군@430                       — SARSA 3.4x 빠름
+Lv.20: 사르사@261, Q군@434                       — SARSA 1.7x 빠름
+Lv.21: 다이나@54, Q군@125                        — Dyna-Q 2.3x 빠름
+Lv.22: 크리틱@134, 그래디@116, Q군@80            — HP 관리 테스트
+Lv.23: 몬테@54, Q군 FAIL(0.2%), 트레이서@72     — MC > TD 확인
+```
+
+### 9.3 골드 소비 메커니즘
+- 골드 타일 최초 방문 시: +10 보상, 해당 에피소드 내 EMPTY로 변환
+- 재방문 시: 보상 없음 (반복 골드 루프 방지)
+- 에피소드 종료 후: 원래 상태로 복원
+- 구현: 8개 알고리즘의 runEpisode()/test() + main.js 비주얼 훈련에 collectedGold Set 적용
+
+### 9.4 수정된 파일
+```
+web/js/game/grid.js          — 6개 맵 추가
+web/js/main.js               — config/order/display name + 골드 소비
+web/index.html               — 6개 option 추가
+web/js/game/qlearning.js     — collectedGold
+web/js/game/local-qlearning.js — collectedGold
+web/js/game/sarsa.js         — collectedGold
+web/js/game/monte-carlo.js   — collectedGold
+web/js/game/sarsa-lambda.js  — collectedGold
+web/js/game/dyna-q.js        — collectedGold
+web/js/game/reinforce.js     — collectedGold
+web/js/game/actor-critic.js  — collectedGold
+test-stages.mjs              — 신규 테스트 스크립트
+```
+
+---
+
+## Phase 10: NPC 가차 시스템 (알고리즘 캐릭터화) — 미구현
+
+### 10.1 알고리즘 NPC 정의
+- [ ] **10.1.1** `AlgorithmNPC` 클래스 생성
   - name, rarity, algorithm_type, stats
   - ✅ 확인: 클래스 정의됨
-- [ ] **6.1.2** 레어리티 정의 (Common, Rare, Epic, Legendary)
+- [ ] **10.1.2** 레어리티 정의 (Common, Rare, Epic, Legendary)
   - ✅ 확인: Enum 존재
-- [ ] **6.1.3** 기본 NPC 데이터 정의
+- [ ] **10.1.3** 기본 NPC 데이터 정의
   ```
   Q군 (Common) - Q-Learning
   사르사 (Common) - SARSA
@@ -424,46 +535,46 @@ Q군 우위:      Lv.7 Gauntlet (33% vs 0% - 불안정)
   삭 (Legendary) - SAC
   ```
   - ✅ 확인: 데이터 파일/코드 존재
-- [ ] **6.1.4** NPC별 특수 능력 정의
+- [ ] **10.1.4** NPC별 특수 능력 정의
   - Q군: 학습 속도 빠름
   - 피피오: 안정적인 학습
   - 삭: 탐험 보너스
   - ✅ 확인: 능력치 차이 확인
 
-### 6.2 가차 시스템
-- [ ] **6.2.1** 가차 확률 정의
+### 10.2 가차 시스템
+- [ ] **10.2.1** 가차 확률 정의
   - Common: 60%, Rare: 30%, Epic: 8%, Legendary: 2%
   - ✅ 확인: 확률 합 100%
-- [ ] **6.2.2** 가차 실행 함수 (`pull_gacha`)
+- [ ] **10.2.2** 가차 실행 함수 (`pull_gacha`)
   - ✅ 확인: NPC 객체 반환
-- [ ] **6.2.3** 10연차 기능 (`pull_gacha_10`)
+- [ ] **10.2.3** 10연차 기능 (`pull_gacha_10`)
   - ✅ 확인: 10개 NPC 반환
-- [ ] **6.2.4** 천장 시스템 (100회 내 Epic 보장)
+- [ ] **10.2.4** 천장 시스템 (100회 내 Epic 보장)
   - ✅ 확인: 100회 안에 Epic 등장
 
-### 6.3 가차 UI
-- [ ] **6.3.1** 가차 버튼
+### 10.3 가차 UI
+- [ ] **10.3.1** 가차 버튼
   - ✅ 확인: 버튼 표시
-- [ ] **6.3.2** 가차 연출 (카드 뒤집기 애니메이션)
+- [ ] **10.3.2** 가차 연출 (카드 뒤집기 애니메이션)
   - ✅ 확인: 애니메이션 재생
-- [ ] **6.3.3** 결과 표시 (NPC 일러스트 + 이름)
+- [ ] **10.3.3** 결과 표시 (NPC 일러스트 + 이름)
   - ✅ 확인: 결과 화면 표시
-- [ ] **6.3.4** 레어리티별 이펙트 (Legendary는 화려하게)
+- [ ] **10.3.4** 레어리티별 이펙트 (Legendary는 화려하게)
   - ✅ 확인: 금색 이펙트
 
-### 6.4 NPC 컬렉션
-- [ ] **6.4.1** 보유 NPC 목록 저장
+### 10.4 NPC 컬렉션
+- [ ] **10.4.1** 보유 NPC 목록 저장
   - ✅ 확인: 로컬 스토리지 또는 DB
-- [ ] **6.4.2** NPC 도감 UI
+- [ ] **10.4.2** NPC 도감 UI
   - ✅ 확인: 그리드 형태로 NPC 표시
-- [ ] **6.4.3** 미보유 NPC는 실루엣 표시
+- [ ] **10.4.3** 미보유 NPC는 실루엣 표시
   - ✅ 확인: 회색 실루엣
-- [ ] **6.4.4** NPC 상세 정보 팝업
+- [ ] **10.4.4** NPC 상세 정보 팝업
   - ✅ 확인: 클릭 시 상세 정보
 
 ---
 
-## Phase 10: 던전 에디터
+## Phase 11: 던전 에디터
 
 ### 7.1 에디터 기본 UI
 - [ ] **7.1.1** 그리드 크기 선택 UI (5x5 ~ 15x15)
@@ -505,7 +616,7 @@ Q군 우위:      Lv.7 Gauntlet (33% vs 0% - 불안정)
 
 ---
 
-## Phase 11: 추가 RL 알고리즘
+## Phase 12: 추가 RL 알고리즘
 
 ### 8.1 SARSA 구현
 - [ ] **8.1.1** SARSA 업데이트 공식 구현
@@ -568,4 +679,4 @@ Q군 우위:      Lv.7 Gauntlet (33% vs 0% - 불안정)
 
 ---
 
-*Last Updated: 2026-02-10*
+*Last Updated: 2026-02-13*

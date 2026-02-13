@@ -46,7 +46,13 @@ const DUNGEON_CONFIG = {
     level_14_long_hall: { cost: 0, firstReward: 150, repeatReward: 15 },
     level_15_multi_room: { cost: 0, firstReward: 120, repeatReward: 12 },
     level_16_open_field: { cost: 0, firstReward: 100, repeatReward: 10 },
-    level_17_two_paths: { cost: 0, firstReward: 120, repeatReward: 12 }
+    level_17_two_paths: { cost: 0, firstReward: 120, repeatReward: 12 },
+    level_18_dead_end: { cost: 0, firstReward: 150, repeatReward: 15 },
+    level_19_bridge: { cost: 0, firstReward: 150, repeatReward: 15 },
+    level_20_sacrifice: { cost: 0, firstReward: 150, repeatReward: 15 },
+    level_21_desert: { cost: 0, firstReward: 150, repeatReward: 15 },
+    level_22_arena: { cost: 0, firstReward: 200, repeatReward: 20, useHpState: true },
+    level_23_mirage: { cost: 0, firstReward: 150, repeatReward: 15 }
 };
 
 // Dungeon order for unlock progression
@@ -67,7 +73,13 @@ const DUNGEON_ORDER = [
     'level_14_long_hall',
     'level_15_multi_room',
     'level_16_open_field',
-    'level_17_two_paths'
+    'level_17_two_paths',
+    'level_18_dead_end',
+    'level_19_bridge',
+    'level_20_sacrifice',
+    'level_21_desert',
+    'level_22_arena',
+    'level_23_mirage'
 ];
 
 const STORAGE_KEY = 'rld_save_data';
@@ -117,11 +129,14 @@ class Game {
         this.recentResults = [];
         this.trainingAgent = null;
         this.trainingKilledMonsters = new Set();
+        this.trainingCollectedGold = new Set();
         this.trainingTotalReward = 0;
         this.trainingSteps = 0;
 
         // Track killed monsters for restoration on reset
         this.killedMonsters = new Set();
+        // Track collected gold for restoration on reset
+        this.collectedGold = new Set();
 
         // Touch state
         this.touchStartX = 0;
@@ -294,7 +309,13 @@ class Game {
             level_14_long_hall: 'Long Hall',
             level_15_multi_room: 'Multi Room',
             level_16_open_field: 'Open Field',
-            level_17_two_paths: 'Two Paths'
+            level_17_two_paths: 'Two Paths',
+            level_18_dead_end: 'Dead End Labyrinth',
+            level_19_bridge: 'Narrow Bridge',
+            level_20_sacrifice: 'Cliff Walking',
+            level_21_desert: 'Desert Crossing',
+            level_22_arena: 'Monster Arena',
+            level_23_mirage: 'The Mirage'
         };
         return names[dungeonId] || dungeonId;
     }
@@ -599,6 +620,13 @@ class Game {
         }
         this.killedMonsters.clear();
 
+        // Restore collected gold before reset
+        for (const key of this.collectedGold) {
+            const [x, y] = key.split(',').map(Number);
+            this.grid.tiles[y][x] = TileType.GOLD;
+        }
+        this.collectedGold.clear();
+
         const { x, y } = this.grid.startPos;
 
         if (!this.agent) {
@@ -661,6 +689,9 @@ class Game {
             // Already handled in done check
         } else if (result.tile === TileType.GOLD) {
             sound.gold();
+            const goldKey = `${this.agent.x},${this.agent.y}`;
+            this.collectedGold.add(goldKey);
+            this.grid.setTile(this.agent.x, this.agent.y, TileType.EMPTY);
             this.showMessage(`Found Gold! +10`, 'success');
             this.renderer.flash('rgba(251, 191, 36, 0.3)');
         } else if (result.tile === TileType.MONSTER) {
@@ -775,11 +806,24 @@ class Game {
         }
         this.trainingKilledMonsters.clear();
 
+        // Restore gold from previous episode
+        for (const key of this.trainingCollectedGold) {
+            const [x, y] = key.split(',').map(Number);
+            this.grid.tiles[y][x] = TileType.GOLD;
+        }
+        this.trainingCollectedGold.clear();
+
         for (const key of this.killedMonsters) {
             const [x, y] = key.split(',').map(Number);
             this.grid.tiles[y][x] = TileType.MONSTER;
         }
         this.killedMonsters.clear();
+
+        for (const key of this.collectedGold) {
+            const [x, y] = key.split(',').map(Number);
+            this.grid.tiles[y][x] = TileType.GOLD;
+        }
+        this.collectedGold.clear();
 
         // Create training agent at start position
         const startPos = this.grid.startPos;
@@ -827,6 +871,9 @@ class Game {
         if (this.trainingKilledMonsters.has(nextKey) && originalTile === TileType.MONSTER) {
             this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
         }
+        if (this.trainingCollectedGold.has(nextKey) && originalTile === TileType.GOLD) {
+            this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
+        }
 
         const result = agent.move(action, this.grid);
         this.trainingSteps++;
@@ -834,6 +881,10 @@ class Game {
 
         if (result.tile === TileType.MONSTER && !this.trainingKilledMonsters.has(nextKey)) {
             this.trainingKilledMonsters.add(nextKey);
+            this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
+        }
+        if (result.tile === TileType.GOLD && !this.trainingCollectedGold.has(nextKey)) {
+            this.trainingCollectedGold.add(nextKey);
             this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
         }
 
@@ -863,6 +914,13 @@ class Game {
             this.grid.tiles[y][x] = TileType.MONSTER;
         }
         this.trainingKilledMonsters.clear();
+
+        // Restore gold
+        for (const key of this.trainingCollectedGold) {
+            const [x, y] = key.split(',').map(Number);
+            this.grid.tiles[y][x] = TileType.GOLD;
+        }
+        this.trainingCollectedGold.clear();
 
         // Decay epsilon
         this.qlearning.decayEpsilon();
@@ -987,6 +1045,12 @@ class Game {
             this.grid.tiles[y][x] = TileType.MONSTER;
         }
         this.trainingKilledMonsters.clear();
+
+        for (const key of this.trainingCollectedGold) {
+            const [x, y] = key.split(',').map(Number);
+            this.grid.tiles[y][x] = TileType.GOLD;
+        }
+        this.trainingCollectedGold.clear();
 
         const successCount = this.recentResults.filter(r => r).length;
         const clearRate = this.recentResults.length > 0
