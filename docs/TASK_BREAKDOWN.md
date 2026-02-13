@@ -517,7 +517,119 @@ test-stages.mjs              — 신규 테스트 스크립트
 
 ---
 
-## Phase 10: NPC 가차 시스템 (알고리즘 캐릭터화) — 미구현
+## Phase 10+: Quick Test (에디터 내 AI 테스트) ✅ 완료
+
+### 10+.0 구현된 기능
+- [x] 에디터 내 Quick Test 섹션 (캐릭터/에피소드 선택, 진행률 바, 결과 표시)
+- [x] 콜백 패턴으로 editor.js → main.js 훈련 위임
+- [x] Grid 딥카피로 에디터 그리드 무변경 보장
+- [x] 수렴 감지 (20ep 중 95% 성공 시 조기 종료)
+- [x] Stop 버튼으로 중간 중단
+- [x] "Show learned policy" 체크박스 → Q-Value/Policy 오버레이
+- [x] 그리드 변경 시 정책 오버레이 자동 해제
+- [x] 모드 전환 시 진행 중인 테스트 자동 중단
+
+---
+
+## Phase 11: Multi-Stage Dungeon System — 계획 수립
+
+> 상세 설계서: `docs/MULTI_STAGE_DUNGEON.md`
+
+### Phase 11-A: Stage Library (소)
+
+기존 에디터의 저장 대상을 Stage Library로 전환.
+
+- [ ] **11.A.1** `rld_stages` localStorage CRUD 함수
+  - ✅ 확인: saveStage/loadStage/deleteStage/getStageList 동작
+- [ ] **11.A.2** 기존 `rld_custom_dungeons` → `rld_stages` 마이그레이션
+  - ✅ 확인: 기존 저장 던전이 Stage Library에 표시
+- [ ] **11.A.3** 에디터 Save/Load UI를 Stage Library로 전환
+  - ✅ 확인: "Stage Library" 라벨, 드롭다운에 스테이지 목록
+
+### Phase 11-B: Dungeon Composer UI (중)
+
+에디터에 Dungeon 서브탭 추가, Floor 슬롯 관리.
+
+- [ ] **11.B.1** Stage / Dungeon 서브탭 전환 UI
+  - ✅ 확인: 탭 클릭 시 패널 전환
+- [ ] **11.B.2** `rld_dungeons` localStorage CRUD
+  - ✅ 확인: saveDungeon/loadDungeon/deleteDungeon 동작
+- [ ] **11.B.3** Floor 슬롯 추가/삭제 UI
+  - ✅ 확인: [+ Add Floor] 클릭 시 슬롯 추가, 삭제 가능
+- [ ] **11.B.4** Floor에 Stage 선택 드롭다운 (Stage Library에서)
+  - ✅ 확인: 드롭다운에 Stage Library 목록 표시
+- [ ] **11.B.5** 선택된 Floor의 스테이지 캔버스 프리뷰
+  - ✅ 확인: Floor 클릭 시 캔버스에 해당 그리드 표시
+- [ ] **11.B.6** Rules 설정 (HP Carry Over, Gold on Clear)
+  - ✅ 확인: 체크박스 상태가 Dungeon 데이터에 저장
+- [ ] **11.B.7** Dungeon 저장/불러오기/삭제
+  - ✅ 확인: Save → Load → Delete 사이클 정상
+
+### Phase 11-C: MultiStageGrid + Algorithm Integration (중~대)
+
+여러 스테이지를 하나의 환경으로 결합, 8개 알고리즘 연동.
+
+- [ ] **11.C.1** `multi-stage-grid.js` 신규 - MultiStageGrid 클래스
+  - Virtual Coordinate Stacking (세로 쌓기)
+  - Grid 인터페이스 호환: width, height, startPos, goalPos, getTile, tiles Proxy, isValidPosition
+  - ✅ 확인: 3개 스테이지 결합 후 getTile/isValidPosition 정상
+- [ ] **11.C.2** `tryAdvanceStage(agent)` 메서드
+  - 비-최종 스테이지 Goal 도달 시 다음 스테이지 전환, HP 유지
+  - ✅ 확인: agent가 1층 Goal → 2층 Start로 이동, HP 유지
+- [ ] **11.C.3** 8개 알고리즘 runEpisode()/test()에 stage transition 코드 추가
+  - qlearning, local-qlearning, sarsa, monte-carlo, sarsa-lambda, dyna-q, reinforce, actor-critic
+  - ✅ 확인: 3층 던전에서 runEpisode() 성공적으로 전 층 통과
+- [ ] **11.C.4** Local Q-Learning goalPos 처리 (currentStageGoalPos)
+  - ✅ 확인: 스카우트가 현재 층 Goal 방향으로 학습
+- [ ] **11.C.5** 몬스터/골드 복원 로직 멀티스테이지 정상 동작
+  - ✅ 확인: 각 층의 몬스터/골드 독립 복원
+- [ ] **11.C.6** 단일 스테이지(기존 Grid) 회귀 테스트
+  - ✅ 확인: 기존 23개 던전 + 커스텀 던전 정상 동작
+
+### Phase 11-D: Play Mode Multi-Stage (중)
+
+수동 플레이 + AI 훈련에서 멀티스테이지 동작.
+
+- [ ] **11.D.1** 멀티스테이지 던전 로드 (resolveDungeon + MultiStageGrid 생성)
+  - ✅ 확인: 드롭다운에서 멀티스테이지 던전 선택 시 로드
+- [ ] **11.D.2** 수동 플레이: Goal 도달 시 스테이지 전환 + HP 유지
+  - ✅ 확인: 방향키로 1층 클리어 → 2층 시작
+- [ ] **11.D.3** 스테이지 전환 시각 효과 ("Floor N Clear!")
+  - ✅ 확인: 메시지 + 플래시 효과
+- [ ] **11.D.4** 현재 층 표시 UI ("Floor 1/3")
+  - ✅ 확인: 게임 UI에 층 정보 표시
+- [ ] **11.D.5** 골드 보류 시스템 (pendingGold 표시 + 클리어 시 확정)
+  - ✅ 확인: Pending Gold UI, 클리어 시 gold 증가, 사망 시 소실
+- [ ] **11.D.6** Visual/Instant Training 멀티스테이지 동작
+  - ✅ 확인: 두 모드 모두 다층 던전에서 학습 정상
+- [ ] **11.D.7** Play 모드 드롭다운에 멀티스테이지 던전 표시
+  - ✅ 확인: "[Custom] 화염의 던전 (3F)" 형식
+
+### Phase 11-E: Variant System (소)
+
+Floor 슬롯에 랜덤 변형 후보 추가.
+
+- [ ] **11.E.1** Floor에 "Add Variant" 버튼 + variant 목록 UI
+  - ✅ 확인: variant 추가/삭제/weight 설정 가능
+- [ ] **11.E.2** resolveDungeon()에서 weighted random 선택
+  - ✅ 확인: 여러 번 실행 시 weight에 따라 다른 스테이지 선택
+- [ ] **11.E.3** Training 시 매 에피소드 새 변형 생성
+  - ✅ 확인: 학습 중 변형 다양하게 경험
+
+### Phase 11-F: Polish (소)
+
+- [ ] **11.F.1** 던전 답파율 표시
+  - ✅ 확인: 최근 N 에피소드 기반 성공률
+- [ ] **11.F.2** Quick Test 멀티스테이지 지원
+  - ✅ 확인: 에디터에서 멀티스테이지 던전 Quick Test 가능
+- [ ] **11.F.3** 프리셋 멀티스테이지 던전 1~2개 추가
+  - ✅ 확인: 기본 제공 던전 플레이 가능
+- [ ] **11.F.4** 기존 커스텀 던전 마이그레이션 안내
+  - ✅ 확인: 첫 실행 시 자동 변환 + 알림
+
+---
+
+## Phase 10 (Old): NPC 가차 시스템 (알고리즘 캐릭터화) — 미구현
 
 ### 10.1 알고리즘 NPC 정의
 - [ ] **10.1.1** `AlgorithmNPC` 클래스 생성
@@ -681,4 +793,4 @@ web/css/style.css       — 탭, 팔레트, 도구, 에디터 모드 UI 스타�
 
 ---
 
-*Last Updated: 2026-02-13*
+*Last Updated: 2026-02-14*

@@ -533,6 +533,43 @@ web/css/style.css       # 탭, 팔레트, 도구, 에디터 모드 스타일
 
 ---
 
-*Document Version: 0.4*
+## 12. Multi-Stage Dungeon System (계획)
+
+### 12.1 개요
+여러 스테이지(층)를 묶어 하나의 "던전"으로 구성하는 시스템. 스테이지는 독립적으로 생성/관리되는 재사용 가능한 빌딩 블록이며, 던전은 스테이지들의 조합 레시피.
+
+### 12.2 핵심 구조
+
+```
+Stage (스테이지) = 재사용 가능한 단위 Grid
+    ↓ 참조
+Dungeon (던전) = 스테이지 조합 레시피 (floor slot 배열)
+    ↓ 실행
+Run (실행) = 랜덤 변형이 확정된 구체적 1회 플레이
+```
+
+### 12.3 게임 규칙
+- **HP 계승**: 이전 층 HP로 다음 층 시작
+- **골드 보류**: 스테이지 중 수집한 골드는 임시 → 전체 클리어 시 확정, 사망 시 소실
+- **답파율 추적**: 던전 단위 클리어 성공률
+
+### 12.4 Variant System (랜덤 변형)
+Floor 슬롯에 여러 스테이지 후보를 등록하면, 매 실행마다 weighted random으로 하나 선택.
+- 좌표 암기형 알고리즘 (Q군 등): 변형 대응 약함 → 일반화의 한계 체감
+- 관찰형 알고리즘 (스카우트): 변형 대응 강함 → 전이학습의 힘 체감
+
+### 12.5 기술 구현: MultiStageGrid
+Virtual Coordinate Stacking 방식으로 여러 Grid를 세로로 쌓아 기존 알고리즘에 투명하게 제공. 8개 알고리즘의 `runEpisode()`에 `tryAdvanceStage()` 3줄 추가로 연동.
+
+### 12.6 에디터 UX
+2-Tier Editor (Stage 탭 / Dungeon 탭):
+- Stage 탭: 기존 에디터 (그리드 페인팅) → Stage Library에 저장
+- Dungeon 탭: Dungeon Composer (Floor 슬롯 관리, 변형 설정, 규칙 설정)
+
+> 상세 설계: `docs/MULTI_STAGE_DUNGEON.md` 참조
+
+---
+
+*Document Version: 0.5*
 *Last Updated: 2026-02-14*
 *Author: RLD Team*
