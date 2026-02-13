@@ -488,6 +488,49 @@ Communication:
 
 ---
 
-*Document Version: 0.3*
-*Last Updated: 2026-02-13*
+---
+
+## 11. 던전 에디터 (구현 완료)
+
+### 11.1 개요
+GDD 2.2절의 "던전 마스터 모드" 핵심 기능. 브라우저 내에서 타일을 배치해 커스텀 던전을 만들고, AI를 훈련시켜 볼 수 있는 에디터.
+
+### 11.2 UI 구조
+- **탭 기반 모드 전환**: `[Play]` / `[Editor]` 탭으로 모드 전환
+- **에디터 모드**: 게임 UI(HP, Gold, Steps, D-pad) 숨김, 에디터 컨트롤 패널 표시
+- **공유 캔버스**: 기존 게임 캔버스를 에디터와 공유
+
+### 11.3 기능 목록
+
+| 기능 | 설명 |
+|------|------|
+| **타일 페인팅** | 9종 타일 팔레트에서 선택, 클릭/드래그로 배치 |
+| **도구** | Brush / Eraser / Fill (BFS 기반 영역 채우기) |
+| **START/GOAL 단일 강제** | 새 배치 시 기존 것 자동 제거 |
+| **Undo/Redo** | Grid.toString() 스냅샷 스택 (최대 50) |
+| **BFS 검증** | START/GOAL 존재 + 경로 존재 확인 |
+| **저장/불러오기** | localStorage (`rld_custom_dungeons`) 기반 |
+| **Play This Dungeon** | 검증 후 즉시 게임 모드로 전환하여 플레이/훈련 |
+| **키보드 단축키** | 0-8 타일선택, Ctrl+Z/Y Undo/Redo, 우클릭 지우개 |
+| **터치 지원** | 모바일에서 터치로 타일 배치 |
+| **그리드 리사이즈** | 3x3 ~ 25x25, 기존 내용 최대 보존 |
+
+### 11.4 커스텀 던전 규칙
+- 골드 비용 0, 보상 0 (이코노미 영향 없음)
+- 언락 제한 없음
+- 드롭다운에 `[Custom] 이름` 형식으로 표시
+- Q-table은 `rld_qtable_{char}_custom_{id}` 키로 저장
+
+### 11.5 파일 구조
+```
+web/js/game/editor.js   # DungeonEditor 클래스 (신규)
+web/js/main.js          # 탭 전환, playCustomDungeon(), 커스텀 던전 처리
+web/index.html          # 모드 탭 + 에디터 컨트롤 패널
+web/css/style.css       # 탭, 팔레트, 도구, 에디터 모드 스타일
+```
+
+---
+
+*Document Version: 0.4*
+*Last Updated: 2026-02-14*
 *Author: RLD Team*

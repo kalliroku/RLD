@@ -3,9 +3,10 @@
  */
 
 import { loadDungeon } from './game/grid.js';
+import { Grid } from './game/grid.js';
 import { Agent, Action } from './game/agent.js';
 import { Renderer } from './game/renderer.js';
-import { TileType } from './game/tiles.js';
+import { TileType, TileProperties } from './game/tiles.js';
 import { QLearning } from './game/qlearning.js';
 import { LocalQLearning } from './game/local-qlearning.js';
 import { SARSA } from './game/sarsa.js';
@@ -15,6 +16,7 @@ import { DynaQ } from './game/dyna-q.js';
 import { Reinforce } from './game/reinforce.js';
 import { ActorCritic } from './game/actor-critic.js';
 import { sound } from './game/sound.js';
+import { DungeonEditor } from './game/editor.js';
 
 // Character registry
 const CHARACTERS = {
@@ -142,6 +144,12 @@ class Game {
         this.touchStartX = 0;
         this.touchStartY = 0;
 
+        // Mode: 'play' or 'editor'
+        this.currentMode = 'play';
+
+        // Editor instance (created lazily)
+        this.editor = null;
+
         // UI elements
         this.goldText = document.getElementById('gold-text');
         this.hpFill = document.getElementById('hp-fill');
@@ -170,8 +178,249 @@ class Game {
         this.showPolicyCheck = document.getElementById('show-policy');
 
         this.setupEventListeners();
+        this.setupModeTabs();
+        this.setupEditor();
         this.updateDungeonSelect();
+        this.loadCustomDungeonOptions();
         this.loadDungeon('level_01_easy');
+    }
+
+    // ========== Mode Tabs ==========
+
+    setupModeTabs() {
+        document.querySelectorAll('.mode-tab').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchMode(e.currentTarget.dataset.mode);
+            });
+        });
+    }
+
+    switchMode(mode, skipReload = false) {
+        if (mode === this.currentMode) return;
+
+        // Stop training if switching away from play
+        if (this.currentMode === 'play' && this.isTraining) {
+            this.stopTraining();
+        }
+
+        this.currentMode = mode;
+
+        // Update tab UI
+        document.querySelectorAll('.mode-tab').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.mode === mode);
+        });
+
+        const playControls = document.querySelector('.controls:not(.editor-controls)');
+        const editorControls = document.getElementById('editor-controls');
+
+        if (mode === 'editor') {
+            document.body.classList.add('editor-mode');
+            playControls.style.display = 'none';
+            editorControls.style.display = '';
+            this.editor.activate();
+        } else {
+            document.body.classList.remove('editor-mode');
+            playControls.style.display = '';
+            editorControls.style.display = 'none';
+            this.editor.deactivate();
+            // Restore play canvas (unless caller will handle it)
+            if (!skipReload) {
+                this.loadDungeon(this.currentDungeon);
+            }
+        }
+    }
+
+    // ========== Editor Setup ==========
+
+    setupEditor() {
+        this.editor = new DungeonEditor(this.canvas, this.renderer, (grid, name) => {
+            this.playCustomDungeon(grid, name);
+        });
+
+        // Build tile palette
+        const palette = document.getElementById('tile-palette');
+        for (const [typeStr, props] of Object.entries(TileProperties)) {
+            const type = parseInt(typeStr);
+            const btn = document.createElement('button');
+            btn.className = 'palette-tile' + (type === this.editor.activeTile ? ' active' : '');
+            btn.dataset.tile = type;
+            btn.innerHTML = `<span class="palette-color" style="background:${props.color}"></span><span class="palette-label">${props.name}</span>`;
+            btn.addEventListener('click', () => {
+                this.editor.selectTile(type);
+                this.editor.setTool('brush');
+                this.editor.updatePaletteUI();
+                this.editor.updateToolUI();
+            });
+            palette.appendChild(btn);
+        }
+
+        // Tool buttons
+        document.querySelectorAll('.btn-tool').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this.editor.setTool(btn.dataset.tool);
+                this.editor.updateToolUI();
+            });
+        });
+
+        // Grid size apply
+        document.getElementById('btn-apply-size').addEventListener('click', () => {
+            const w = parseInt(document.getElementById('grid-width').value) || 7;
+            const h = parseInt(document.getElementById('grid-height').value) || 7;
+            this.editor.resizeGrid(w, h);
+            this.showEditorMessage(`Grid resized to ${this.editor.grid.width}x${this.editor.grid.height}`, 'info');
+        });
+
+        // Undo/Redo/Clear/Validate buttons
+        document.getElementById('btn-undo').addEventListener('click', () => this.editor.undo());
+        document.getElementById('btn-redo').addEventListener('click', () => this.editor.redo());
+        document.getElementById('btn-clear').addEventListener('click', () => {
+            this.editor.clearGrid();
+            this.showEditorMessage('Grid cleared', 'info');
+        });
+        document.getElementById('btn-validate').addEventListener('click', () => {
+            const result = this.editor.validate();
+            if (result.valid) {
+                this.showEditorMessage('Valid! Ready to play.', 'success');
+            } else {
+                this.showEditorMessage(result.errors.join(', '), 'danger');
+            }
+        });
+
+        // Save
+        document.getElementById('btn-save-dungeon').addEventListener('click', () => {
+            const nameInput = document.getElementById('dungeon-name-input');
+            const name = nameInput.value.trim();
+            if (!name) {
+                this.showEditorMessage('Enter a dungeon name', 'warning');
+                return;
+            }
+            const result = this.editor.validate();
+            if (!result.valid) {
+                this.showEditorMessage('Fix errors first: ' + result.errors.join(', '), 'danger');
+                return;
+            }
+            const id = this.editor.saveCustomDungeon(name);
+            this.showEditorMessage(`Saved "${name}"`, 'success');
+            this.refreshCustomDungeonSelects();
+        });
+
+        // Load
+        document.getElementById('btn-load-dungeon').addEventListener('click', () => {
+            const sel = document.getElementById('custom-dungeon-select');
+            const id = sel.value;
+            if (!id) return;
+            if (this.editor.loadCustomDungeon(id)) {
+                const list = this.editor.getCustomDungeonList();
+                const item = list.find(d => d.id === id);
+                document.getElementById('dungeon-name-input').value = item ? item.name : '';
+                document.getElementById('grid-width').value = this.editor.grid.width;
+                document.getElementById('grid-height').value = this.editor.grid.height;
+                this.showEditorMessage(`Loaded "${item ? item.name : id}"`, 'info');
+            }
+        });
+
+        // Delete
+        document.getElementById('btn-delete-dungeon').addEventListener('click', () => {
+            const sel = document.getElementById('custom-dungeon-select');
+            const id = sel.value;
+            if (!id) return;
+            if (this.editor.deleteCustomDungeon(id)) {
+                this.showEditorMessage('Deleted', 'warning');
+                this.refreshCustomDungeonSelects();
+            }
+        });
+
+        // Play This Dungeon
+        document.getElementById('btn-play-dungeon').addEventListener('click', () => {
+            const result = this.editor.playDungeon();
+            if (!result.success) {
+                this.showEditorMessage(result.errors.join(', '), 'danger');
+            }
+        });
+
+        // Populate custom dungeon select in editor
+        this.refreshEditorDungeonSelect();
+    }
+
+    showEditorMessage(text, type = 'info') {
+        const el = document.getElementById('editor-message');
+        el.textContent = text;
+        el.className = 'editor-message ' + type;
+    }
+
+    refreshEditorDungeonSelect() {
+        const sel = document.getElementById('custom-dungeon-select');
+        const currentVal = sel.value;
+        // Clear all but the first default option
+        while (sel.options.length > 1) sel.remove(1);
+        const list = this.editor.getCustomDungeonList();
+        list.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = `${d.name} (${d.width}x${d.height})`;
+            sel.appendChild(opt);
+        });
+        // Restore selection if still exists
+        if ([...sel.options].some(o => o.value === currentVal)) {
+            sel.value = currentVal;
+        }
+    }
+
+    refreshCustomDungeonSelects() {
+        this.refreshEditorDungeonSelect();
+        this.loadCustomDungeonOptions();
+    }
+
+    // ========== Custom Dungeon Play ==========
+
+    playCustomDungeon(grid, name) {
+        // Switch to play mode (skip reload, we'll set up the grid ourselves)
+        this.switchMode('play', true);
+
+        // Use the grid directly
+        this.currentDungeon = 'custom_' + this.editor._nameToId(name);
+        this.grid = Grid.fromString(grid.toString()); // deep copy
+        this.renderer.setGrid(this.grid);
+
+        // Create algorithm
+        this.qlearning = this.createAlgorithm({ cost: 0, firstReward: 0, repeatReward: 0 });
+
+        // Try to load Q-table for this custom dungeon
+        this.loadQTable();
+
+        this.trainStats.innerHTML = '';
+        this.renderer.setQData(null, null);
+
+        const charDef = CHARACTERS[this.currentCharacter];
+        this.showMessage(`[Custom] ${name} [${charDef.name}]`, 'info');
+
+        // Update dropdown selection
+        if ([...this.dungeonSelect.options].some(o => o.value === this.currentDungeon)) {
+            this.dungeonSelect.value = this.currentDungeon;
+        }
+
+        this.reset();
+    }
+
+    loadCustomDungeonOptions() {
+        // Add custom dungeons to the play mode dungeon select
+        const list = DungeonEditor.getCustomDungeonListStatic();
+
+        // Remove existing custom options
+        const options = [...this.dungeonSelect.options];
+        options.forEach(opt => {
+            if (opt.value.startsWith('custom_')) {
+                opt.remove();
+            }
+        });
+
+        // Add custom dungeons
+        list.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = 'custom_' + d.id;
+            opt.textContent = `[Custom] ${d.name}`;
+            this.dungeonSelect.appendChild(opt);
+        });
     }
 
     loadProgress() {
@@ -407,12 +656,14 @@ class Game {
 
         // Touch controls - swipe on canvas
         this.canvas.addEventListener('touchstart', (e) => {
+            if (this.currentMode === 'editor') return;
             this.touchStartX = e.touches[0].clientX;
             this.touchStartY = e.touches[0].clientY;
             e.preventDefault();
         }, { passive: false });
 
         this.canvas.addEventListener('touchend', (e) => {
+            if (this.currentMode === 'editor') return;
             if (this.isTraining) return;
             const dx = e.changedTouches[0].clientX - this.touchStartX;
             const dy = e.changedTouches[0].clientY - this.touchStartY;
@@ -452,6 +703,11 @@ class Game {
         // UI controls
         this.dungeonSelect.addEventListener('change', (e) => {
             const selected = e.target.value;
+            // Custom dungeons don't need unlock check
+            if (selected.startsWith('custom_')) {
+                this.loadDungeon(selected);
+                return;
+            }
             if (!this.unlockedDungeons.has(selected)) {
                 e.target.value = this.currentDungeon;
                 this.showMessage('🔒 Clear previous dungeons first!', 'warning');
@@ -507,6 +763,8 @@ class Game {
     }
 
     handleKeyDown(e) {
+        // In editor mode, let the editor handle keys
+        if (this.currentMode === 'editor') return;
         if (this.isTraining) return;
 
         if (this.done) {
@@ -558,6 +816,37 @@ class Game {
         }
 
         this.currentDungeon = name;
+
+        // Custom dungeon: load from localStorage
+        if (name.startsWith('custom_')) {
+            const customId = name.replace('custom_', '');
+            const grid = DungeonEditor.loadCustomDungeonGrid(customId);
+            if (!grid) {
+                this.showMessage('Custom dungeon not found!', 'danger');
+                return;
+            }
+            this.grid = grid;
+            this.renderer.setGrid(this.grid);
+
+            const config = { cost: 0, firstReward: 0, repeatReward: 0 };
+            this.qlearning = this.createAlgorithm(config);
+            const loaded = this.loadQTable();
+
+            this.trainStats.innerHTML = '';
+            this.renderer.setQData(null, null);
+
+            const charDef = CHARACTERS[this.currentCharacter];
+            const loadNote = loaded ? ' (Data loaded)' : '';
+            this.showMessage(`[Custom] ${customId} [${charDef.name}]${loadNote}`, 'info');
+
+            if (loaded) {
+                this.updateVisualization();
+            }
+
+            this.reset();
+            return;
+        }
+
         this.grid = loadDungeon(name);
         this.renderer.setGrid(this.grid);
 
@@ -585,7 +874,7 @@ class Game {
     }
 
     tryEnterDungeon() {
-        const config = DUNGEON_CONFIG[this.currentDungeon];
+        const config = DUNGEON_CONFIG[this.currentDungeon] || { cost: 0, firstReward: 0, repeatReward: 0 };
 
         if (this.gold < config.cost) {
             this.showMessage(`Not enough gold! Need ${config.cost}G`, 'danger');
@@ -711,6 +1000,15 @@ class Game {
     }
 
     handleVictory() {
+        // Custom dungeons: no economy impact
+        if (this.currentDungeon.startsWith('custom_')) {
+            sound.victory();
+            this.showMessage(`CLEAR! (Steps: ${this.steps}) [Custom Dungeon]`, 'success');
+            this.renderer.flash('rgba(34, 197, 94, 0.4)');
+            this.updateUI();
+            return;
+        }
+
         const config = DUNGEON_CONFIG[this.currentDungeon];
         const isFirstClear = !this.clearedDungeons.has(this.currentDungeon);
 

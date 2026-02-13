@@ -577,3 +577,334 @@ footer {
         display: flex;
     }
 }
+
+/* ========== Mode Tabs ========== */
+.mode-tabs {
+    display: flex;
+    justify-content: center;
+    gap: 0;
+    margin-bottom: 20px;
+}
+
+.mode-tab {
+    width: auto;
+    padding: 10px 32px;
+    font-size: 1rem;
+    font-weight: bold;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    border: 2px solid #334155;
+    margin-bottom: 0;
+    cursor: pointer;
+    transition: background 0.15s, color 0.15s;
+}
+
+.mode-tab:first-child {
+    border-radius: 8px 0 0 8px;
+    border-right: 1px solid #334155;
+}
+
+.mode-tab:last-child {
+    border-radius: 0 8px 8px 0;
+    border-left: 1px solid #334155;
+}
+
+.mode-tab.active {
+    background: var(--accent);
+    color: white;
+    border-color: var(--accent);
+}
+
+.mode-tab:hover {
+    transform: none;
+    box-shadow: none;
+    background: #1e3a5f;
+    color: var(--text-primary);
+}
+
+.mode-tab.active:hover {
+    background: #d63851;
+}
+
+/* ========== Editor Mode Toggle ========== */
+body.editor-mode .game-ui,
+body.editor-mode .dpad-container {
+    display: none !important;
+}
+
+/* ========== Editor Controls ========== */
+.editor-controls .control-section {
+    margin-bottom: 16px;
+}
+
+/* Grid Size */
+.size-controls {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.size-label {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.size-input {
+    width: 54px;
+    padding: 5px 6px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid #334155;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+.size-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+/* Tile Palette */
+.tile-palette {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 4px;
+}
+
+.palette-tile {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    background: var(--bg-tertiary);
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    min-height: 36px;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.palette-tile:hover {
+    transform: none;
+    box-shadow: none;
+    background: #1e3a5f;
+    color: var(--text-primary);
+}
+
+.palette-tile.active {
+    border-color: var(--accent);
+    background: rgba(233, 69, 96, 0.15);
+    color: var(--text-primary);
+}
+
+.palette-color {
+    width: 16px;
+    height: 16px;
+    border-radius: 3px;
+    flex-shrink: 0;
+}
+
+.palette-label {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+/* Tool Buttons */
+.tool-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.btn-tool {
+    flex: 1;
+    padding: 7px 6px;
+    font-size: 0.8rem;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    border: 1px solid transparent;
+}
+
+.btn-tool.active {
+    background: #3b82f6;
+    color: white;
+    border-color: #60a5fa;
+}
+
+.btn-tool:hover {
+    transform: none;
+    box-shadow: none;
+    background: #1e3a5f;
+    color: var(--text-primary);
+}
+
+.btn-tool.active:hover {
+    background: #2563eb;
+}
+
+/* Action Buttons */
+.action-buttons {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+}
+
+.btn-small {
+    width: auto;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    margin-bottom: 0;
+    border: 1px solid #334155;
+}
+
+.btn-small:hover {
+    transform: none;
+    box-shadow: none;
+    background: #1e3a5f;
+    color: var(--text-primary);
+}
+
+.btn-validate {
+    background: #3b82f6;
+    color: white;
+    border-color: #3b82f6;
+}
+
+.btn-validate:hover {
+    background: #2563eb;
+}
+
+/* Save / Load */
+.save-controls {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 8px;
+}
+
+.dungeon-name-input {
+    flex: 1;
+    padding: 6px 8px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border: 1px solid #334155;
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+
+.dungeon-name-input:focus {
+    outline: none;
+    border-color: var(--accent);
+}
+
+.btn-save {
+    background: var(--success);
+    color: #000;
+    border-color: var(--success);
+    font-weight: bold;
+}
+
+.btn-save:hover {
+    background: #22b060;
+    box-shadow: none;
+    transform: none;
+}
+
+.load-controls select {
+    margin-bottom: 6px;
+}
+
+.load-buttons {
+    display: flex;
+    gap: 4px;
+}
+
+.load-buttons button {
+    flex: 1;
+}
+
+.btn-danger-small {
+    background: var(--danger) !important;
+    color: white !important;
+    border-color: var(--danger) !important;
+}
+
+.btn-danger-small:hover {
+    background: #dc2626 !important;
+    transform: none;
+    box-shadow: none;
+}
+
+/* Play Dungeon Button */
+.btn-play-dungeon {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 12px;
+    border: none;
+    border-radius: 8px;
+    width: 100%;
+    letter-spacing: 0.5px;
+}
+
+.btn-play-dungeon:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4);
+}
+
+/* Editor Message */
+.editor-message {
+    min-height: 20px;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+}
+
+.editor-message.success {
+    background: rgba(74, 222, 128, 0.15);
+    color: var(--success);
+}
+
+.editor-message.danger {
+    background: rgba(239, 68, 68, 0.15);
+    color: var(--danger);
+}
+
+.editor-message.warning {
+    background: rgba(251, 191, 36, 0.15);
+    color: var(--warning);
+}
+
+.editor-message.info {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+}
+
+/* ========== Responsive for Editor ========== */
+@media (max-width: 700px) {
+    .tile-palette {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .editor-controls {
+        width: 100%;
+        max-width: 400px;
+    }
+
+    .mode-tab {
+        padding: 8px 20px;
+        font-size: 0.9rem;
+    }
+}
