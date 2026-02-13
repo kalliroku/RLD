@@ -13,6 +13,11 @@
             <p class="subtitle">강화학습 던전 탐험</p>
         </header>
 
+        <nav class="mode-tabs">
+            <button class="mode-tab active" data-mode="play">Play</button>
+            <button class="mode-tab" data-mode="editor">Editor</button>
+        </nav>
+
         <main>
             <div class="game-area">
                 <canvas id="game-canvas"></canvas>
@@ -193,6 +198,78 @@
                         <div class="legend-item"><span class="tile-preview gold"></span> Gold (+10)</div>
                         <div class="legend-item"><span class="tile-preview monster"></span> Monster (-30 HP)</div>
                         <div class="legend-item"><span class="tile-preview wall"></span> Wall</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="controls editor-controls" id="editor-controls" style="display: none;">
+                <div class="control-section">
+                    <h3>Grid Size</h3>
+                    <div class="size-controls">
+                        <label class="size-label">W: <input type="number" id="grid-width" class="size-input" value="7" min="3" max="25"></label>
+                        <label class="size-label">H: <input type="number" id="grid-height" class="size-input" value="7" min="3" max="25"></label>
+                        <button class="btn-small" id="btn-apply-size">Apply</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Tile Palette</h3>
+                    <div class="tile-palette" id="tile-palette">
+                        <!-- Generated dynamically by JS -->
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Tools</h3>
+                    <div class="tool-buttons">
+                        <button class="btn-tool active" data-tool="brush">Brush</button>
+                        <button class="btn-tool" data-tool="eraser">Eraser</button>
+                        <button class="btn-tool" data-tool="fill">Fill</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Actions</h3>
+                    <div class="action-buttons">
+                        <button class="btn-small btn-action" id="btn-undo">Undo</button>
+                        <button class="btn-small btn-action" id="btn-redo">Redo</button>
+                        <button class="btn-small btn-action" id="btn-clear">Clear</button>
+                        <button class="btn-small btn-action btn-validate" id="btn-validate">Validate</button>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Save / Load</h3>
+                    <div class="save-controls">
+                        <input type="text" id="dungeon-name-input" class="dungeon-name-input" placeholder="Dungeon name...">
+                        <button class="btn-small btn-save" id="btn-save-dungeon">Save</button>
+                    </div>
+                    <div class="load-controls">
+                        <select id="custom-dungeon-select">
+                            <option value="">-- Select --</option>
+                        </select>
+                        <div class="load-buttons">
+                            <button class="btn-small" id="btn-load-dungeon">Load</button>
+                            <button class="btn-small btn-danger-small" id="btn-delete-dungeon">Delete</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-section">
+                    <button class="btn-play-dungeon" id="btn-play-dungeon">Play This Dungeon</button>
+                </div>
+
+                <div class="control-section">
+                    <div class="editor-message" id="editor-message"></div>
+                </div>
+
+                <div class="control-section">
+                    <h3>Shortcuts</h3>
+                    <div class="key-hints">
+                        <span class="key">0-8</span> Select tile<br>
+                        <span class="key">Ctrl+Z</span> Undo<br>
+                        <span class="key">Ctrl+Y</span> Redo<br>
+                        <span class="key">Right-click</span> Erase
                     </div>
                 </div>
             </div>
