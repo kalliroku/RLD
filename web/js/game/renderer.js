@@ -220,6 +220,7 @@ export class Renderer {
     render() {
         this.clear();
         this.renderGrid();
+        this.renderStageSeparators();
 
         if (this.showQValues && this.qValues) {
             this.renderQValues();
@@ -230,6 +231,34 @@ export class Renderer {
         }
 
         this.renderAgent();
+    }
+
+    /**
+     * Draw horizontal lines between stages in a MultiStageGrid
+     */
+    renderStageSeparators() {
+        if (!this.grid || !this.grid.getTotalStages) return;
+        const total = this.grid.getTotalStages();
+        if (total <= 1) return;
+
+        const { ctx, tileSize } = this;
+        ctx.save();
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 3;
+        ctx.setLineDash([6, 4]);
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 4;
+
+        for (let s = 1; s < total; s++) {
+            const yOffset = this.grid.getStageOffset(s);
+            const py = yOffset * tileSize;
+            ctx.beginPath();
+            ctx.moveTo(0, py);
+            ctx.lineTo(this.grid.width * tileSize, py);
+            ctx.stroke();
+        }
+
+        ctx.restore();
     }
 
     setQData(qValues, policy) {

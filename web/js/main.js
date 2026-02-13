@@ -17,6 +17,7 @@ import { Reinforce } from './game/reinforce.js';
 import { ActorCritic } from './game/actor-critic.js';
 import { sound } from './game/sound.js';
 import { DungeonEditor } from './game/editor.js';
+import { MultiStageGrid } from './game/multi-stage-grid.js';
 
 // Character registry
 const CHARACTERS = {
@@ -177,6 +178,9 @@ class Game {
         this.showQValuesCheck = document.getElementById('show-qvalues');
         this.showPolicyCheck = document.getElementById('show-policy');
 
+        // Migrate legacy custom dungeons to Stage Library
+        DungeonEditor.migrateToStages();
+
         this.setupEventListeners();
         this.setupModeTabs();
         this.setupEditor();
@@ -306,7 +310,7 @@ class Game {
                 this.showEditorMessage('Fix errors first: ' + result.errors.join(', '), 'danger');
                 return;
             }
-            const id = this.editor.saveCustomDungeon(name);
+            const id = this.editor.saveStage(name);
             this.showEditorMessage(`Saved "${name}"`, 'success');
             this.refreshCustomDungeonSelects();
         });
@@ -316,8 +320,8 @@ class Game {
             const sel = document.getElementById('custom-dungeon-select');
             const id = sel.value;
             if (!id) return;
-            if (this.editor.loadCustomDungeon(id)) {
-                const list = this.editor.getCustomDungeonList();
+            if (this.editor.loadStage(id)) {
+                const list = this.editor.getStageList();
                 const item = list.find(d => d.id === id);
                 document.getElementById('dungeon-name-input').value = item ? item.name : '';
                 document.getElementById('grid-width').value = this.editor.grid.width;
@@ -331,7 +335,7 @@ class Game {
             const sel = document.getElementById('custom-dungeon-select');
             const id = sel.value;
             if (!id) return;
-            if (this.editor.deleteCustomDungeon(id)) {
+            if (this.editor.deleteStage(id)) {
                 this.showEditorMessage('Deleted', 'warning');
                 this.refreshCustomDungeonSelects();
             }
@@ -382,8 +386,334 @@ class Game {
             }
         });
 
-        // Populate custom dungeon select in editor
+        // ===== Editor Sub-tabs =====
+        this.editorSubtab = 'stage';
+        document.querySelectorAll('.editor-subtab').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                this.switchEditorSubtab(e.currentTarget.dataset.subtab);
+            });
+        });
+
+        // ===== Dungeon Composer =====
+        this.composerFloors = [];
+        this.composerSelectedFloor = -1;
+
+        document.getElementById('btn-add-floor').addEventListener('click', () => {
+            this.addComposerFloor();
+        });
+
+        // Save Dungeon
+        document.getElementById('btn-save-dungeon-comp').addEventListener('click', () => {
+            const name = document.getElementById('dungeon-composer-name').value.trim();
+            if (!name) {
+                this.showEditorMessage('Enter a dungeon name', 'warning');
+                return;
+            }
+            if (this.composerFloors.length === 0) {
+                this.showEditorMessage('Add at least one floor', 'warning');
+                return;
+            }
+            // Validate all floors have at least one stage selected
+            for (let i = 0; i < this.composerFloors.length; i++) {
+                if (!this.composerFloors[i].stages[0]) {
+                    this.showEditorMessage(`Floor ${i + 1} has no stage selected`, 'warning');
+                    return;
+                }
+                // Check all variant slots are filled
+                for (let vi = 0; vi < this.composerFloors[i].stages.length; vi++) {
+                    if (!this.composerFloors[i].stages[vi]) {
+                        this.showEditorMessage(`Floor ${i + 1}, variant ${vi + 1} is empty`, 'warning');
+                        return;
+                    }
+                }
+            }
+            const rules = {
+                hpCarryOver: document.getElementById('dungeon-hp-carry').checked,
+                goldOnClear: document.getElementById('dungeon-gold-on-clear').checked
+            };
+            const floors = this.composerFloors.map(f => {
+                if (f.stages.length === 1) {
+                    return { type: 'fixed', stageId: f.stages[0] };
+                }
+                return { type: 'random', variants: f.stages.map(s => ({ stageId: s, weight: 1 })) };
+            });
+            const id = this.editor.saveDungeon(name, floors, rules);
+            this.showEditorMessage(`Saved dungeon "${name}"`, 'success');
+            this.refreshDungeonComposerSelect();
+            this.loadCustomDungeonOptions();
+        });
+
+        // Load Dungeon
+        document.getElementById('btn-load-dungeon-comp').addEventListener('click', () => {
+            const sel = document.getElementById('dungeon-comp-select');
+            const id = sel.value;
+            if (!id) return;
+            const data = this.editor.loadDungeonData(id);
+            if (!data) {
+                this.showEditorMessage('Dungeon not found', 'danger');
+                return;
+            }
+            document.getElementById('dungeon-composer-name').value = data.name;
+            document.getElementById('dungeon-hp-carry').checked = data.rules?.hpCarryOver ?? true;
+            document.getElementById('dungeon-gold-on-clear').checked = data.rules?.goldOnClear ?? true;
+            this.composerFloors = (data.floors || []).map(f => {
+                if (f.type === 'random' && f.variants) {
+                    return { stages: f.variants.map(v => v.stageId) };
+                }
+                return { stages: [f.stageId || ''] };
+            });
+            this.composerSelectedFloor = this.composerFloors.length > 0 ? 0 : -1;
+            this.renderComposerFloors();
+            if (this.composerSelectedFloor >= 0) {
+                this.previewComposerFloor(0);
+            }
+            this.showEditorMessage(`Loaded dungeon "${data.name}"`, 'info');
+        });
+
+        // Delete Dungeon
+        document.getElementById('btn-delete-dungeon-comp').addEventListener('click', () => {
+            const sel = document.getElementById('dungeon-comp-select');
+            const id = sel.value;
+            if (!id) return;
+            if (this.editor.deleteDungeon(id)) {
+                this.showEditorMessage('Dungeon deleted', 'warning');
+                this.refreshDungeonComposerSelect();
+                this.loadCustomDungeonOptions();
+            }
+        });
+
+        // Play This Dungeon (from composer)
+        document.getElementById('btn-play-dungeon-comp').addEventListener('click', () => {
+            const name = document.getElementById('dungeon-composer-name').value.trim() || 'Untitled';
+            if (this.composerFloors.length === 0) {
+                this.showEditorMessage('Add at least one floor', 'warning');
+                return;
+            }
+            for (let i = 0; i < this.composerFloors.length; i++) {
+                if (!this.composerFloors[i].stages[0]) {
+                    this.showEditorMessage(`Floor ${i + 1} has no stage selected`, 'warning');
+                    return;
+                }
+            }
+            // Build dungeon data and resolve
+            const rules = {
+                hpCarryOver: document.getElementById('dungeon-hp-carry').checked,
+                goldOnClear: document.getElementById('dungeon-gold-on-clear').checked
+            };
+            const floors = this.composerFloors.map(f => {
+                if (f.stages.length === 1) {
+                    return { type: 'fixed', stageId: f.stages[0] };
+                }
+                return { type: 'random', variants: f.stages.map(s => ({ stageId: s, weight: 1 })) };
+            });
+            const dungeonData = { name, floors, rules };
+            const resolved = DungeonEditor.resolveDungeon(dungeonData);
+            if (!resolved || resolved.grids.length === 0) {
+                this.showEditorMessage('Failed to resolve dungeon stages', 'danger');
+                return;
+            }
+            // Play the dungeon (single or multi-stage)
+            const hasVariants = resolved.floorVariants && resolved.floorVariants.some(v => v !== null);
+            if (resolved.grids.length === 1 && !hasVariants) {
+                this.playCustomDungeon(resolved.grids[0], name);
+            } else {
+                this.playMultiStageDungeon(resolved.grids, resolved.rules, name, resolved.floorVariants);
+            }
+        });
+
+        // Populate selects
         this.refreshEditorDungeonSelect();
+        this.refreshDungeonComposerSelect();
+    }
+
+    switchEditorSubtab(subtab) {
+        if (subtab === this.editorSubtab) return;
+        this.editorSubtab = subtab;
+
+        document.querySelectorAll('.editor-subtab').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.subtab === subtab);
+        });
+
+        document.getElementById('stage-panel').style.display = subtab === 'stage' ? '' : 'none';
+        document.getElementById('dungeon-panel').style.display = subtab === 'dungeon' ? '' : 'none';
+
+        if (subtab === 'dungeon') {
+            this.refreshComposerStageDropdowns();
+            if (this.composerSelectedFloor >= 0) {
+                this.previewComposerFloor(this.composerSelectedFloor);
+            } else {
+                // Show empty canvas
+                this.editor.applyGridToRenderer();
+                this.editor.render();
+            }
+        }
+    }
+
+    addComposerFloor() {
+        if (this.composerFloors.length >= 5) {
+            this.showEditorMessage('Maximum 5 floors', 'warning');
+            return;
+        }
+        this.composerFloors.push({ stages: [''] });
+        this.composerSelectedFloor = this.composerFloors.length - 1;
+        this.renderComposerFloors();
+    }
+
+    removeComposerFloor(index) {
+        this.composerFloors.splice(index, 1);
+        if (this.composerSelectedFloor >= this.composerFloors.length) {
+            this.composerSelectedFloor = this.composerFloors.length - 1;
+        }
+        this.renderComposerFloors();
+        if (this.composerSelectedFloor >= 0) {
+            this.previewComposerFloor(this.composerSelectedFloor);
+        }
+    }
+
+    renderComposerFloors() {
+        const container = document.getElementById('dungeon-floor-list');
+        container.innerHTML = '';
+
+        if (this.composerFloors.length === 0) {
+            container.innerHTML = '<div class="dungeon-floor-empty">No floors yet. Click "+ Add Floor" to start.</div>';
+            return;
+        }
+
+        const stageList = this.editor.getStageList();
+
+        this.composerFloors.forEach((floor, index) => {
+            const slot = document.createElement('div');
+            slot.className = 'floor-slot' + (index === this.composerSelectedFloor ? ' selected' : '');
+            slot.dataset.floorIndex = index;
+
+            const header = document.createElement('div');
+            header.className = 'floor-header';
+            const label = floor.stages.length > 1
+                ? `Floor ${index + 1} <span class="variant-badge">${floor.stages.length} variants</span>`
+                : `Floor ${index + 1}`;
+            header.innerHTML = `<span class="floor-label">${label}</span>`;
+
+            const removeBtn = document.createElement('button');
+            removeBtn.className = 'btn-remove-floor';
+            removeBtn.title = 'Remove floor';
+            removeBtn.textContent = '×';
+            removeBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                this.removeComposerFloor(index);
+            });
+            header.appendChild(removeBtn);
+            slot.appendChild(header);
+
+            // Render a dropdown for each variant stage
+            floor.stages.forEach((stageId, vi) => {
+                const row = document.createElement('div');
+                row.className = 'floor-variant-row';
+
+                const select = document.createElement('select');
+                select.className = 'floor-stage-select';
+                const defaultOpt = document.createElement('option');
+                defaultOpt.value = '';
+                defaultOpt.textContent = vi === 0 ? '-- Select Stage --' : '-- Variant --';
+                select.appendChild(defaultOpt);
+
+                stageList.forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = `${s.name} (${s.width}x${s.height})`;
+                    if (s.id === stageId) opt.selected = true;
+                    select.appendChild(opt);
+                });
+
+                select.addEventListener('change', (e) => {
+                    this.composerFloors[index].stages[vi] = e.target.value;
+                    if (index === this.composerSelectedFloor && e.target.value) {
+                        this.previewComposerFloor(index, vi);
+                    }
+                });
+
+                row.appendChild(select);
+
+                // Remove variant button (only for variants beyond the first)
+                if (vi > 0) {
+                    const rmBtn = document.createElement('button');
+                    rmBtn.className = 'btn-remove-variant';
+                    rmBtn.title = 'Remove variant';
+                    rmBtn.textContent = '×';
+                    rmBtn.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        floor.stages.splice(vi, 1);
+                        this.renderComposerFloors();
+                    });
+                    row.appendChild(rmBtn);
+                }
+
+                slot.appendChild(row);
+            });
+
+            // Add Variant button
+            if (floor.stages.length < 4) {
+                const addVarBtn = document.createElement('button');
+                addVarBtn.className = 'btn-add-variant';
+                addVarBtn.textContent = '+ Variant';
+                addVarBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    floor.stages.push('');
+                    this.renderComposerFloors();
+                });
+                slot.appendChild(addVarBtn);
+            }
+
+            slot.addEventListener('click', (e) => {
+                if (e.target.tagName === 'SELECT' || e.target.tagName === 'BUTTON') return;
+                this.composerSelectedFloor = index;
+                document.querySelectorAll('.floor-slot').forEach(s => s.classList.remove('selected'));
+                slot.classList.add('selected');
+                if (floor.stages[0]) {
+                    this.previewComposerFloor(index, 0);
+                }
+            });
+
+            container.appendChild(slot);
+        });
+    }
+
+    previewComposerFloor(index, variantIndex = 0) {
+        const floor = this.composerFloors[index];
+        if (!floor || !floor.stages[variantIndex]) return;
+
+        const grid = DungeonEditor.loadStageGrid(floor.stages[variantIndex]);
+        if (!grid) return;
+
+        this.renderer.setGrid(grid);
+        this.renderer.setAgent(null);
+        this.renderer.fogOfWar = false;
+        this.renderer.showQValues = false;
+        this.renderer.showPolicy = false;
+        this.renderer.setQData(null, null);
+        this.renderer.render();
+    }
+
+    refreshComposerStageDropdowns() {
+        // Re-render floors to pick up any new stages
+        if (this.composerFloors.length > 0) {
+            this.renderComposerFloors();
+        }
+    }
+
+    refreshDungeonComposerSelect() {
+        const sel = document.getElementById('dungeon-comp-select');
+        const currentVal = sel.value;
+        while (sel.options.length > 1) sel.remove(1);
+        const list = this.editor.getDungeonList();
+        list.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = d.id;
+            opt.textContent = `${d.name} (${d.floorCount}F)`;
+            sel.appendChild(opt);
+        });
+        if ([...sel.options].some(o => o.value === currentVal)) {
+            sel.value = currentVal;
+        }
     }
 
     showEditorMessage(text, type = 'info') {
@@ -397,7 +727,7 @@ class Game {
         const currentVal = sel.value;
         // Clear all but the first default option
         while (sel.options.length > 1) sel.remove(1);
-        const list = this.editor.getCustomDungeonList();
+        const list = this.editor.getStageList();
         list.forEach(d => {
             const opt = document.createElement('option');
             opt.value = d.id;
@@ -542,23 +872,54 @@ class Game {
         this.reset();
     }
 
-    loadCustomDungeonOptions() {
-        // Add custom dungeons to the play mode dungeon select
-        const list = DungeonEditor.getCustomDungeonListStatic();
+    playMultiStageDungeon(grids, rules, name, floorVariants = null) {
+        this.switchMode('play', true);
 
-        // Remove existing custom options
+        // Deep copy each stage grid, then stack into MultiStageGrid
+        const copies = grids.map(g => Grid.fromString(g.toString()));
+        // Deep copy variant grids too
+        const variantCopies = floorVariants ? floorVariants.map(fv =>
+            fv ? fv.map(g => Grid.fromString(g.toString())) : null
+        ) : null;
+        this.grid = new MultiStageGrid(copies, rules, variantCopies);
+        this.currentDungeon = 'dungeon_composer_temp';
+        this.renderer.setGrid(this.grid);
+
+        this.qlearning = this.createAlgorithm({ cost: 0, firstReward: 0, repeatReward: 0 });
+
+        this.trainStats.innerHTML = '';
+        this.renderer.setQData(null, null);
+
+        const charDef = CHARACTERS[this.currentCharacter];
+        this.showMessage(`[Dungeon] ${name} (${grids.length} Floors) [${charDef.name}]`, 'info');
+
+        this.reset();
+    }
+
+    loadCustomDungeonOptions() {
+        // Remove existing custom/dungeon options
         const options = [...this.dungeonSelect.options];
         options.forEach(opt => {
-            if (opt.value.startsWith('custom_')) {
+            if (opt.value.startsWith('custom_') || opt.value.startsWith('dungeon_')) {
                 opt.remove();
             }
         });
 
-        // Add custom dungeons
-        list.forEach(d => {
+        // Add single-stage custom dungeons (from Stage Library)
+        const stages = DungeonEditor.getStageListStatic();
+        stages.forEach(d => {
             const opt = document.createElement('option');
             opt.value = 'custom_' + d.id;
             opt.textContent = `[Custom] ${d.name}`;
+            this.dungeonSelect.appendChild(opt);
+        });
+
+        // Add multi-stage dungeons (from Dungeon Composer)
+        const dungeons = DungeonEditor.getDungeonListStatic();
+        dungeons.forEach(d => {
+            const opt = document.createElement('option');
+            opt.value = 'dungeon_' + d.id;
+            opt.textContent = `[Custom] ${d.name} (${d.floorCount}F)`;
             this.dungeonSelect.appendChild(opt);
         });
     }
@@ -843,8 +1204,8 @@ class Game {
         // UI controls
         this.dungeonSelect.addEventListener('change', (e) => {
             const selected = e.target.value;
-            // Custom dungeons don't need unlock check
-            if (selected.startsWith('custom_')) {
+            // Custom/dungeon entries don't need unlock check
+            if (selected.startsWith('custom_') || selected.startsWith('dungeon_')) {
                 this.loadDungeon(selected);
                 return;
             }
@@ -957,10 +1318,10 @@ class Game {
 
         this.currentDungeon = name;
 
-        // Custom dungeon: load from localStorage
+        // Custom single-stage: load from Stage Library
         if (name.startsWith('custom_')) {
             const customId = name.replace('custom_', '');
-            const grid = DungeonEditor.loadCustomDungeonGrid(customId);
+            const grid = DungeonEditor.loadStageGrid(customId);
             if (!grid) {
                 this.showMessage('Custom dungeon not found!', 'danger');
                 return;
@@ -978,6 +1339,50 @@ class Game {
             const charDef = CHARACTERS[this.currentCharacter];
             const loadNote = loaded ? ' (Data loaded)' : '';
             this.showMessage(`[Custom] ${customId} [${charDef.name}]${loadNote}`, 'info');
+
+            if (loaded) {
+                this.updateVisualization();
+            }
+
+            this.reset();
+            return;
+        }
+
+        // Multi-stage dungeon: load from Dungeon Composer
+        if (name.startsWith('dungeon_')) {
+            const dungeonId = name.replace('dungeon_', '');
+            const dungeonData = DungeonEditor.loadDungeonDataStatic(dungeonId);
+            if (!dungeonData) {
+                this.showMessage('Dungeon not found!', 'danger');
+                return;
+            }
+
+            const resolved = DungeonEditor.resolveDungeon(dungeonData);
+            if (!resolved || resolved.grids.length === 0) {
+                this.showMessage('Failed to resolve dungeon stages!', 'danger');
+                return;
+            }
+
+            // Multi-stage: stack all grids into one virtual coordinate space
+            const hasVariants = resolved.floorVariants && resolved.floorVariants.some(v => v !== null);
+            if (resolved.grids.length === 1 && !hasVariants) {
+                this.grid = resolved.grids[0];
+            } else {
+                this.grid = new MultiStageGrid(resolved.grids, resolved.rules, resolved.floorVariants);
+            }
+            this.renderer.setGrid(this.grid);
+
+            const config = { cost: 0, firstReward: 0, repeatReward: 0 };
+            this.qlearning = this.createAlgorithm(config);
+            const loaded = this.loadQTable();
+
+            this.trainStats.innerHTML = '';
+            this.renderer.setQData(null, null);
+
+            const charDef = CHARACTERS[this.currentCharacter];
+            const floorInfo = resolved.grids.length > 1 ? ` (${resolved.grids.length} Floors)` : '';
+            const loadNote = loaded ? ' (Data loaded)' : '';
+            this.showMessage(`[Dungeon] ${dungeonData.name}${floorInfo} [${charDef.name}]${loadNote}`, 'info');
 
             if (loaded) {
                 this.updateVisualization();
@@ -1089,6 +1494,18 @@ class Game {
 
         // Handle result
         if (result.done) {
+            // Multi-stage: try advancing to next floor
+            if (this.grid.tryAdvanceStage && this.grid.tryAdvanceStage(this.agent)) {
+                sound.victory();
+                const stageNum = this.grid.getCurrentStageIndex();
+                const total = this.grid.getTotalStages();
+                this.showMessage(`Floor ${stageNum}/${total} reached! Advancing...`, 'success');
+                this.renderer.flash('rgba(34, 197, 94, 0.3)');
+                this.updateUI();
+                this.render();
+                return;
+            }
+
             this.done = true;
             const tile = this.grid.getTile(this.agent.x, this.agent.y);
 
@@ -1141,9 +1558,10 @@ class Game {
 
     handleVictory() {
         // Custom dungeons: no economy impact
-        if (this.currentDungeon.startsWith('custom_')) {
+        if (this.currentDungeon.startsWith('custom_') || this.currentDungeon.startsWith('dungeon_')) {
             sound.victory();
-            this.showMessage(`CLEAR! (Steps: ${this.steps}) [Custom Dungeon]`, 'success');
+            const floorInfo = this.grid.getTotalStages ? ` (${this.grid.getTotalStages()} Floors)` : '';
+            this.showMessage(`CLEAR!${floorInfo} Steps: ${this.steps}`, 'success');
             this.renderer.flash('rgba(34, 197, 94, 0.4)');
             this.updateUI();
             return;
