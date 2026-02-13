@@ -8,7 +8,25 @@ import { Renderer } from './game/renderer.js';
 import { TileType } from './game/tiles.js';
 import { QLearning } from './game/qlearning.js';
 import { LocalQLearning } from './game/local-qlearning.js';
+import { SARSA } from './game/sarsa.js';
+import { MonteCarlo } from './game/monte-carlo.js';
+import { SarsaLambda } from './game/sarsa-lambda.js';
+import { DynaQ } from './game/dyna-q.js';
+import { Reinforce } from './game/reinforce.js';
+import { ActorCritic } from './game/actor-critic.js';
 import { sound } from './game/sound.js';
+
+// Character registry
+const CHARACTERS = {
+    qkun:   { name: 'Q군',     algo: 'Q-Learning',   cls: QLearning,      desc: '좌표를 외워서 학습합니다. 던전별 전문가.' },
+    scout:  { name: '스카우트', algo: 'Local Q',      cls: LocalQLearning, desc: '주변을 관찰해서 학습합니다. 처음 보는 던전도 경험을 활용!' },
+    sarsa:  { name: '사르사',   algo: 'SARSA',        cls: SARSA,          desc: '실수에서 배우는 신중파. 안전한 길을 선호합니다.' },
+    monte:  { name: '몬테',     algo: 'Monte Carlo',  cls: MonteCarlo,     desc: '끝까지 가봐야 안다! 완주 후 복기하는 사색가.' },
+    tracer: { name: '트레이서', algo: 'SARSA(λ)',     cls: SarsaLambda,    desc: '발자취를 남기며 학습. 먼 과거의 선택도 평가합니다.' },
+    dyna:   { name: '다이나',   algo: 'Dyna-Q',       cls: DynaQ,          desc: '상상력의 달인. 경험을 머릿속에서 반복 재생합니다.' },
+    gradi:  { name: '그래디',   algo: 'REINFORCE',    cls: Reinforce,      desc: '직감형 탐험가. 확률로 판단, 다양한 경로를 시도합니다.' },
+    critic: { name: '크리틱',   algo: 'Actor-Critic', cls: ActorCritic,    desc: '배우와 비평가를 겸비. 안정적이고 효율적입니다.' },
+};
 
 // Dungeon config: cost to enter, first clear reward, repeat reward
 const DUNGEON_CONFIG = {
@@ -23,7 +41,12 @@ const DUNGEON_CONFIG = {
     level_09_treasure: { cost: 40, firstReward: 350, repeatReward: 35 },
     level_10_final:    { cost: 50, firstReward: 500, repeatReward: 50 },
     level_11_hp_test:  { cost: 0,  firstReward: 100, repeatReward: 10, useHpState: true },
-    level_12_hp_gauntlet: { cost: 0, firstReward: 200, repeatReward: 20, useHpState: true }
+    level_12_hp_gauntlet: { cost: 0, firstReward: 200, repeatReward: 20, useHpState: true },
+    level_13_cliff:    { cost: 0,  firstReward: 100, repeatReward: 10 },
+    level_14_long_hall: { cost: 0, firstReward: 150, repeatReward: 15 },
+    level_15_multi_room: { cost: 0, firstReward: 120, repeatReward: 12 },
+    level_16_open_field: { cost: 0, firstReward: 100, repeatReward: 10 },
+    level_17_two_paths: { cost: 0, firstReward: 120, repeatReward: 12 }
 };
 
 // Dungeon order for unlock progression
@@ -39,15 +62,15 @@ const DUNGEON_ORDER = [
     'level_09_treasure',
     'level_10_final',
     'level_11_hp_test',
-    'level_12_hp_gauntlet'
+    'level_12_hp_gauntlet',
+    'level_13_cliff',
+    'level_14_long_hall',
+    'level_15_multi_room',
+    'level_16_open_field',
+    'level_17_two_paths'
 ];
 
 const STORAGE_KEY = 'rld_save_data';
-
-const CHARACTER_DESC = {
-    qkun: '좌표를 외워서 학습합니다. 던전별 전문가.',
-    scout: '주변을 관찰해서 학습합니다. 처음 보는 던전도 경험을 활용!'
-};
 
 // Training speed delays (ms per step)
 const SPEED_DELAYS = {
@@ -71,28 +94,28 @@ class Game {
         this.steps = 0;
         this.done = false;
         this.currentDungeon = 'level_01_easy';
-        this.currentCharacter = 'qkun'; // 'qkun' | 'scout'
+        this.currentCharacter = 'qkun';
 
         // Gold system & Progress
         this.gold = 100;
-        this.clearedDungeons = new Set(); // Track first clears
-        this.unlockedDungeons = new Set(['level_01_easy']); // Start with only level 1 unlocked
+        this.clearedDungeons = new Set();
+        this.unlockedDungeons = new Set(['level_01_easy']);
 
         // Load saved progress
         this.loadProgress();
         this.migrateOldQTables();
 
-        // Q-Learning
+        // Algorithm instance (was qlearning, now generic)
         this.qlearning = null;
         this.isTraining = false;
 
         // Training state
-        this.trainingSpeed = 1;    // 1, 2, 3, or 0 (instant)
-        this.trainingMode = 'until_success'; // 'until_success' or 'continuous'
+        this.trainingSpeed = 1;
+        this.trainingMode = 'until_success';
         this.trainingEpisode = 0;
         this.trainingStepTimer = null;
-        this.recentResults = [];   // last N episode results for convergence check
-        this.trainingAgent = null; // separate agent for visual training
+        this.recentResults = [];
+        this.trainingAgent = null;
         this.trainingKilledMonsters = new Set();
         this.trainingTotalReward = 0;
         this.trainingSteps = 0;
@@ -199,7 +222,6 @@ class Game {
                 const shared = localStorage.getItem('rld_qtable_scout_shared');
                 if (shared) {
                     this.qlearning.deserialize(shared);
-                    // Reset epsilon for new dungeon exploration
                     this.qlearning.epsilon = 0.5;
                     this.qlearning.episodeRewards = [];
                     this.qlearning.episodeSteps = [];
@@ -238,7 +260,6 @@ class Game {
 
             option.disabled = !isUnlocked;
 
-            // Update display text with lock/clear status
             const levelMatch = dungeonId.match(/level_(\d+)_(\w+)/);
             if (levelMatch) {
                 const levelNum = parseInt(levelMatch[1]);
@@ -268,32 +289,61 @@ class Game {
             level_09_treasure: 'Treasure Hunt',
             level_10_final: 'Final',
             level_11_hp_test: 'HP Test',
-            level_12_hp_gauntlet: 'HP Gauntlet'
+            level_12_hp_gauntlet: 'HP Gauntlet',
+            level_13_cliff: 'Cliff Walk',
+            level_14_long_hall: 'Long Hall',
+            level_15_multi_room: 'Multi Room',
+            level_16_open_field: 'Open Field',
+            level_17_two_paths: 'Two Paths'
         };
         return names[dungeonId] || dungeonId;
     }
 
-    createQLearning(config, overrides = {}) {
-        const opts = {
+    /**
+     * Create algorithm instance based on current character
+     */
+    createAlgorithm(config, overrides = {}) {
+        const charDef = CHARACTERS[this.currentCharacter];
+        if (!charDef) {
+            console.error('Unknown character:', this.currentCharacter);
+            return new QLearning(this.grid, overrides);
+        }
+
+        const baseOpts = {
             alpha: overrides.alpha ?? 0.1,
             gamma: overrides.gamma ?? 0.99,
             epsilon: overrides.epsilon ?? 1.0,
             epsilonMin: overrides.epsilonMin ?? 0.01,
-            epsilonDecay: overrides.epsilonDecay ?? 0.995
+            epsilonDecay: overrides.epsilonDecay ?? 0.995,
+            useHpState: config.useHpState ?? false
         };
 
-        if (this.currentCharacter === 'scout') {
-            return new LocalQLearning(this.grid, opts);
+        // Character-specific option overrides
+        switch (this.currentCharacter) {
+            case 'scout':
+                return new LocalQLearning(this.grid, baseOpts);
+            case 'gradi':
+                // REINFORCE needs smaller learning rate for stability
+                return new Reinforce(this.grid, { ...baseOpts, alpha: 0.01 });
+            case 'critic':
+                // Actor-Critic: separate learning rates for actor and critic
+                return new ActorCritic(this.grid, {
+                    ...baseOpts,
+                    alphaActor: 0.01,
+                    alphaCritic: 0.1
+                });
+            case 'tracer':
+                return new SarsaLambda(this.grid, { ...baseOpts, lambda: 0.9 });
+            case 'dyna':
+                return new DynaQ(this.grid, { ...baseOpts, planningSteps: 10 });
+            default:
+                return new charDef.cls(this.grid, baseOpts);
         }
-
-        return new QLearning(this.grid, {
-            ...opts,
-            useHpState: config.useHpState ?? false
-        });
     }
 
     switchCharacter(charName) {
         if (charName === this.currentCharacter) return;
+        if (!CHARACTERS[charName]) return;
 
         // Stop training if running
         if (this.isTraining) {
@@ -303,10 +353,10 @@ class Game {
         this.currentCharacter = charName;
 
         // Update UI
-        document.querySelectorAll('.btn-character').forEach(btn => {
+        document.querySelectorAll('.char-card').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.char === charName);
         });
-        this.characterDesc.textContent = CHARACTER_DESC[charName];
+        this.characterDesc.textContent = CHARACTERS[charName].desc;
 
         // Reload dungeon with new character's algorithm
         this.loadDungeon(this.currentDungeon);
@@ -324,8 +374,8 @@ class Game {
         document.addEventListener('click', initSound);
         document.addEventListener('touchstart', initSound);
 
-        // Character select buttons
-        document.querySelectorAll('.btn-character').forEach(btn => {
+        // Character select cards
+        document.querySelectorAll('.char-card').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 this.switchCharacter(e.currentTarget.dataset.char);
             });
@@ -382,7 +432,6 @@ class Game {
         this.dungeonSelect.addEventListener('change', (e) => {
             const selected = e.target.value;
             if (!this.unlockedDungeons.has(selected)) {
-                // Revert to current dungeon if locked
                 e.target.value = this.currentDungeon;
                 this.showMessage('🔒 Clear previous dungeons first!', 'warning');
                 return;
@@ -491,9 +540,9 @@ class Game {
         this.grid = loadDungeon(name);
         this.renderer.setGrid(this.grid);
 
-        // Initialize Q-Learning for this dungeon (based on character)
-        const config = DUNGEON_CONFIG[name];
-        this.qlearning = this.createQLearning(config);
+        // Initialize algorithm for this dungeon (based on character)
+        const config = DUNGEON_CONFIG[name] || { cost: 0, firstReward: 100, repeatReward: 10 };
+        this.qlearning = this.createAlgorithm(config);
 
         // Try to load saved Q-Table
         const loaded = this.loadQTable();
@@ -501,9 +550,10 @@ class Game {
         this.trainStats.innerHTML = '';
         this.renderer.setQData(null, null);
 
+        const charDef = CHARACTERS[this.currentCharacter];
         const hpNote = config.useHpState ? ' [HP-Aware]' : '';
-        const charNote = this.currentCharacter === 'scout' ? ' [Scout]' : '';
-        const loadNote = loaded ? ' (Q-Table loaded)' : '';
+        const charNote = charDef ? ` [${charDef.name}]` : '';
+        const loadNote = loaded ? ' (Data loaded)' : '';
         this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G${hpNote}${charNote}${loadNote}`, 'info');
 
         if (loaded) {
@@ -524,7 +574,7 @@ class Game {
 
         // Deduct entry cost
         this.gold -= config.cost;
-        this.saveProgress(); // Save gold change
+        this.saveProgress();
         this.updateUI();
         this.reset();
 
@@ -574,7 +624,7 @@ class Game {
         const result = this.agent.move(action, this.grid);
         this.steps++;
 
-        // Learning from Demonstration: teach Q-learning from user play
+        // Learning from Demonstration: teach algorithm from user play
         if (this.qlearning && !this.isTraining) {
             const nextState = [this.agent.x, this.agent.y, this.agent.hp];
             this.qlearning.learn(prevState, action, result.reward, nextState, result.done);
@@ -615,11 +665,10 @@ class Game {
             this.renderer.flash('rgba(251, 191, 36, 0.3)');
         } else if (result.tile === TileType.MONSTER) {
             sound.monster();
-            // Monster defeated - track for restoration, remove from grid, give gold reward
             const monsterKey = `${this.agent.x},${this.agent.y}`;
             this.killedMonsters.add(monsterKey);
             this.grid.setTile(this.agent.x, this.agent.y, TileType.EMPTY);
-            this.gold += 5; // Monster defeat reward
+            this.gold += 5;
             this.showMessage(`MONSTER! HP -30, Defeated! +5G`, 'warning');
             this.renderer.flash('rgba(147, 51, 234, 0.4)');
         } else {
@@ -655,14 +704,13 @@ class Game {
             if (unlockedNext) {
                 sound.victory();
                 setTimeout(() => sound.unlock(), 600);
-                const nextName = this.getDungeonDisplayName(DUNGEON_ORDER[currentIndex + 1]);
+                const nextName = this.getDungeonDisplayName(DUNGEON_ORDER[DUNGEON_ORDER.indexOf(this.currentDungeon) + 1]);
                 this.showMessage(`FIRST CLEAR! +${reward}G 🔓 ${nextName} Unlocked!`, 'success');
             } else {
                 sound.victory();
                 this.showMessage(`FIRST CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
             }
 
-            // Update dropdown to show new unlock
             this.updateDungeonSelect();
         } else {
             sound.victory();
@@ -671,9 +719,7 @@ class Game {
             this.showMessage(`CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
         }
 
-        // Save progress
         this.saveProgress();
-
         this.renderer.flash('rgba(34, 197, 94, 0.4)');
         this.updateUI();
     }
@@ -692,9 +738,9 @@ class Game {
         // Disable fog of war during training
         this.renderer.fogOfWar = false;
 
-        // Reset Q-Learning with fresh parameters (based on character)
-        const config = DUNGEON_CONFIG[this.currentDungeon];
-        this.qlearning = this.createQLearning(config, {
+        // Reset algorithm with fresh parameters (based on character)
+        const config = DUNGEON_CONFIG[this.currentDungeon] || {};
+        this.qlearning = this.createAlgorithm(config, {
             alpha: 0.1,
             gamma: 0.99,
             epsilon: 1.0,
@@ -714,7 +760,8 @@ class Game {
 
     // Visual training: one step at a time with rendering
     startVisualTraining() {
-        this.showMessage('Visual training started...', 'info');
+        const charDef = CHARACTERS[this.currentCharacter];
+        this.showMessage(`Visual training started... [${charDef ? charDef.name : this.currentCharacter}]`, 'info');
         this.beginVisualEpisode();
     }
 
@@ -728,7 +775,6 @@ class Game {
         }
         this.trainingKilledMonsters.clear();
 
-        // Also restore the main killedMonsters
         for (const key of this.killedMonsters) {
             const [x, y] = key.split(',').map(Number);
             this.grid.tiles[y][x] = TileType.MONSTER;
@@ -741,7 +787,6 @@ class Game {
         this.trainingTotalReward = 0;
         this.trainingSteps = 0;
 
-        // Set the training agent as the displayed agent
         this.agent = this.trainingAgent;
         this.renderer.setAgent(this.agent);
         this.steps = 0;
@@ -750,7 +795,6 @@ class Game {
         this.updateUI();
         this.render();
 
-        // Start stepping
         this.scheduleVisualStep();
     }
 
@@ -767,7 +811,6 @@ class Game {
         const maxSteps = 200;
 
         if (this.trainingSteps >= maxSteps || this.done) {
-            // Episode ended
             this.finishVisualEpisode(false);
             return;
         }
@@ -776,7 +819,7 @@ class Game {
         const state = [agent.x, agent.y, agent.hp];
         const action = this.qlearning.stepAction(agent.x, agent.y, agent.hp);
 
-        // Handle killed monsters (treat as empty)
+        // Handle killed monsters
         const nextPos = agent.getNextPosition(action);
         const nextKey = `${nextPos.x},${nextPos.y}`;
         const originalTile = this.grid.getTile(nextPos.x, nextPos.y);
@@ -785,12 +828,10 @@ class Game {
             this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
         }
 
-        // Execute move
         const result = agent.move(action, this.grid);
         this.trainingSteps++;
         this.steps = this.trainingSteps;
 
-        // Track monster kills
         if (result.tile === TileType.MONSTER && !this.trainingKilledMonsters.has(nextKey)) {
             this.trainingKilledMonsters.add(nextKey);
             this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
@@ -803,7 +844,6 @@ class Game {
 
         this.trainingTotalReward += result.reward;
 
-        // Update display
         this.updateUI();
         this.render();
 
@@ -813,7 +853,6 @@ class Game {
             return;
         }
 
-        // Schedule next step
         this.scheduleVisualStep();
     }
 
@@ -836,16 +875,13 @@ class Game {
             this.recentResults.shift();
         }
 
-        // Calculate stats
         const successCount = this.recentResults.filter(r => r).length;
         const clearRate = this.recentResults.length > 0
             ? (successCount / this.recentResults.length * 100).toFixed(0)
             : 0;
 
-        // Update progress UI
         this.updateTrainingUI(clearRate);
 
-        // Check termination conditions
         if (this.trainingEpisode >= MAX_EPISODES) {
             this.finishTraining(`Max episodes (${MAX_EPISODES}) reached. Clear: ${clearRate}%`);
             return;
@@ -858,19 +894,18 @@ class Game {
             return;
         }
 
-        // Continue to next episode
         this.beginVisualEpisode();
     }
 
     // Instant training: no visualization, fast execution
     async startInstantTraining() {
-        this.showMessage('Instant training...', 'info');
+        const charDef = CHARACTERS[this.currentCharacter];
+        this.showMessage(`Instant training... [${charDef ? charDef.name : this.currentCharacter}]`, 'info');
 
         const batchSize = 10;
         let running = true;
 
         while (running && this.isTraining && this.trainingEpisode < MAX_EPISODES) {
-            // Run a batch
             for (let i = 0; i < batchSize && this.isTraining && this.trainingEpisode < MAX_EPISODES; i++) {
                 const result = this.qlearning.runEpisode();
                 this.trainingEpisode++;
@@ -880,7 +915,6 @@ class Game {
                 }
             }
 
-            // Calculate stats
             const successCount = this.recentResults.filter(r => r).length;
             const clearRate = this.recentResults.length > 0
                 ? (successCount / this.recentResults.length * 100).toFixed(0)
@@ -888,7 +922,6 @@ class Game {
 
             this.updateTrainingUI(clearRate);
 
-            // Check convergence
             if (this.trainingMode === 'until_success' &&
                 this.recentResults.length >= CONVERGENCE_WINDOW &&
                 successCount / this.recentResults.length >= CONVERGENCE_THRESHOLD) {
@@ -897,14 +930,10 @@ class Game {
                 break;
             }
 
-            // Update visualization periodically
             this.updateVisualization();
-
-            // Yield to UI
             await new Promise(r => setTimeout(r, 0));
         }
 
-        // If we hit max episodes
         if (running && this.isTraining) {
             const successCount = this.recentResults.filter(r => r).length;
             const clearRate = this.recentResults.length > 0
@@ -916,10 +945,11 @@ class Game {
 
     updateTrainingUI(clearRate) {
         const epsilon = this.qlearning.epsilon;
+        const charDef = CHARACTERS[this.currentCharacter];
+        const charLabel = charDef ? charDef.name : this.currentCharacter;
         this.trainStats.innerHTML =
-            `Episode: ${this.trainingEpisode} | Clear: ${clearRate}% | ε: ${epsilon.toFixed(2)}`;
+            `[${charLabel}] Episode: ${this.trainingEpisode} | Clear: ${clearRate}% | ε: ${epsilon.toFixed(2)}`;
 
-        // Update progress bar (use episode count, cap at MAX_EPISODES)
         const percent = Math.min(100, (this.trainingEpisode / MAX_EPISODES) * 100);
         this.progressFill.style.width = `${percent}%`;
         this.progressText.textContent =
@@ -936,13 +966,8 @@ class Game {
             this.trainingStepTimer = null;
         }
 
-        // Save Q-Table
         this.saveQTable();
-
-        // Restore fog of war
         this.renderer.fogOfWar = this.fogOfWarCheck.checked;
-
-        // Reset display agent
         this.reset();
         this.updateVisualization();
 
@@ -957,7 +982,6 @@ class Game {
             this.trainingStepTimer = null;
         }
 
-        // Restore training killed monsters
         for (const key of this.trainingKilledMonsters) {
             const [x, y] = key.split(',').map(Number);
             this.grid.tiles[y][x] = TileType.MONSTER;
@@ -984,20 +1008,15 @@ class Game {
     }
 
     updateUI() {
-        // Gold
         this.goldText.textContent = this.gold;
 
         if (!this.agent) return;
 
-        // HP
         const hpPercent = (this.agent.hp / this.agent.maxHp) * 100;
         this.hpFill.style.width = `${hpPercent}%`;
         this.hpText.textContent = `${this.agent.hp}/${this.agent.maxHp}`;
-
-        // Steps
         this.stepsText.textContent = this.steps;
 
-        // Reward
         const reward = this.agent.totalReward;
         this.rewardText.textContent = reward.toFixed(1);
         this.rewardText.style.color = reward >= 0 ? '#4ade80' : '#ef4444';
