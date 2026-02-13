@@ -385,9 +385,9 @@ function resolveDungeon(dungeon, stageLibrary) {
 | `main.js` | setupEditor에서 Stage Library 연동 |
 | `index.html` | Save/Load 섹션 라벨 변경 |
 
-- [ ] Stage 저장소 (`rld_stages`) CRUD
-- [ ] 기존 `rld_custom_dungeons` → `rld_stages` 마이그레이션 함수
-- [ ] Stage Library 드롭다운 UI
+- [x] Stage 저장소 (`rld_stages`) CRUD
+- [x] 기존 `rld_custom_dungeons` → `rld_stages` 마이그레이션 함수
+- [x] Stage Library 드롭다운 UI
 
 ### Phase 11-B: Dungeon Composer UI (중)
 
@@ -400,13 +400,13 @@ function resolveDungeon(dungeon, stageLibrary) {
 | `editor.js` | 서브탭 전환, Dungeon 데이터 관리 |
 | `main.js` | Dungeon Composer 이벤트 연결 |
 
-- [ ] Stage / Dungeon 서브탭 전환 UI
-- [ ] Dungeon 데이터 모델 (`rld_dungeons`) CRUD
-- [ ] Floor 슬롯 추가/삭제/순서 변경
-- [ ] Floor에 Stage 선택 (드롭다운)
-- [ ] 선택된 Floor의 스테이지 캔버스 프리뷰
-- [ ] Rules 설정 (HP Carry Over, Gold on Clear)
-- [ ] Dungeon 저장/불러오기/삭제
+- [x] Stage / Dungeon 서브탭 전환 UI
+- [x] Dungeon 데이터 모델 (`rld_dungeons`) CRUD
+- [x] Floor 슬롯 추가/삭제/순서 변경
+- [x] Floor에 Stage 선택 (드롭다운)
+- [x] 선택된 Floor의 스테이지 캔버스 프리뷰
+- [x] Rules 설정 (HP Carry Over, Gold on Clear)
+- [x] Dungeon 저장/불러오기/삭제
 
 ### Phase 11-C: MultiStageGrid + Algorithm Integration (중~대)
 
@@ -424,13 +424,13 @@ function resolveDungeon(dungeon, stageLibrary) {
 | `reinforce.js` | 동일 |
 | `actor-critic.js` | 동일 |
 
-- [ ] MultiStageGrid 클래스 (Virtual Coordinate Stacking)
-- [ ] Grid 인터페이스 호환 (width, height, startPos, goalPos, getTile, tiles Proxy, isValidPosition)
-- [ ] tryAdvanceStage(agent) 메서드
-- [ ] 8개 알고리즘 runEpisode()/test()에 stage transition 코드 추가
-- [ ] Local Q-Learning의 goalPos 처리 (currentStageGoalPos)
-- [ ] 몬스터/골드 복원 로직이 멀티스테이지에서 정상 동작 확인
-- [ ] 단일 스테이지(기존 Grid) 회귀 테스트
+- [x] MultiStageGrid 클래스 (Virtual Coordinate Stacking)
+- [x] Grid 인터페이스 호환 (width, height, startPos, goalPos, getTile, tiles row reference, isValidPosition)
+- [x] tryAdvanceStage(agent) 메서드
+- [x] 8개 알고리즘 runEpisode()/test()에 stage transition 코드 추가
+- [x] Local Q-Learning의 goalPos 처리 (동적 currentStage 기반)
+- [x] 몬스터/골드 복원 로직이 멀티스테이지에서 정상 동작 확인
+- [x] 단일 스테이지(기존 Grid) 회귀 테스트
 
 ### Phase 11-D: Play Mode Multi-Stage (중)
 
@@ -442,14 +442,14 @@ function resolveDungeon(dungeon, stageLibrary) {
 | `index.html` | 층 표시 UI, 임시 골드 표시 |
 | `css/style.css` | 층 전환 연출 스타일 |
 
-- [ ] 멀티스테이지 던전 로드 (resolveDungeon + MultiStageGrid 생성)
-- [ ] 수동 플레이: Goal 도달 시 스테이지 전환 + HP 유지
-- [ ] 스테이지 전환 시각 효과 ("Floor N Clear!")
-- [ ] 현재 층 표시 UI ("Floor 1/3")
-- [ ] 골드 보류 시스템 (pendingGold)
-- [ ] Visual Training: 스테이지 전환 시 렌더 업데이트
-- [ ] Instant Training: MultiStageGrid.runEpisode 자연 동작
-- [ ] Play 모드 던전 드롭다운에 멀티스테이지 던전 표시 ("(3F)" 접미사)
+- [x] 멀티스테이지 던전 로드 (resolveDungeon + MultiStageGrid 생성)
+- [x] 수동 플레이: Goal 도달 시 스테이지 전환 + HP 유지
+- [x] 스테이지 전환 시각 효과 ("Floor N/M reached! Advancing...")
+- [x] 현재 층 표시 UI ("Floor 1/2")
+- [ ] 골드 보류 시스템 (pendingGold) — 향후 구현
+- [x] Visual Training: 스테이지 전환 시 렌더 업데이트
+- [x] Instant Training: MultiStageGrid.runEpisode 자연 동작
+- [x] Play 모드 던전 드롭다운에 멀티스테이지 던전 표시 ("(2F)" 접미사)
 
 ### Phase 11-E: Variant System (소)
 
@@ -462,17 +462,18 @@ function resolveDungeon(dungeon, stageLibrary) {
 | `main.js` | resolveDungeon에서 weighted random 선택 |
 | `multi-stage-grid.js` | 에피소드마다 새 변형 resolve |
 
-- [ ] Floor 슬롯에 "Add Variant" 버튼
-- [ ] Variant 목록 표시 (weight 포함)
-- [ ] resolveDungeon(): weighted random 선택 구현
-- [ ] Training 시 매 에피소드 새 변형 생성
+- [x] Floor 슬롯에 "Add Variant" 버튼
+- [x] Variant 목록 표시 (weight 포함)
+- [x] resolveDungeon(): weighted random 선택 구현
+- [x] Training 시 매 에피소드 새 변형 생성 (_resolveVariants in startPos getter)
 
 ### Phase 11-F: Polish (소)
 
-- [ ] 던전 답파율 표시 (최근 N 에피소드 기반)
-- [ ] Quick Test 멀티스테이지 지원
-- [ ] 프리셋 멀티스테이지 던전 1~2개 추가
-- [ ] 기존 커스텀 던전 마이그레이션 안내 UI
+- [ ] 던전 답파율 표시 (최근 N 에피소드 기반) — 향후
+- [x] suggestedMaxSteps 스케일링 (200 × stages.length)
+- [x] test() 메서드 maxSteps 통일
+- [ ] 프리셋 멀티스테이지 던전 추가 — 향후
+- [x] 기존 커스텀 던전 마이그레이션 (자동 실행)
 
 ---
 
@@ -510,5 +511,6 @@ function resolveDungeon(dungeon, stageLibrary) {
 
 ---
 
-*Document Version: 1.0*
+*Document Version: 2.0 — Implementation complete (Phase 11-A~F)*
 *Created: 2026-02-14*
+*Updated: 2026-02-14*

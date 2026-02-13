@@ -5,8 +5,11 @@
 import { Grid } from './grid.js';
 import { TileType, TileProperties, getTileColor } from './tiles.js';
 
-const STORAGE_KEY_CUSTOM = 'rld_custom_dungeons';
+const STORAGE_KEY_STAGES = 'rld_stages';
+const STORAGE_KEY_DUNGEONS = 'rld_dungeons';
+const STORAGE_KEY_CUSTOM_LEGACY = 'rld_custom_dungeons';
 const MAX_UNDO = 50;
+const MAX_FLOORS = 5;
 const MIN_SIZE = 3;
 const MAX_SIZE = 25;
 
@@ -519,22 +522,22 @@ export class DungeonEditor {
         return false;
     }
 
-    // ========== Save/Load ==========
+    // ========== Stage Library (Save/Load) ==========
 
-    _loadAll() {
+    _loadStages() {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY_CUSTOM);
+            const raw = localStorage.getItem(STORAGE_KEY_STAGES);
             return raw ? JSON.parse(raw) : {};
         } catch (e) {
             return {};
         }
     }
 
-    _saveAll(data) {
+    _saveStages(data) {
         try {
-            localStorage.setItem(STORAGE_KEY_CUSTOM, JSON.stringify(data));
+            localStorage.setItem(STORAGE_KEY_STAGES, JSON.stringify(data));
         } catch (e) {
-            console.warn('Failed to save custom dungeons:', e);
+            console.warn('Failed to save stages:', e);
         }
     }
 
@@ -542,24 +545,26 @@ export class DungeonEditor {
         return name.trim().toLowerCase().replace(/[^a-z0-9]+/g, '_').replace(/^_|_$/g, '') || 'unnamed';
     }
 
-    saveCustomDungeon(name) {
+    saveStage(name) {
         if (!this.grid || !name.trim()) return null;
 
         const id = this._nameToId(name);
-        const all = this._loadAll();
+        const all = this._loadStages();
         all[id] = {
+            id,
             name: name.trim(),
             gridString: this.grid.toString(),
             width: this.grid.width,
             height: this.grid.height,
-            createdAt: new Date().toISOString()
+            tags: all[id]?.tags || [],
+            createdAt: all[id]?.createdAt || new Date().toISOString()
         };
-        this._saveAll(all);
+        this._saveStages(all);
         return id;
     }
 
-    loadCustomDungeon(id) {
-        const all = this._loadAll();
+    loadStage(id) {
+        const all = this._loadStages();
         const data = all[id];
         if (!data) return false;
 
@@ -571,31 +576,33 @@ export class DungeonEditor {
         return true;
     }
 
-    deleteCustomDungeon(id) {
-        const all = this._loadAll();
+    deleteStage(id) {
+        const all = this._loadStages();
         if (all[id]) {
             delete all[id];
-            this._saveAll(all);
+            this._saveStages(all);
             return true;
         }
         return false;
     }
 
-    getCustomDungeonList() {
-        const all = this._loadAll();
+    getStageList() {
+        const all = this._loadStages();
         return Object.entries(all).map(([id, data]) => ({
             id,
             name: data.name,
             width: data.width,
             height: data.height,
+            tags: data.tags || [],
             createdAt: data.createdAt
         }));
     }
 
-    // Static method for external access (e.g., main.js)
-    static getCustomDungeonListStatic() {
+    // Static methods for external access (e.g., main.js)
+
+    static getStageListStatic() {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY_CUSTOM);
+            const raw = localStorage.getItem(STORAGE_KEY_STAGES);
             const all = raw ? JSON.parse(raw) : {};
             return Object.entries(all).map(([id, data]) => ({
                 id,
@@ -608,15 +615,55 @@ export class DungeonEditor {
         }
     }
 
-    static loadCustomDungeonGrid(id) {
+    static loadStageGrid(id) {
         try {
-            const raw = localStorage.getItem(STORAGE_KEY_CUSTOM);
+            const raw = localStorage.getItem(STORAGE_KEY_STAGES);
             const all = raw ? JSON.parse(raw) : {};
             const data = all[id];
             if (!data) return null;
             return Grid.fromString(data.gridString);
         } catch (e) {
             return null;
+        }
+    }
+
+    /**
+     * Migrate legacy rld_custom_dungeons to rld_stages.
+     * Called once on startup. Safe to call multiple times.
+     */
+    static migrateToStages() {
+        try {
+            const customRaw = localStorage.getItem(STORAGE_KEY_CUSTOM_LEGACY);
+            if (!customRaw) return;
+
+            const customs = JSON.parse(customRaw);
+            if (Object.keys(customs).length === 0) return;
+
+            const stagesRaw = localStorage.getItem(STORAGE_KEY_STAGES);
+            const stages = stagesRaw ? JSON.parse(stagesRaw) : {};
+
+            let migrated = 0;
+            for (const [id, data] of Object.entries(customs)) {
+                if (!stages[id]) {
+                    stages[id] = {
+                        id,
+                        name: data.name,
+                        gridString: data.gridString,
+                        width: data.width,
+                        height: data.height,
+                        tags: [],
+                        createdAt: data.createdAt || new Date().toISOString()
+                    };
+                    migrated++;
+                }
+            }
+
+            if (migrated > 0) {
+                localStorage.setItem(STORAGE_KEY_STAGES, JSON.stringify(stages));
+                console.log(`Migrated ${migrated} custom dungeons to Stage Library`);
+            }
+        } catch (e) {
+            console.warn('Stage migration failed:', e);
         }
     }
 
@@ -795,5 +842,140 @@ export class DungeonEditor {
             this.onPlayDungeon(this.grid, 'Custom Dungeon');
         }
         return { success: true };
+    }
+
+    // ========== Dungeon Composer (CRUD) ==========
+
+    _loadDungeons() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_DUNGEONS);
+            return raw ? JSON.parse(raw) : {};
+        } catch (e) {
+            return {};
+        }
+    }
+
+    _saveDungeons(data) {
+        try {
+            localStorage.setItem(STORAGE_KEY_DUNGEONS, JSON.stringify(data));
+        } catch (e) {
+            console.warn('Failed to save dungeons:', e);
+        }
+    }
+
+    saveDungeon(name, floors, rules) {
+        if (!name.trim()) return null;
+        const id = this._nameToId(name);
+        const all = this._loadDungeons();
+        all[id] = {
+            id,
+            name: name.trim(),
+            floors,
+            rules,
+            createdAt: all[id]?.createdAt || new Date().toISOString()
+        };
+        this._saveDungeons(all);
+        return id;
+    }
+
+    loadDungeonData(id) {
+        const all = this._loadDungeons();
+        return all[id] || null;
+    }
+
+    deleteDungeon(id) {
+        const all = this._loadDungeons();
+        if (all[id]) {
+            delete all[id];
+            this._saveDungeons(all);
+            return true;
+        }
+        return false;
+    }
+
+    getDungeonList() {
+        const all = this._loadDungeons();
+        return Object.entries(all).map(([id, data]) => ({
+            id,
+            name: data.name,
+            floorCount: data.floors ? data.floors.length : 0,
+            createdAt: data.createdAt
+        }));
+    }
+
+    static getDungeonListStatic() {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_DUNGEONS);
+            const all = raw ? JSON.parse(raw) : {};
+            return Object.entries(all).map(([id, data]) => ({
+                id,
+                name: data.name,
+                floorCount: data.floors ? data.floors.length : 0
+            }));
+        } catch (e) {
+            return [];
+        }
+    }
+
+    static loadDungeonDataStatic(id) {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY_DUNGEONS);
+            const all = raw ? JSON.parse(raw) : {};
+            return all[id] || null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    /**
+     * Resolve a dungeon recipe into an array of Grids (for play/training).
+     * For now, only handles "fixed" floors. Variant support in Phase 11-E.
+     */
+    /**
+     * Resolve a dungeon recipe into playable grids.
+     * Returns { grids, rules, floorVariants } where floorVariants[i] is
+     * null (fixed) or an array of Grid objects (random variants).
+     */
+    static resolveDungeon(dungeonData) {
+        if (!dungeonData || !dungeonData.floors) return null;
+
+        const stagesRaw = localStorage.getItem(STORAGE_KEY_STAGES);
+        const stages = stagesRaw ? JSON.parse(stagesRaw) : {};
+
+        const grids = [];
+        const floorVariants = [];
+
+        for (const floor of dungeonData.floors) {
+            if (floor.type === 'random' && floor.variants && floor.variants.length > 0) {
+                // Random floor: resolve all variants
+                const variantGrids = [];
+                for (const v of floor.variants) {
+                    if (!stages[v.stageId]) return null;
+                    variantGrids.push(Grid.fromString(stages[v.stageId].gridString));
+                }
+                // Pick one for initial resolution (weighted random)
+                const picked = DungeonEditor._weightedRandom(floor.variants);
+                grids.push(Grid.fromString(stages[picked.stageId].gridString));
+                floorVariants.push(variantGrids);
+            } else {
+                // Fixed floor
+                const stageId = floor.stageId;
+                if (!stageId || !stages[stageId]) return null;
+                grids.push(Grid.fromString(stages[stageId].gridString));
+                floorVariants.push(null);
+            }
+        }
+
+        return { grids, rules: dungeonData.rules || {}, floorVariants };
+    }
+
+    static _weightedRandom(variants) {
+        const totalWeight = variants.reduce((sum, v) => sum + (v.weight || 1), 0);
+        let r = Math.random() * totalWeight;
+        for (const v of variants) {
+            r -= (v.weight || 1);
+            if (r <= 0) return v;
+        }
+        return variants[variants.length - 1];
     }
 }

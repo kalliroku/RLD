@@ -177,7 +177,8 @@ export class ActorCritic {
         this.epsilon = Math.max(this.epsilonMin, this.epsilon * this.epsilonDecay);
     }
 
-    runEpisode(maxSteps = 200) {
+    runEpisode(maxSteps = 0) {
+        maxSteps = maxSteps || this.grid.suggestedMaxSteps || 200;
         const startPos = this.grid.startPos;
         if (!startPos) return null;
 
@@ -220,7 +221,10 @@ export class ActorCritic {
             totalReward += result.reward;
             steps++;
 
-            if (result.done) break;
+            if (result.done) {
+                if (this.grid.tryAdvanceStage && this.grid.tryAdvanceStage(agent)) continue;
+                break;
+            }
         }
 
         // Restore monsters
@@ -277,6 +281,7 @@ export class ActorCritic {
     test(nEpisodes = 100) {
         const oldEpsilon = this.epsilon;
         this.epsilon = 0;
+        const testMaxSteps = this.grid.suggestedMaxSteps || 200;
 
         let successes = 0;
         let totalReward = 0;
@@ -289,7 +294,7 @@ export class ActorCritic {
             const collectedGold = new Set();
             let steps = 0;
 
-            while (steps < 200) {
+            while (steps < testMaxSteps) {
                 const action = this.getBestAction(agent.x, agent.y, agent.hp);
                 const nextPos = agent.getNextPosition(action);
                 const nextKey = `${nextPos.x},${nextPos.y}`;
@@ -312,6 +317,7 @@ export class ActorCritic {
 
                 steps++;
                 if (result.done) {
+                    if (this.grid.tryAdvanceStage && this.grid.tryAdvanceStage(agent)) continue;
                     if (agent.hp > 0 && this.grid.getTile(agent.x, agent.y) === TileType.GOAL) {
                         successes++;
                     }
