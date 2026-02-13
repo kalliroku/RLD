@@ -892,6 +892,17 @@ body.editor-mode .dpad-container {
     color: #60a5fa;
 }
 
+/* Quick Test */
+.quick-test-char-select, .quick-test-episodes { display: flex; align-items: center; gap: 4px; margin-bottom: 8px; }
+.quick-test-char-select select, .quick-test-episodes select { flex: 1; margin-bottom: 0; padding: 5px 8px; font-size: 0.85rem; }
+.quick-test-buttons { display: flex; gap: 6px; }
+.quick-test-buttons button { flex: 1; margin-bottom: 0; }
+.quick-test-progress { margin-top: 8px; }
+.quick-test-results { font-size: 0.85rem; margin-top: 8px; line-height: 1.4; }
+.quick-test-results.success { color: var(--success); }
+.quick-test-results.warning { color: var(--warning); }
+.quick-test-results.danger { color: var(--danger); }
+
 /* ========== Responsive for Editor ========== */
 @media (max-width: 700px) {
     .tile-palette {

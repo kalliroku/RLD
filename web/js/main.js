@@ -233,9 +233,16 @@ class Game {
     // ========== Editor Setup ==========
 
     setupEditor() {
-        this.editor = new DungeonEditor(this.canvas, this.renderer, (grid, name) => {
-            this.playCustomDungeon(grid, name);
-        });
+        this.editor = new DungeonEditor(
+            this.canvas,
+            this.renderer,
+            (grid, name) => {
+                this.playCustomDungeon(grid, name);
+            },
+            (grid, character, maxEpisodes, onProgress, onComplete, shouldAbort) => {
+                this.runQuickTest(grid, character, maxEpisodes, onProgress, onComplete, shouldAbort);
+            }
+        );
 
         // Build tile palette
         const palette = document.getElementById('tile-palette');
@@ -338,6 +345,43 @@ class Game {
             }
         });
 
+        // Quick Test
+        document.getElementById('btn-quick-test').addEventListener('click', () => {
+            const character = document.getElementById('qt-character').value;
+            const maxEpisodes = parseInt(document.getElementById('qt-episodes').value);
+
+            // UI: show progress, disable start, enable stop
+            document.getElementById('btn-quick-test').disabled = true;
+            document.getElementById('btn-quick-test-stop').disabled = false;
+            document.getElementById('qt-progress').style.display = 'block';
+            document.getElementById('qt-progress-fill').style.width = '0%';
+            document.getElementById('qt-progress-text').textContent = '0 / ' + maxEpisodes;
+            document.getElementById('qt-results').textContent = '';
+            document.getElementById('qt-results').className = 'quick-test-results';
+            document.getElementById('qt-show-policy').checked = false;
+
+            const result = this.editor.startQuickTest(character, maxEpisodes);
+            if (!result.success) {
+                this.showEditorMessage(result.errors.join(', '), 'danger');
+                document.getElementById('btn-quick-test').disabled = false;
+                document.getElementById('btn-quick-test-stop').disabled = true;
+                document.getElementById('qt-progress').style.display = 'none';
+            }
+        });
+
+        document.getElementById('btn-quick-test-stop').addEventListener('click', () => {
+            this.editor.stopQuickTest();
+        });
+
+        // Show learned policy checkbox
+        document.getElementById('qt-show-policy').addEventListener('change', (e) => {
+            if (e.target.checked) {
+                this.editor.showTestPolicy();
+            } else {
+                this.editor.clearTestPolicy();
+            }
+        });
+
         // Populate custom dungeon select in editor
         this.refreshEditorDungeonSelect();
     }
@@ -369,6 +413,102 @@ class Game {
     refreshCustomDungeonSelects() {
         this.refreshEditorDungeonSelect();
         this.loadCustomDungeonOptions();
+    }
+
+    // ========== Quick Test ==========
+
+    async runQuickTest(grid, character, maxEpisodes, onProgress, onComplete, shouldAbort) {
+        // Deep copy grid so editor grid is unmodified
+        const testGrid = Grid.fromString(grid.toString());
+
+        // Temporarily swap character/grid to use createAlgorithm()
+        const savedCharacter = this.currentCharacter;
+        const savedGrid = this.grid;
+        this.currentCharacter = character;
+        this.grid = testGrid;
+        const algo = this.createAlgorithm({ cost: 0, firstReward: 0, repeatReward: 0 });
+        this.currentCharacter = savedCharacter;
+        this.grid = savedGrid;
+
+        const batchSize = 10;
+        const convergenceWindow = 20;
+        const convergenceThreshold = 0.95;
+        const recentResults = [];
+        let episode = 0;
+        let converged = false;
+
+        const progressEl = document.getElementById('qt-progress-fill');
+        const progressTextEl = document.getElementById('qt-progress-text');
+        const resultsEl = document.getElementById('qt-results');
+        const startBtn = document.getElementById('btn-quick-test');
+        const stopBtn = document.getElementById('btn-quick-test-stop');
+
+        while (episode < maxEpisodes && !shouldAbort()) {
+            for (let i = 0; i < batchSize && episode < maxEpisodes && !shouldAbort(); i++) {
+                const result = algo.runEpisode();
+                episode++;
+                recentResults.push(result.success);
+                if (recentResults.length > convergenceWindow) {
+                    recentResults.shift();
+                }
+            }
+
+            const successCount = recentResults.filter(r => r).length;
+            const clearRate = recentResults.length > 0
+                ? (successCount / recentResults.length * 100).toFixed(0)
+                : 0;
+
+            // Update progress UI
+            const percent = Math.min(100, (episode / maxEpisodes) * 100);
+            progressEl.style.width = `${percent}%`;
+            progressTextEl.textContent = `${episode} / ${maxEpisodes} (Clear: ${clearRate}%)`;
+
+            onProgress({ episode, total: maxEpisodes, clearRate: parseFloat(clearRate), epsilon: algo.epsilon });
+
+            // Convergence check
+            if (recentResults.length >= convergenceWindow &&
+                successCount / recentResults.length >= convergenceThreshold) {
+                converged = true;
+                break;
+            }
+
+            // Yield to UI
+            await new Promise(r => setTimeout(r, 0));
+        }
+
+        const successCount = recentResults.filter(r => r).length;
+        const clearRate = recentResults.length > 0
+            ? (successCount / recentResults.length * 100).toFixed(0)
+            : 0;
+
+        const valueGrid = algo.getValueGrid();
+        const policyGrid = algo.getPolicyGrid();
+
+        // Update final progress
+        progressEl.style.width = '100%';
+
+        // Show results
+        const aborted = shouldAbort();
+        let resultText, resultClass;
+        if (aborted) {
+            resultText = `Stopped at ${episode} ep. Clear: ${clearRate}%`;
+            resultClass = 'warning';
+        } else if (converged) {
+            resultText = `Converged! Clear: ${clearRate}% after ${episode} ep`;
+            resultClass = 'success';
+        } else {
+            resultText = `Done ${episode} ep. Clear: ${clearRate}%`;
+            resultClass = parseFloat(clearRate) >= 80 ? 'success' : parseFloat(clearRate) >= 30 ? 'warning' : 'danger';
+        }
+
+        resultsEl.textContent = resultText;
+        resultsEl.className = 'quick-test-results ' + resultClass;
+
+        // Restore button states
+        startBtn.disabled = false;
+        stopBtn.disabled = true;
+
+        onComplete({ episodes: episode, clearRate: parseFloat(clearRate), converged, valueGrid, policyGrid });
     }
 
     // ========== Custom Dungeon Play ==========
