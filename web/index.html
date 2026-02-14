@@ -53,6 +53,10 @@
                             <span class="stat-label">Reward</span>
                             <span class="stat-value" id="reward-text">0.0</span>
                         </div>
+                        <div class="stat" id="clear-rate-stat" style="display:none;">
+                            <span class="stat-label">Clear Rate</span>
+                            <span class="stat-value" id="clear-rate-text">-</span>
+                        </div>
                     </div>
 
                     <div class="message" id="message"></div>
@@ -94,6 +98,18 @@
                         <button class="char-card" data-char="critic">
                             <span class="char-name">크리틱</span>
                             <span class="char-algo">Actor-Critic</span>
+                        </button>
+                        <button class="char-card" data-char="qvkun">
+                            <span class="char-name">QV군</span>
+                            <span class="char-algo">QV-Learning</span>
+                        </button>
+                        <button class="char-card" data-char="acla">
+                            <span class="char-name">아클라</span>
+                            <span class="char-algo">ACLA</span>
+                        </button>
+                        <button class="char-card" data-char="ensemble">
+                            <span class="char-name">앙상블</span>
+                            <span class="char-algo">Ensemble</span>
                         </button>
                     </div>
                     <p class="character-desc" id="character-desc">
@@ -279,6 +295,9 @@
                                 <option value="dyna">다이나 (Dyna-Q)</option>
                                 <option value="gradi">그래디 (REINFORCE)</option>
                                 <option value="critic">크리틱 (Actor-Critic)</option>
+                                <option value="qvkun">QV군 (QV-Learning)</option>
+                                <option value="acla">아클라 (ACLA)</option>
+                                <option value="ensemble">앙상블 (Ensemble)</option>
                             </select>
                         </div>
                         <div class="quick-test-episodes">
