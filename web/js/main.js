@@ -61,7 +61,9 @@ const DUNGEON_CONFIG = {
     level_20_sacrifice: { cost: 0, firstReward: 150, repeatReward: 15 },
     level_21_desert: { cost: 0, firstReward: 150, repeatReward: 15 },
     level_22_arena: { cost: 0, firstReward: 200, repeatReward: 20, useHpState: true },
-    level_23_mirage: { cost: 0, firstReward: 150, repeatReward: 15 }
+    level_23_mirage: { cost: 0, firstReward: 150, repeatReward: 15 },
+    level_24_paper_maze: { cost: 0, firstReward: 100, repeatReward: 10 },
+    level_25_paper_hard: { cost: 0, firstReward: 120, repeatReward: 12 }
 };
 
 // Dungeon order for unlock progression
@@ -88,7 +90,9 @@ const DUNGEON_ORDER = [
     'level_20_sacrifice',
     'level_21_desert',
     'level_22_arena',
-    'level_23_mirage'
+    'level_23_mirage',
+    'level_24_paper_maze',
+    'level_25_paper_hard'
 ];
 
 const PRESET_MULTI_DUNGEONS = {
@@ -1102,7 +1106,9 @@ class Game {
             level_20_sacrifice: 'Cliff Walking',
             level_21_desert: 'Desert Crossing',
             level_22_arena: 'Monster Arena',
-            level_23_mirage: 'The Mirage'
+            level_23_mirage: 'The Mirage',
+            level_24_paper_maze: 'Paper Maze',
+            level_25_paper_hard: 'Paper Maze+'
         };
         return names[dungeonId] || dungeonId;
     }
