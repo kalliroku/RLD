@@ -21,10 +21,17 @@ export class Renderer {
 
         // Fog of War
         this.fogOfWar = false;
+
+        // Stage viewport (multi-stage: show one floor at a time)
+        this.viewportYOffset = 0;   // current stage's virtual y start
+        this.viewportHeight = null; // null = show entire grid (single stage compat)
     }
 
     setGrid(grid) {
         this.grid = grid;
+        // Reset viewport (single grid = show everything)
+        this.viewportYOffset = 0;
+        this.viewportHeight = null;
         // Resize canvas to fit grid
         this.canvas.width = grid.width * this.tileSize;
         this.canvas.height = grid.height * this.tileSize;
@@ -32,6 +39,30 @@ export class Renderer {
 
     setAgent(agent) {
         this.agent = agent;
+    }
+
+    /**
+     * Show only a single stage (floor) of a MultiStageGrid.
+     * Resizes canvas to that stage's height.
+     */
+    setViewportStage(stageIndex) {
+        if (!this.grid || !this.grid.getStageOffset) return;
+        this.viewportYOffset = this.grid.getStageOffset(stageIndex);
+        this.viewportHeight = this.grid.stages[stageIndex].height;
+        this.canvas.width = this.grid.width * this.tileSize;
+        this.canvas.height = this.viewportHeight * this.tileSize;
+    }
+
+    /**
+     * Clear viewport — show the full grid (all stages stacked).
+     */
+    clearViewport() {
+        this.viewportYOffset = 0;
+        this.viewportHeight = null;
+        if (this.grid) {
+            this.canvas.width = this.grid.width * this.tileSize;
+            this.canvas.height = this.grid.height * this.tileSize;
+        }
     }
 
     clear() {
@@ -43,8 +74,11 @@ export class Renderer {
         if (!this.grid) return;
 
         const { ctx, tileSize } = this;
+        const yStart = this.viewportYOffset;
+        const yEnd = this.viewportHeight != null ? yStart + this.viewportHeight : this.grid.height;
 
-        for (let y = 0; y < this.grid.height; y++) {
+        for (let y = yStart; y < yEnd; y++) {
+            const cy = y - this.viewportYOffset;
             for (let x = 0; x < this.grid.width; x++) {
                 const tile = this.grid.getTile(x, y);
 
@@ -59,7 +93,7 @@ export class Renderer {
                     ctx.fillStyle = '#0a0a0f';
                     ctx.fillRect(
                         x * tileSize + 1,
-                        y * tileSize + 1,
+                        cy * tileSize + 1,
                         tileSize - 2,
                         tileSize - 2
                     );
@@ -68,7 +102,7 @@ export class Renderer {
                     ctx.fillStyle = '#333';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText('?', x * tileSize + tileSize / 2, y * tileSize + tileSize / 2);
+                    ctx.fillText('?', x * tileSize + tileSize / 2, cy * tileSize + tileSize / 2);
                     continue;
                 }
 
@@ -78,7 +112,7 @@ export class Renderer {
                 ctx.fillStyle = color;
                 ctx.fillRect(
                     x * tileSize + 1,
-                    y * tileSize + 1,
+                    cy * tileSize + 1,
                     tileSize - 2,
                     tileSize - 2
                 );
@@ -87,20 +121,20 @@ export class Renderer {
                 ctx.strokeStyle = 'rgba(255, 255, 255, 0.1)';
                 ctx.strokeRect(
                     x * tileSize + 1,
-                    y * tileSize + 1,
+                    cy * tileSize + 1,
                     tileSize - 2,
                     tileSize - 2
                 );
 
                 // Draw special markers
-                this.drawTileMarker(x, y, tile);
+                this.drawTileMarker(x, cy, tile);
 
                 // Apply fog overlay for partial visibility
                 if (visibility < 1.0) {
                     ctx.fillStyle = `rgba(10, 10, 15, ${1 - visibility})`;
                     ctx.fillRect(
                         x * tileSize + 1,
-                        y * tileSize + 1,
+                        cy * tileSize + 1,
                         tileSize - 2,
                         tileSize - 2
                     );
@@ -177,8 +211,13 @@ export class Renderer {
         const { ctx, tileSize } = this;
         const { x, y, hp, maxHp } = this.agent;
 
+        // Apply viewport offset
+        const cy = y - this.viewportYOffset;
+        const visibleRows = this.viewportHeight != null ? this.viewportHeight : this.grid.height;
+        if (cy < 0 || cy >= visibleRows) return;
+
         const centerX = x * tileSize + tileSize / 2;
-        const centerY = y * tileSize + tileSize / 2;
+        const centerY = cy * tileSize + tileSize / 2;
         const radius = tileSize * 0.35;
 
         // Agent body (circle)
@@ -204,7 +243,7 @@ export class Renderer {
         const barWidth = tileSize * 0.8;
         const barHeight = 4;
         const barX = x * tileSize + (tileSize - barWidth) / 2;
-        const barY = y * tileSize + 4;
+        const barY = cy * tileSize + 4;
 
         // Background
         ctx.fillStyle = '#333';
@@ -231,6 +270,49 @@ export class Renderer {
         }
 
         this.renderAgent();
+        this.renderFloorIndicator();
+    }
+
+    /**
+     * Draw "Floor X/Y" badge at top-right of canvas (viewport mode only)
+     */
+    renderFloorIndicator() {
+        if (!this.grid || !this.grid.getTotalStages) return;
+        const total = this.grid.getTotalStages();
+        if (total <= 1 || this.viewportHeight == null) return;
+
+        const stageIndex = this.grid.getCurrentStageIndex();
+        const label = `Floor ${stageIndex + 1}/${total}`;
+
+        const { ctx, tileSize } = this;
+        ctx.save();
+        ctx.font = `bold ${tileSize * 0.32}px monospace`;
+        const metrics = ctx.measureText(label);
+        const padX = 8, padY = 4;
+        const w = metrics.width + padX * 2;
+        const h = tileSize * 0.32 + padY * 2 + 4;
+        const bx = this.canvas.width - w - 6;
+        const by = 6;
+
+        // Background
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.beginPath();
+        ctx.roundRect(bx, by, w, h, 4);
+        ctx.fill();
+
+        // Border
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.roundRect(bx, by, w, h, 4);
+        ctx.stroke();
+
+        // Text
+        ctx.fillStyle = '#fbbf24';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(label, bx + w / 2, by + h / 2);
+        ctx.restore();
     }
 
     /**
@@ -238,6 +320,7 @@ export class Renderer {
      */
     renderStageSeparators() {
         if (!this.grid || !this.grid.getTotalStages) return;
+        if (this.viewportHeight != null) return; // viewport mode: one floor shown, no separators
         const total = this.grid.getTotalStages();
         if (total <= 1) return;
 
@@ -270,13 +353,15 @@ export class Renderer {
         if (!this.qValues) return;
 
         const { ctx, tileSize } = this;
+        const yStart = this.viewportYOffset;
+        const yEnd = this.viewportHeight != null ? yStart + this.viewportHeight : this.grid.height;
 
-        // Find min/max for color scaling
+        // Find min/max for color scaling (within viewport)
         let minQ = Infinity, maxQ = -Infinity;
-        for (let y = 0; y < this.grid.height; y++) {
+        for (let y = yStart; y < yEnd; y++) {
             for (let x = 0; x < this.grid.width; x++) {
                 const tile = this.grid.getTile(x, y);
-                if (tile !== TileType.WALL) {
+                if (tile !== TileType.WALL && this.qValues[y]) {
                     const q = this.qValues[y][x];
                     minQ = Math.min(minQ, q);
                     maxQ = Math.max(maxQ, q);
@@ -286,10 +371,12 @@ export class Renderer {
 
         const range = maxQ - minQ || 1;
 
-        for (let y = 0; y < this.grid.height; y++) {
+        for (let y = yStart; y < yEnd; y++) {
+            const cy = y - this.viewportYOffset;
             for (let x = 0; x < this.grid.width; x++) {
                 const tile = this.grid.getTile(x, y);
                 if (tile === TileType.WALL || tile === TileType.GOAL) continue;
+                if (!this.qValues[y]) continue;
 
                 const q = this.qValues[y][x];
                 const normalized = (q - minQ) / range;
@@ -302,7 +389,7 @@ export class Renderer {
                 ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.4)`;
                 ctx.fillRect(
                     x * tileSize + 2,
-                    y * tileSize + 2,
+                    cy * tileSize + 2,
                     tileSize - 4,
                     tileSize - 4
                 );
@@ -312,7 +399,7 @@ export class Renderer {
                 ctx.fillStyle = 'white';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'bottom';
-                ctx.fillText(q.toFixed(1), x * tileSize + tileSize / 2, (y + 1) * tileSize - 4);
+                ctx.fillText(q.toFixed(1), x * tileSize + tileSize / 2, (cy + 1) * tileSize - 4);
             }
         }
     }
@@ -322,6 +409,8 @@ export class Renderer {
 
         const { ctx, tileSize } = this;
         const arrowSize = tileSize * 0.25;
+        const yStart = this.viewportYOffset;
+        const yEnd = this.viewportHeight != null ? yStart + this.viewportHeight : this.grid.height;
 
         // Arrow directions for each action
         const arrows = {
@@ -331,16 +420,18 @@ export class Renderer {
             [Action.RIGHT]: { dx: 1, dy: 0 }
         };
 
-        for (let y = 0; y < this.grid.height; y++) {
+        for (let y = yStart; y < yEnd; y++) {
+            const cy = y - this.viewportYOffset;
             for (let x = 0; x < this.grid.width; x++) {
                 const tile = this.grid.getTile(x, y);
                 if (tile === TileType.WALL || tile === TileType.GOAL) continue;
+                if (!this.policy[y]) continue;
 
                 const action = this.policy[y][x];
                 const dir = arrows[action];
 
                 const centerX = x * tileSize + tileSize / 2;
-                const centerY = y * tileSize + tileSize / 2;
+                const centerY = cy * tileSize + tileSize / 2;
 
                 // Draw arrow
                 ctx.beginPath();

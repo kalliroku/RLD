@@ -15,6 +15,9 @@ import { SarsaLambda } from './game/sarsa-lambda.js';
 import { DynaQ } from './game/dyna-q.js';
 import { Reinforce } from './game/reinforce.js';
 import { ActorCritic } from './game/actor-critic.js';
+import { QVLearning } from './game/qv-learning.js';
+import { ACLA } from './game/acla.js';
+import { Ensemble } from './game/ensemble.js';
 import { sound } from './game/sound.js';
 import { DungeonEditor } from './game/editor.js';
 import { MultiStageGrid } from './game/multi-stage-grid.js';
@@ -29,6 +32,9 @@ const CHARACTERS = {
     dyna:   { name: '다이나',   algo: 'Dyna-Q',       cls: DynaQ,          desc: '상상력의 달인. 경험을 머릿속에서 반복 재생합니다.' },
     gradi:  { name: '그래디',   algo: 'REINFORCE',    cls: Reinforce,      desc: '직감형 탐험가. 확률로 판단, 다양한 경로를 시도합니다.' },
     critic: { name: '크리틱',   algo: 'Actor-Critic', cls: ActorCritic,    desc: '배우와 비평가를 겸비. 안정적이고 효율적입니다.' },
+    qvkun:  { name: 'QV군',    algo: 'QV-Learning',  cls: QVLearning,     desc: 'Q와 V를 동시에 학습. 과대추정을 줄여 안정적입니다.' },
+    acla:   { name: '아클라',   algo: 'ACLA',         cls: ACLA,           desc: '학습 오토마톤. 확률을 직접 조작해 빠르게 정책을 바꿉니다.' },
+    ensemble: { name: '앙상블', algo: 'Ensemble',     cls: Ensemble,       desc: '5개 알고리즘의 합의. 볼츠만 곱으로 최적 행동을 선택합니다.' },
 };
 
 // Dungeon config: cost to enter, first clear reward, repeat reward
@@ -85,6 +91,19 @@ const DUNGEON_ORDER = [
     'level_23_mirage'
 ];
 
+const PRESET_MULTI_DUNGEONS = {
+    preset_beginner_tower: {
+        name: "Beginner's Tower",
+        stages: ['level_01_easy', 'level_02_trap', 'level_03_maze'],
+        rules: { hpCarryOver: true, goldOnClear: true }
+    },
+    preset_algorithm_challenge: {
+        name: "Algorithm Challenge",
+        stages: ['level_13_cliff', 'level_15_multi_room', 'level_16_open_field'],
+        rules: { hpCarryOver: true, goldOnClear: true }
+    }
+};
+
 const STORAGE_KEY = 'rld_save_data';
 
 // Training speed delays (ms per step)
@@ -113,6 +132,7 @@ class Game {
 
         // Gold system & Progress
         this.gold = 100;
+        this.pendingGold = 0;
         this.clearedDungeons = new Set();
         this.unlockedDungeons = new Set(['level_01_easy']);
 
@@ -172,6 +192,10 @@ class Game {
 
         // Character UI
         this.characterDesc = document.getElementById('character-desc');
+
+        // Clear Rate UI
+        this.clearRateStat = document.getElementById('clear-rate-stat');
+        this.clearRateText = document.getElementById('clear-rate-text');
 
         // Visualization checkboxes
         this.fogOfWarCheck = document.getElementById('fog-of-war');
@@ -885,6 +909,11 @@ class Game {
         this.currentDungeon = 'dungeon_composer_temp';
         this.renderer.setGrid(this.grid);
 
+        // Viewport: show one floor at a time
+        if (this.grid.getTotalStages() > 1) {
+            this.renderer.setViewportStage(0);
+        }
+
         this.qlearning = this.createAlgorithm({ cost: 0, firstReward: 0, repeatReward: 0 });
 
         this.trainStats.innerHTML = '';
@@ -897,13 +926,21 @@ class Game {
     }
 
     loadCustomDungeonOptions() {
-        // Remove existing custom/dungeon options
+        // Remove existing custom/dungeon/preset options
         const options = [...this.dungeonSelect.options];
         options.forEach(opt => {
-            if (opt.value.startsWith('custom_') || opt.value.startsWith('dungeon_')) {
+            if (opt.value.startsWith('custom_') || opt.value.startsWith('dungeon_') || opt.value.startsWith('preset_')) {
                 opt.remove();
             }
         });
+
+        // Add preset multi-stage dungeons
+        for (const [id, preset] of Object.entries(PRESET_MULTI_DUNGEONS)) {
+            const opt = document.createElement('option');
+            opt.value = id;
+            opt.textContent = `[Preset] ${preset.name} (${preset.stages.length}F)`;
+            this.dungeonSelect.appendChild(opt);
+        }
 
         // Add single-stage custom dungeons (from Stage Library)
         const stages = DungeonEditor.getStageListStatic();
@@ -1107,6 +1144,14 @@ class Game {
                 return new SarsaLambda(this.grid, { ...baseOpts, lambda: 0.9 });
             case 'dyna':
                 return new DynaQ(this.grid, { ...baseOpts, planningSteps: 10 });
+            case 'acla':
+                return new ACLA(this.grid, {
+                    ...baseOpts,
+                    alphaActor: 0.05,
+                    alphaCritic: 0.1
+                });
+            case 'ensemble':
+                return new Ensemble(this.grid, { ...baseOpts, temperature: 1.0 });
             default:
                 return new charDef.cls(this.grid, baseOpts);
         }
@@ -1204,8 +1249,8 @@ class Game {
         // UI controls
         this.dungeonSelect.addEventListener('change', (e) => {
             const selected = e.target.value;
-            // Custom/dungeon entries don't need unlock check
-            if (selected.startsWith('custom_') || selected.startsWith('dungeon_')) {
+            // Custom/dungeon/preset entries don't need unlock check
+            if (selected.startsWith('custom_') || selected.startsWith('dungeon_') || selected.startsWith('preset_')) {
                 this.loadDungeon(selected);
                 return;
             }
@@ -1318,6 +1363,14 @@ class Game {
 
         this.currentDungeon = name;
 
+        // Load and display saved clear rate for this dungeon+character
+        const savedRate = this.loadClearRate(name);
+        if (savedRate !== null) {
+            this.showClearRate(savedRate);
+        } else {
+            this.hideClearRate();
+        }
+
         // Custom single-stage: load from Stage Library
         if (name.startsWith('custom_')) {
             const customId = name.replace('custom_', '');
@@ -1372,6 +1425,11 @@ class Game {
             }
             this.renderer.setGrid(this.grid);
 
+            // Viewport: show one floor at a time for multi-stage
+            if (this.grid.getTotalStages && this.grid.getTotalStages() > 1) {
+                this.renderer.setViewportStage(0);
+            }
+
             const config = { cost: 0, firstReward: 0, repeatReward: 0 };
             this.qlearning = this.createAlgorithm(config);
             const loaded = this.loadQTable();
@@ -1383,6 +1441,37 @@ class Game {
             const floorInfo = resolved.grids.length > 1 ? ` (${resolved.grids.length} Floors)` : '';
             const loadNote = loaded ? ' (Data loaded)' : '';
             this.showMessage(`[Dungeon] ${dungeonData.name}${floorInfo} [${charDef.name}]${loadNote}`, 'info');
+
+            if (loaded) {
+                this.updateVisualization();
+            }
+
+            this.reset();
+            return;
+        }
+
+        // Preset multi-stage dungeons
+        if (name.startsWith('preset_') && PRESET_MULTI_DUNGEONS[name]) {
+            const preset = PRESET_MULTI_DUNGEONS[name];
+            const grids = preset.stages.map(s => loadDungeon(s));
+            this.grid = new MultiStageGrid(grids, preset.rules);
+            this.renderer.setGrid(this.grid);
+
+            // Viewport: show one floor at a time
+            if (this.grid.getTotalStages() > 1) {
+                this.renderer.setViewportStage(0);
+            }
+
+            const config = { cost: 0, firstReward: 0, repeatReward: 0 };
+            this.qlearning = this.createAlgorithm(config);
+            const loaded = this.loadQTable();
+
+            this.trainStats.innerHTML = '';
+            this.renderer.setQData(null, null);
+
+            const charDef = CHARACTERS[this.currentCharacter];
+            const loadNote = loaded ? ' (Data loaded)' : '';
+            this.showMessage(`[Preset] ${preset.name} (${preset.stages.length}F) [${charDef.name}]${loadNote}`, 'info');
 
             if (loaded) {
                 this.updateVisualization();
@@ -1472,6 +1561,12 @@ class Game {
         this.renderer.setAgent(this.agent);
         this.steps = 0;
         this.done = false;
+        this.pendingGold = 0;
+
+        // Viewport: reset to stage 0 for multi-stage grids
+        if (this.grid.getTotalStages && this.grid.getTotalStages() > 1) {
+            this.renderer.setViewportStage(0);
+        }
 
         this.updateUI();
         this.render();
@@ -1499,7 +1594,8 @@ class Game {
                 sound.victory();
                 const stageNum = this.grid.getCurrentStageIndex();
                 const total = this.grid.getTotalStages();
-                this.showMessage(`Floor ${stageNum}/${total} reached! Advancing...`, 'success');
+                this.renderer.setViewportStage(stageNum);
+                this.showMessage(`Floor ${stageNum + 1}/${total} reached! Advancing...`, 'success');
                 this.renderer.flash('rgba(34, 197, 94, 0.3)');
                 this.updateUI();
                 this.render();
@@ -1513,11 +1609,15 @@ class Game {
                 this.handleVictory();
             } else if (tile === TileType.PIT) {
                 sound.pit();
-                this.showMessage(`FELL INTO PIT! Instant death...`, 'danger');
+                const lostMsg = this.pendingGold > 0 ? ` ${this.pendingGold}G lost!` : '';
+                this.pendingGold = 0;
+                this.showMessage(`FELL INTO PIT! Instant death...${lostMsg}`, 'danger');
                 this.renderer.flash('rgba(0, 0, 0, 0.8)');
             } else {
                 sound.death();
-                this.showMessage(`DIED! Steps: ${this.steps}`, 'danger');
+                const lostMsg = this.pendingGold > 0 ? ` ${this.pendingGold}G lost!` : '';
+                this.pendingGold = 0;
+                this.showMessage(`DIED! Steps: ${this.steps}${lostMsg}`, 'danger');
                 this.renderer.flash('rgba(239, 68, 68, 0.5)');
             }
         } else if (!result.success) {
@@ -1545,8 +1645,13 @@ class Game {
             const monsterKey = `${this.agent.x},${this.agent.y}`;
             this.killedMonsters.add(monsterKey);
             this.grid.setTile(this.agent.x, this.agent.y, TileType.EMPTY);
-            this.gold += 5;
-            this.showMessage(`MONSTER! HP -30, Defeated! +5G`, 'warning');
+            if (this.grid.getTotalStages && this.grid.getTotalStages() > 1) {
+                this.pendingGold += 5;
+                this.showMessage(`MONSTER! HP -30, Defeated! +5G (Pending)`, 'warning');
+            } else {
+                this.gold += 5;
+                this.showMessage(`MONSTER! HP -30, Defeated! +5G`, 'warning');
+            }
             this.renderer.flash('rgba(147, 51, 234, 0.4)');
         } else {
             sound.move();
@@ -1557,11 +1662,18 @@ class Game {
     }
 
     handleVictory() {
-        // Custom dungeons: no economy impact
-        if (this.currentDungeon.startsWith('custom_') || this.currentDungeon.startsWith('dungeon_')) {
+        // Custom/preset dungeons: no economy impact (except pending gold)
+        if (this.currentDungeon.startsWith('custom_') || this.currentDungeon.startsWith('dungeon_') || this.currentDungeon.startsWith('preset_')) {
             sound.victory();
             const floorInfo = this.grid.getTotalStages ? ` (${this.grid.getTotalStages()} Floors)` : '';
-            this.showMessage(`CLEAR!${floorInfo} Steps: ${this.steps}`, 'success');
+            let goldMsg = '';
+            if (this.pendingGold > 0) {
+                this.gold += this.pendingGold;
+                goldMsg = ` +${this.pendingGold}G confirmed!`;
+                this.pendingGold = 0;
+                this.saveProgress();
+            }
+            this.showMessage(`CLEAR!${floorInfo} Steps: ${this.steps}${goldMsg}`, 'success');
             this.renderer.flash('rgba(34, 197, 94, 0.4)');
             this.updateUI();
             return;
@@ -1692,6 +1804,11 @@ class Game {
         this.steps = 0;
         this.done = false;
 
+        // Viewport: reset to stage 0 for multi-stage visual training
+        if (this.grid.getTotalStages && this.grid.getTotalStages() > 1) {
+            this.renderer.setViewportStage(0);
+        }
+
         this.updateUI();
         this.render();
 
@@ -1755,6 +1872,15 @@ class Game {
         this.render();
 
         if (result.done) {
+            // Multi-stage: try advancing to next floor before ending episode
+            if (this.grid.tryAdvanceStage && this.grid.tryAdvanceStage(agent)) {
+                const stageNum = this.grid.getCurrentStageIndex();
+                this.renderer.setViewportStage(stageNum);
+                this.render();
+                this.scheduleVisualStep();
+                return;
+            }
+
             const success = agent.hp > 0 && this.grid.getTile(agent.x, agent.y) === TileType.GOAL;
             this.finishVisualEpisode(success);
             return;
@@ -1880,6 +2006,14 @@ class Game {
             this.trainingStepTimer = null;
         }
 
+        // Compute and save clear rate
+        const successCount = this.recentResults.filter(r => r).length;
+        const finalClearRate = this.recentResults.length > 0
+            ? Math.round(successCount / this.recentResults.length * 100)
+            : 0;
+        this.saveClearRate(this.currentDungeon, finalClearRate);
+        this.showClearRate(finalClearRate);
+
         this.saveQTable();
         this.renderer.fogOfWar = this.fogOfWarCheck.checked;
         this.reset();
@@ -1916,6 +2050,44 @@ class Game {
         this.finishTraining(`Stopped at episode ${this.trainingEpisode}. Clear: ${clearRate}%`);
     }
 
+    // ========== Clear Rate ==========
+
+    saveClearRate(dungeonId, rate) {
+        try {
+            const key = `rld_clearrate_${this.currentCharacter}_${dungeonId}`;
+            localStorage.setItem(key, JSON.stringify(rate));
+        } catch (e) {
+            console.warn('Failed to save clear rate:', e);
+        }
+    }
+
+    loadClearRate(dungeonId) {
+        try {
+            const key = `rld_clearrate_${this.currentCharacter}_${dungeonId}`;
+            const saved = localStorage.getItem(key);
+            return saved !== null ? JSON.parse(saved) : null;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    showClearRate(rate) {
+        this.clearRateStat.style.display = '';
+        this.clearRateText.textContent = `${rate}%`;
+        if (rate >= 80) {
+            this.clearRateText.style.color = '#4ade80';
+        } else if (rate >= 30) {
+            this.clearRateText.style.color = '#fbbf24';
+        } else {
+            this.clearRateText.style.color = '#ef4444';
+        }
+    }
+
+    hideClearRate() {
+        this.clearRateStat.style.display = 'none';
+        this.clearRateText.textContent = '-';
+    }
+
     // ========== End Training System ==========
 
     updateVisualization() {
@@ -1928,7 +2100,9 @@ class Game {
     }
 
     updateUI() {
-        this.goldText.textContent = this.gold;
+        this.goldText.textContent = this.pendingGold > 0
+            ? `${this.gold} (+${this.pendingGold})`
+            : this.gold;
 
         if (!this.agent) return;
 
