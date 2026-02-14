@@ -24,8 +24,10 @@ AI 모험가를 훈련시켜 던전을 공략하거나, 자신만의 던전을 �
 | Phase 8 | Q-Table 저장, 모바일 터치, AI 학습 시각화 | ✅ 완료 |
 | Phase 9 | 쇼케이스 스테이지 확장 + 골드 소비 | ✅ 완료 |
 | Phase 10 | 던전 에디터 (브라우저 내 제작 도구) | ✅ 완료 |
-| Phase 11 | NPC 가차 시스템 | ⏳ 예정 |
-| Phase 12 | 추가 알고리즘 (DQN, PPO) | ⏳ 예정 |
+| Phase 11 | 멀티스테이지 던전 | ✅ 완료 |
+| Phase 12 | Wiering & van Hasselt 앙상블 (QV, ACLA, Ensemble) | ✅ 완료 |
+| Phase 13 | NPC 가차 시스템 | ⏳ 예정 |
+| Phase 14 | 추가 알고리즘 (DQN, PPO) | ⏳ 예정 |
 
 ## 설치
 
@@ -117,7 +119,7 @@ RLD/
 │   ├── css/style.css   # 스타일
 │   └── js/
 │       ├── main.js     # 게임 엔트리포인트
-│       └── game/       # 그리드, 에이전트, 8개 RL 알고리즘, 렌더러, 에디터, 사운드
+│       └── game/       # 그리드, 에이전트, 11개 RL 알고리즘, 렌더러, 에디터, 사운드
 ├── assets/
 │   └── dungeons/       # 던전 파일들 (12개)
 ├── tests/
@@ -155,7 +157,7 @@ RLD/
 
 ## 주요 기능
 
-- **23개 던전**: 튜토리얼부터 쇼케이스 스테이지까지 난이도별 진행
+- **25개 던전**: 튜토리얼부터 논문 벤치마크까지 난이도별 진행
 - **골드 이코노미**: 던전 입장비, 클리어 보상, 몬스터 처치 보상
 - **던전 언락**: 이전 던전 클리어 시 다음 던전 해금
 - **전장의 안개**: 방문한 칸만 보이는 탐험 시스템
@@ -166,7 +168,8 @@ RLD/
 - **모바일 터치 컨트롤**: 스와이프 + D-pad
 - **AI 학습 시각화**: 4단계 속도로 학습 과정 실시간 관찰
 - **8비트 사운드**: Web Audio API 기반 효과음
-- **8개 RL 알고리즘**: Q-Learning, SARSA, Monte Carlo, SARSA(λ), Dyna-Q, REINFORCE, Actor-Critic, Local Q-Learning
+- **11개 RL 알고리즘**: Q-Learning, SARSA, Monte Carlo, SARSA(λ), Dyna-Q, REINFORCE, Actor-Critic, Local Q-Learning, QV-Learning, ACLA, Ensemble
+- **앙상블 시스템**: Boltzmann Multiplication으로 5개 알고리즘 결합 (Wiering & van Hasselt, 2008)
 - **던전 에디터**: 브라우저 내 타일 배치, BFS 검증, 저장/불러오기, 커스텀 던전 AI 훈련
 
 ## 향후 계획
