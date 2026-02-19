@@ -170,6 +170,7 @@ RLD/
 - **8비트 사운드**: Web Audio API 기반 효과음
 - **11개 RL 알고리즘**: Q-Learning, SARSA, Monte Carlo, SARSA(λ), Dyna-Q, REINFORCE, Actor-Critic, Local Q-Learning, QV-Learning, ACLA, Ensemble
 - **앙상블 시스템**: Boltzmann Multiplication으로 5개 알고리즘 결합 (Wiering & van Hasselt, 2008)
+- **멀티스테이지 던전**: 여러 층을 묶어 하나의 던전으로 구성, HP 계승, 골드 보류
 - **던전 에디터**: 브라우저 내 타일 배치, BFS 검증, 저장/불러오기, 커스텀 던전 AI 훈련
 
 ## 향후 계획
