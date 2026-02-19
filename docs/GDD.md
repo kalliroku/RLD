@@ -540,7 +540,7 @@ web/css/style.css       # 탭, 팔레트, 도구, 에디터 모드 스타일
 
 ---
 
-## 12. Multi-Stage Dungeon System (계획)
+## 12. Multi-Stage Dungeon System (구현 완료)
 
 ### 12.1 개요
 여러 스테이지(층)를 묶어 하나의 "던전"으로 구성하는 시스템. 스테이지는 독립적으로 생성/관리되는 재사용 가능한 빌딩 블록이며, 던전은 스테이지들의 조합 레시피.
@@ -577,6 +577,39 @@ Virtual Coordinate Stacking 방식으로 여러 Grid를 세로로 쌓아 기존 
 
 ---
 
-*Document Version: 0.5*
-*Last Updated: 2026-02-14*
+## 13. 앙상블 알고리즘 시스템 (구현 완료)
+
+Wiering & van Hasselt (2008) "Ensemble Algorithms in Reinforcement Learning" 논문 기반 구현.
+
+### 13.1 새 알고리즘 3종
+
+| 알고리즘 | 캐릭터 | 파일 | 핵심 |
+|---------|--------|------|------|
+| QV-Learning | QV군 | `qv-learning.js` | Q(s,a) + V(s) 이중 테이블, 과대추정 감소 |
+| ACLA | 아클라 | `acla.js` | Learning Automaton, 확률 벡터 직접 조작 |
+| Ensemble (BM) | 앙상블 | `ensemble.js` | 5개 서브 알고리즘 Boltzmann Multiplication 결합 |
+
+### 13.2 Boltzmann Multiplication
+
+```
+combined(a) = ∏_k p_k(a|s)   (모든 서브 알고리즘의 확률 곱)
+정규화 후 행동 선택
+```
+
+- **Q-based** (QLearning, SARSA, QVLearning): `softmax(Q/temperature)` → 확률 변환
+- **Prob-based** (ActorCritic, ACLA): 이미 확률 출력이므로 그대로 사용
+- 서브 알고리즘 epsilon = 0 (탐험은 앙상블 레벨에서만)
+
+### 13.3 설계 주의점: 거부권(Veto) 효과
+
+Boltzmann Multiplication은 확률을 **곱**하므로, 하나의 서브 알고리즘이 특정 행동에 0%를 출력하면 전체 앙상블도 0%가 됨. 이는 구덩이(P, 즉사) 같은 극단적 위험 요소에서 Actor-Critic이 학습 실패 시 발생. 해결: 즉사 대신 HP 데미지(Monster) 사용으로 모든 서브 알고리즘이 회피 학습 가능하도록 설계.
+
+### 13.4 Paper Maze 벤치마크
+
+논문의 6×9 그리드를 Lv.24(원본), Lv.25(확장판)으로 재현. 모든 알고리즘 100% 수렴 확인.
+
+---
+
+*Document Version: 0.6*
+*Last Updated: 2026-02-19*
 *Author: RLD Team*
