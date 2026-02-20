@@ -81,18 +81,42 @@ export class Agent {
         return isPassable(tile);
     }
 
+    /**
+     * Apply stochastic transition if grid is slippery (FrozenLake style).
+     * With slippery: 1/3 intended, 1/3 perpendicular left, 1/3 perpendicular right.
+     */
+    _resolveAction(action, grid) {
+        if (!grid.slippery) return action;
+
+        const r = Math.random();
+        if (r < 1/3) {
+            return action; // Intended direction
+        } else if (r < 2/3) {
+            // Perpendicular left (rotate -90°)
+            // UP->LEFT, DOWN->RIGHT, LEFT->DOWN, RIGHT->UP
+            return [Action.LEFT, Action.RIGHT, Action.DOWN, Action.UP][action];
+        } else {
+            // Perpendicular right (rotate +90°)
+            // UP->RIGHT, DOWN->LEFT, LEFT->UP, RIGHT->DOWN
+            return [Action.RIGHT, Action.LEFT, Action.UP, Action.DOWN][action];
+        }
+    }
+
     move(action, grid) {
         const stepReward = -0.1;  // Small penalty for each step
 
-        if (!this.canMove(action, grid)) {
-            // Wall bump
+        // Stochastic transition: resolve actual action
+        const resolvedAction = this._resolveAction(action, grid);
+
+        if (!this.canMove(resolvedAction, grid)) {
+            // Wall bump (stay in place, still penalized)
             const penalty = stepReward - 1;
             this.totalReward += penalty;
             return { reward: penalty, done: false, success: false };
         }
 
-        // Execute move
-        const next = this.getNextPosition(action);
+        // Execute move with resolved action
+        const next = this.getNextPosition(resolvedAction);
         this.x = next.x;
         this.y = next.y;
         this.turnCount++;

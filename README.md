@@ -26,8 +26,10 @@ AI 모험가를 훈련시켜 던전을 공략하거나, 자신만의 던전을 �
 | Phase 10 | 던전 에디터 (브라우저 내 제작 도구) | ✅ 완료 |
 | Phase 11 | 멀티스테이지 던전 | ✅ 완료 |
 | Phase 12 | Wiering & van Hasselt 앙상블 (QV, ACLA, Ensemble) | ✅ 완료 |
-| Phase 13 | NPC 가차 시스템 | ⏳ 예정 |
-| Phase 14 | 추가 알고리즘 (DQN, PPO) | ⏳ 예정 |
+| Phase 13 | DQN 실험 (Vanilla JS MLP) — 코드 완성, UI 미등록 | 🔬 실험 |
+| Phase 14 | 논문 기반 검토 + Expected SARSA, Double Q-Learning, 확률적 던전, 25×25 미로 | ✅ 완료 |
+| Phase 15 | 대규모 던전 + 절차적 생성 | ⏳ 예정 |
+| Phase 16 | NPC 가차 시스템 | ⏳ 예정 |
 
 ## 설치
 
@@ -119,7 +121,7 @@ RLD/
 │   ├── css/style.css   # 스타일
 │   └── js/
 │       ├── main.js     # 게임 엔트리포인트
-│       └── game/       # 그리드, 에이전트, 11개 RL 알고리즘, 렌더러, 에디터, 사운드
+│       └── game/       # 그리드, 에이전트, 11개 RL 알고리즘 + DQN(실험), 렌더러, 에디터, 사운드
 ├── assets/
 │   └── dungeons/       # 던전 파일들 (12개)
 ├── tests/
@@ -157,7 +159,7 @@ RLD/
 
 ## 주요 기능
 
-- **25개 던전**: 튜토리얼부터 논문 벤치마크까지 난이도별 진행
+- **29개 던전**: 튜토리얼부터 논문 벤치마크, 확률적 전이 환경, 25×25 대규모 미로까지
 - **골드 이코노미**: 던전 입장비, 클리어 보상, 몬스터 처치 보상
 - **던전 언락**: 이전 던전 클리어 시 다음 던전 해금
 - **전장의 안개**: 방문한 칸만 보이는 탐험 시스템
@@ -168,24 +170,50 @@ RLD/
 - **모바일 터치 컨트롤**: 스와이프 + D-pad
 - **AI 학습 시각화**: 4단계 속도로 학습 과정 실시간 관찰
 - **8비트 사운드**: Web Audio API 기반 효과음
-- **11개 RL 알고리즘**: Q-Learning, SARSA, Monte Carlo, SARSA(λ), Dyna-Q, REINFORCE, Actor-Critic, Local Q-Learning, QV-Learning, ACLA, Ensemble
+- **13개 RL 알고리즘**: Q-Learning, SARSA, Monte Carlo, SARSA(λ), Dyna-Q, REINFORCE, Actor-Critic, Local Q-Learning, QV-Learning, ACLA, Ensemble, Expected SARSA, Double Q-Learning
+- **확률적 전이 환경**: FrozenLake 스타일 미끄러운 바닥 (Slippery) 지원
 - **앙상블 시스템**: Boltzmann Multiplication으로 5개 알고리즘 결합 (Wiering & van Hasselt, 2008)
 - **멀티스테이지 던전**: 여러 층을 묶어 하나의 던전으로 구성, HP 계승, 골드 보류
 - **던전 에디터**: 브라우저 내 타일 배치, BFS 검증, 저장/불러오기, 커스텀 던전 AI 훈련
 
 ## 향후 계획
 
-1. **NPC 가차**: 알고리즘 캐릭터화
-   - 딥큐 (Rare) - DQN
-   - 피피오 (Epic) - PPO
-   - 삭 (Legendary) - SAC
-2. **DQN/PPO**: 신경망 기반 알고리즘
+1. **추가 Tabular 알고리즘**: n-step Tree Backup, Prioritized Sweeping
+2. **대규모 던전**: 50×50 미로, 절차적 생성 (BSP + Cellular Automata)
+3. **NPC 가차**: 알고리즘 캐릭터화 (피피오/PPO, 삭/SAC 등)
+4. **Neural 알고리즘**: DQN 재활성화 (50×50+), PPO, A2C
 
-## 참고 자료
+## 참고 자료 / 논문 출처
 
-- [DeepMind RL Course](https://www.deepmind.com/learning-resources/introduction-to-reinforcement-learning-with-david-silver)
+**강의 자료**
+- [DeepMind RL Course (David Silver)](https://www.deepmind.com/learning-resources/introduction-to-reinforcement-learning-with-david-silver) — Q-Learning, SARSA, MC, SARSA(λ), Dyna-Q, REINFORCE, Actor-Critic
 - [Hugging Face Deep RL Course](https://huggingface.co/learn/deep-rl-course/unit0/introduction)
 - [Gymnasium Documentation](https://gymnasium.farama.org/)
+- [Sutton & Barto (2018) "Reinforcement Learning: An Introduction" 2nd ed.](http://incompleteideas.net/book/the-book-2nd.html)
+
+**논문 — 현재 구현**
+- Watkins & Dayan (1992) "Q-learning", Machine Learning — Q-Learning
+- Rummery & Niranjan (1994) "On-line Q-learning using connectionist systems" — SARSA
+- Sutton (1991) "Dyna, an integrated architecture for learning, planning, and reacting" — Dyna-Q
+- Williams (1992) "Simple statistical gradient-following algorithms for connectionist RL" — REINFORCE
+- Barto, Sutton & Anderson (1983) "Neuronlike adaptive elements..." — Actor-Critic
+- Wiering & van Hasselt (2008) "Ensemble Algorithms in Reinforcement Learning", IEEE TSMCB — QV-Learning, ACLA, Ensemble (Boltzmann Multiplication)
+- Mnih et al. (2015) "Human-level control through deep reinforcement learning", Nature 518 — DQN (실험적)
+- Farama Foundation, MiniGrid — 로컬 관측(egocentric partial observation) 상태 인코딩 참조
+
+**논문 — 추가 예정 알고리즘**
+- van Seijen et al. (2009) "A Theoretical and Empirical Analysis of Expected Sarsa" — Expected SARSA
+- van Hasselt (2010) "Double Q-learning", NeurIPS — Double Q-Learning
+- Moore & Atkeson (1993) "Prioritized Sweeping", Machine Learning — Prioritized Sweeping
+
+**벤치마킹 연구**
+- "Benchmarking Tabular RL Algorithms" (TDS, 2025) — 25×25까지 체계적 비교
+- "Revisiting Benchmarking of Tabular RL Methods" (TDS) — n-step Tree Backup 최우수
+
+**표준 벤치마크 환경**
+- Gymnasium: CliffWalking, WindyGridworld, FrozenLake
+- MiniGrid (Farama): Empty, FourRooms, DoorKey, LavaGap, MultiRoom
+- AI Safety Gridworlds (DeepMind, 2017)
 
 ## 라이선스
 
