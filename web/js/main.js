@@ -18,6 +18,8 @@ import { ActorCritic } from './game/actor-critic.js';
 import { QVLearning } from './game/qv-learning.js';
 import { ACLA } from './game/acla.js';
 import { Ensemble } from './game/ensemble.js';
+import { ExpectedSarsa } from './game/expected-sarsa.js';
+import { DoubleQLearning } from './game/double-qlearning.js';
 import { sound } from './game/sound.js';
 import { DungeonEditor } from './game/editor.js';
 import { MultiStageGrid } from './game/multi-stage-grid.js';
@@ -35,6 +37,8 @@ const CHARACTERS = {
     qvkun:  { name: 'QV군',    algo: 'QV-Learning',  cls: QVLearning,     desc: 'Q와 V를 동시에 학습. 과대추정을 줄여 안정적입니다.' },
     acla:   { name: '아클라',   algo: 'ACLA',         cls: ACLA,           desc: '학습 오토마톤. 확률을 직접 조작해 빠르게 정책을 바꿉니다.' },
     ensemble: { name: '앙상블', algo: 'Ensemble',     cls: Ensemble,       desc: '5개 알고리즘의 합의. 볼츠만 곱으로 최적 행동을 선택합니다.' },
+    exsa:     { name: '에크사', algo: 'Expected SARSA', cls: ExpectedSarsa, desc: '기대값으로 학습. 분산 없는 업데이트로 Q군과 사르사를 모두 지배합니다.' },
+    doubleq:  { name: '더블Q', algo: 'Double Q',     cls: DoubleQLearning, desc: '두 개의 눈으로 편향 없이 판단. 과대추정의 해결사.' },
 };
 
 // Dungeon config: cost to enter, first clear reward, repeat reward
@@ -63,7 +67,11 @@ const DUNGEON_CONFIG = {
     level_22_arena: { cost: 0, firstReward: 200, repeatReward: 20, useHpState: true },
     level_23_mirage: { cost: 0, firstReward: 150, repeatReward: 15 },
     level_24_paper_maze: { cost: 0, firstReward: 100, repeatReward: 10 },
-    level_25_paper_hard: { cost: 0, firstReward: 120, repeatReward: 12 }
+    level_25_paper_hard: { cost: 0, firstReward: 120, repeatReward: 12 },
+    level_26_frozen_lake: { cost: 0, firstReward: 150, repeatReward: 15, slippery: true },
+    level_27_ice_maze: { cost: 0, firstReward: 200, repeatReward: 20, slippery: true },
+    level_28_frozen_cliff: { cost: 0, firstReward: 200, repeatReward: 20, slippery: true },
+    level_29_big_maze: { cost: 0, firstReward: 500, repeatReward: 50, maxSteps: 1000 }
 };
 
 // Dungeon order for unlock progression
@@ -92,7 +100,11 @@ const DUNGEON_ORDER = [
     'level_22_arena',
     'level_23_mirage',
     'level_24_paper_maze',
-    'level_25_paper_hard'
+    'level_25_paper_hard',
+    'level_26_frozen_lake',
+    'level_27_ice_maze',
+    'level_28_frozen_cliff',
+    'level_29_big_maze'
 ];
 
 const PRESET_MULTI_DUNGEONS = {
@@ -1108,7 +1120,11 @@ class Game {
             level_22_arena: 'Monster Arena',
             level_23_mirage: 'The Mirage',
             level_24_paper_maze: 'Paper Maze',
-            level_25_paper_hard: 'Paper Maze+'
+            level_25_paper_hard: 'Paper Maze+',
+            level_26_frozen_lake: 'Frozen Lake',
+            level_27_ice_maze: 'Ice Maze',
+            level_28_frozen_cliff: 'Frozen Cliff',
+            level_29_big_maze: 'Big Maze (25×25)'
         };
         return names[dungeonId] || dungeonId;
     }
@@ -1488,10 +1504,19 @@ class Game {
         }
 
         this.grid = loadDungeon(name);
+
+        // Apply dungeon-specific grid properties
+        const config = DUNGEON_CONFIG[name] || { cost: 0, firstReward: 100, repeatReward: 10 };
+        if (config.slippery) {
+            this.grid.slippery = true;
+        }
+        if (config.maxSteps) {
+            this.grid.suggestedMaxSteps = config.maxSteps;
+        }
+
         this.renderer.setGrid(this.grid);
 
         // Initialize algorithm for this dungeon (based on character)
-        const config = DUNGEON_CONFIG[name] || { cost: 0, firstReward: 100, repeatReward: 10 };
         this.qlearning = this.createAlgorithm(config);
 
         // Try to load saved Q-Table
@@ -1502,9 +1527,10 @@ class Game {
 
         const charDef = CHARACTERS[this.currentCharacter];
         const hpNote = config.useHpState ? ' [HP-Aware]' : '';
+        const slipNote = config.slippery ? ' [Slippery ❄️]' : '';
         const charNote = charDef ? ` [${charDef.name}]` : '';
         const loadNote = loaded ? ' (Data loaded)' : '';
-        this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G${hpNote}${charNote}${loadNote}`, 'info');
+        this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G${hpNote}${slipNote}${charNote}${loadNote}`, 'info');
 
         if (loaded) {
             this.updateVisualization();
@@ -1831,7 +1857,7 @@ class Game {
         if (!this.isTraining || !this.trainingAgent) return;
 
         const agent = this.trainingAgent;
-        const maxSteps = 200;
+        const maxSteps = this.grid.suggestedMaxSteps || 200;
 
         if (this.trainingSteps >= maxSteps || this.done) {
             this.finishVisualEpisode(false);

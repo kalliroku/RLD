@@ -53,7 +53,7 @@
 ### 3.1 던전 시스템 (Grid World)
 
 #### 3.1.1 기본 구조
-- **크기**: 최소 5x5 ~ 최대 20x20
+- **크기**: 최소 5x5 ~ 최대 50x50 (현재 구현: 5x5~19x12, 대규모 확장 예정)
 - **시작점**: 모험가 스폰 위치 (S)
 - **목표점**: 클리어 조건 (G)
 - **시야**: 모험가 주변 N칸만 관측 가능 (부분 관측)
@@ -169,9 +169,9 @@ rewards = {
 
 David Silver UCL RL 강의 기반으로 알고리즘을 캐릭터화. 각 캐릭터는 실제 다른 RL 알고리즘으로 학습하며, 던전에서 눈에 보이는 행동 차이를 보여줌.
 
-**현재 구현된 캐릭터 (11종)**
+**현재 구현된 캐릭터 (13종)**
 
-| 캐릭터 | 알고리즘 | 강의 | 핵심 특성 | 설명 |
+| 캐릭터 | 알고리즘 | 강의/논문 | 핵심 특성 | 설명 |
 |--------|---------|------|----------|------|
 | **Q군** | Q-Learning | L5 | Off-policy, 낙관적 | 좌표를 외워서 학습. 던전별 전문가. |
 | **스카우트** | Local Q-Learning | L5 | 관찰형 전이학습 | 주변을 관찰해서 학습. 던전 간 경험 공유. |
@@ -181,11 +181,50 @@ David Silver UCL RL 강의 기반으로 알고리즘을 캐릭터화. 각 캐릭
 | **다이나** | Dyna-Q | L8 | 모델 기반 계획 | 상상력의 달인. 경험을 머릿속에서 반복 재생. |
 | **그래디** | REINFORCE | L7 | 정책 경사법 | 직감형 탐험가. 확률로 판단, 다양한 경로 시도. |
 | **크리틱** | Actor-Critic | L7 | 가치+정책 동시 학습 | 배우와 비평가를 겸비. 안정적이고 효율적. |
-| **QV군** | QV-Learning | 논문 | Q+V 이중 학습 | Q와 V를 동시에 학습. 과대추정을 줄여 안정적. |
-| **아클라** | ACLA | 논문 | 학습 오토마톤 | 확률을 직접 조작해 빠르게 정책을 바꿈. |
-| **앙상블** | Ensemble (BM) | 논문 | 5알고리즘 합의 | 볼츠만 곱으로 최적 행동을 선택. |
+| **QV군** | QV-Learning | 논문¹ | Q+V 이중 학습 | Q와 V를 동시에 학습. 과대추정을 줄여 안정적. |
+| **아클라** | ACLA | 논문¹ | 학습 오토마톤 | 확률을 직접 조작해 빠르게 정책을 바꿈. |
+| **앙상블** | Ensemble (BM) | 논문¹ | 5알고리즘 합의 | 볼츠만 곱으로 최적 행동을 선택. |
+| **에크사** | Expected SARSA | 논문² | 기대값 업데이트 | 분산 0 업데이트. Q군과 사르사를 모두 지배. |
+| **더블Q** | Double Q-Learning | 논문³ | 과대추정 해결 | 두 Q-table로 편향 없는 판단. |
 
-> QV-Learning, ACLA, Ensemble은 Wiering & van Hasselt (2008) "Ensemble Algorithms in Reinforcement Learning" 논문 기반.
+> ¹ QV-Learning, ACLA, Ensemble: Wiering & van Hasselt (2008) "Ensemble Algorithms in Reinforcement Learning"
+> ² Expected SARSA: van Seijen et al. (2009) "A Theoretical and Empirical Analysis of Expected Sarsa"
+> ³ Double Q-Learning: van Hasselt (2010) "Double Q-learning", NeurIPS
+
+**DQN 실험 (UI 미등록, 코드만 보존)**
+
+DQN(Mnih et al. 2015)을 Vanilla JS로 실험적 구현 완료 (`nn.js`, `dqn.js`). 소규모 그리드월드에서 탭형 방식 대비 이점이 없어 UI에는 등록하지 않음. 향후 50×50 이상 대규모 던전에서 로컬 관측 윈도우와 함께 활용 예정. 상세 기록: `docs/devlog/2026-02-20-dqn-implementation.md`
+
+**알고리즘별 최적 환경 (Phase 14 논문 검토 결과)**
+
+| 환경 유형 | 최적 알고리즘 | 논문 근거 |
+|----------|-------------|----------|
+| 결정적 소규모 (≤15×15) | Q-Learning, SARSA, Dyna-Q | 모두 빠르게 수렴, 차이 미미 |
+| 절벽/위험 인접 경로 | SARSA | On-policy로 탐험 실수 고려 (Sutton & Barto Ch.6) |
+| 확률적 전이 | Expected SARSA | 분산 0 업데이트 (van Seijen et al., 2009) |
+| 희소/지연 보상 | SARSA(λ) | 적격 흔적으로 크레딧 전파 |
+| 넓은 개방 공간 | Dyna-Q | 모델 기반 계획으로 10배 빠른 수렴 (Sutton, 1991) |
+| 대규모 (50×50) | MC > Dyna-Q > Q-Learning | TDS 벤치마킹 연구 |
+| 다양한 미로 | Ensemble (BM) | 단일 알고리즘은 모든 문제에서 우세하지 않음 (Wiering & van Hasselt, 2008) |
+
+> 50×50 벤치마크 순위: Value Iteration > MC > Dyna-Q > Q-Learning > SARSA-n (TDS Benchmarking Study, 2025)
+
+**Tabular vs Neural 교차점 (Phase 14 스케일링 분석)**
+
+| 그리드 크기 | 상태 수 | Tabular | Neural |
+|-----------|--------|---------|--------|
+| ≤25×25 | ≤625 | ✅ 엄격히 우수 | 불필요 |
+| 25×25~50×50 | 625~2,500 | ⚠️ 느림 | 대등~약간 우수 |
+| ≥50×50 | ≥2,500 | ❌ 비실용적 | ✅ 필수 |
+
+**추가 예정 알고리즘 (Phase 14+)**
+
+| 알고리즘 | 출처 | 우선순위 | 이유 |
+|---------|------|:--------:|------|
+| Expected SARSA | van Seijen et al. (2009) | 🥇 | Q-Learning과 SARSA를 포함하는 일반화, 분산 0 |
+| Double Q-Learning | van Hasselt (2010) | 🥈 | 확률적 환경에서 과대추정 해결 |
+| n-step Tree Backup | Sutton & Barto Ch.7 | 🥉 | 벤치마크 전체 1위 tabular 알고리즘 |
+| Prioritized Sweeping | Moore & Atkeson (1993) | 4위 | Dyna-Q 개선, 희소 보상 최적 |
 
 **쇼케이스 던전 (알고리즘별 차이 확인용)**
 
@@ -204,6 +243,10 @@ David Silver UCL RL 강의 기반으로 알고리즘을 캐릭터화. 각 캐릭
 | Lv.23 The Mirage | Monte Carlo | 골드 줄줄이+구덩이 함정, MC 1회 사망으로 즉시 학습 |
 | Lv.24 Paper Maze | 앙상블 | Wiering & van Hasselt (2008) 논문 원본 6×9 그리드 벤치마크 |
 | Lv.25 Paper Maze+ | 앙상블 | 논문 미로에 함정·힐·몬스터·골드 추가, 서브 알고리즘별 위험 평가 차이 |
+| Lv.26 Frozen Lake | Expected SARSA | 미끄러운 바닥 (1/3 확률 전이), 확률적 환경에서 분산 감소 효과 |
+| Lv.27 Ice Maze | Double Q-Learning | 미끄러운 미로, 벽이 안전장치 역할, 과대추정 편향 비교 |
+| Lv.28 Frozen Cliff | Exp SARSA vs SARSA | 미끄러운 절벽, 확률적 전이에서 on-policy 안전성 비교 |
+| Lv.29 Big Maze | 스케일링 테스트 | 25×25 대규모 미로, tabular 알고리즘 수렴 속도 비교 |
 
 **골드 소비 메커니즘**: 골드 타일은 에피소드 내 최초 방문 시에만 보상을 부여하고 사라짐 (몬스터 처치와 동일 패턴). 반복 방문 시 보상 없음.
 
@@ -610,6 +653,44 @@ Boltzmann Multiplication은 확률을 **곱**하므로, 하나의 서브 알고�
 
 ---
 
-*Document Version: 0.6*
-*Last Updated: 2026-02-19*
+---
+
+## 14. 던전 설계 근거 (Phase 14 연구 결과)
+
+### 14.1 표준 벤치마크 커버리지
+
+| 표준 환경 | 핵심 테스트 속성 | RLD 커버 | 해당 던전 |
+|----------|----------------|:---:|----------|
+| CliffWalking | on-policy 안전성 | ✅ | Lv.13, 19, 20 |
+| WindyGridworld | 확률적 전이 | ❌ | 미구현 (추가 예정) |
+| FrozenLake | 미끄러운 바닥 | ❌ | 미구현 (추가 예정) |
+| MiniGrid Empty | 기본 탐색 | ✅ | Lv.01, 16 |
+| MiniGrid FourRooms | 다중 방 | ✅ | Lv.15 |
+| MiniGrid DoorKey | 열쇠-문 퍼즐 | ❌ | GDD 설계만 존재 |
+| MiniGrid LavaGap | 위험 회피 | ✅ | Lv.04, 19 |
+| Wiering Paper Maze | 앙상블 벤치마크 | ✅ | Lv.24, 25 |
+
+### 14.2 누락된 환경 패턴 (추가 예정)
+
+1. **확률적 전이**: WindyGridworld/FrozenLake 스타일 — Expected SARSA, Double Q-Learning 쇼케이스
+2. **열쇠-문 퍼즐**: 상태 공간 확장 (인벤토리)
+3. **대규모 미로** (25×25, 50×50): tabular 스케일링 한계 시연
+4. **절차적 생성 던전**: BSP Tree + Cellular Automata 하이브리드
+
+### 14.3 절차적 던전 생성 (디아블로 스타일)
+
+기존 직사각형 그리드에 벽(#) 배치로 불규칙 공간 표현 가능 (시스템 확장 불필요).
+
+| 생성 방법 | 용도 | 파라미터 |
+|----------|------|---------|
+| BSP Tree | 방+복도 구조 | 분할 4~9회, 비율 0.45 |
+| Cellular Automata | 유기적 동굴 | 밀도 45%, birth≥5, survival≥4 |
+| Drunkard's Walk | 유기적 통로 | 목표 바닥 비율 ~22% |
+
+추천 하이브리드: BSP(대구조) → CA(방 내부 형태) → Drunkard's Walk(복도)
+
+---
+
+*Document Version: 0.7*
+*Last Updated: 2026-02-20*
 *Author: RLD Team*
