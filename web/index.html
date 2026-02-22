@@ -22,6 +22,19 @@
             <div class="game-area">
                 <canvas id="game-canvas"></canvas>
 
+                <!-- Game Over Overlay -->
+                <div class="game-over-overlay" id="game-over-overlay" style="display:none;">
+                    <div class="game-over-box">
+                        <div class="game-over-title">GAME OVER</div>
+                        <div class="game-over-content">
+                            <div class="game-over-cause" id="game-over-cause"></div>
+                            <div class="game-over-stats" id="game-over-stats"></div>
+                            <div class="game-over-note">Q-table is preserved. Your serpas remember everything.</div>
+                        </div>
+                        <button class="btn-new-run" id="btn-new-run">New Run</button>
+                    </div>
+                </div>
+
                 <div class="dpad-container" id="dpad-container">
                     <div class="dpad">
                         <button class="dpad-btn dpad-up" data-action="0">&#9650;</button>
@@ -35,8 +48,16 @@
                 <div class="game-ui">
                     <div class="stats">
                         <div class="stat">
+                            <span class="stat-label">Run</span>
+                            <span class="stat-value run-value" id="run-text">#1</span>
+                        </div>
+                        <div class="stat">
                             <span class="stat-label">Gold</span>
-                            <span class="stat-value gold-value" id="gold-text">100</span>
+                            <span class="stat-value gold-value" id="gold-text">500</span>
+                        </div>
+                        <div class="stat" id="food-stat" style="display:none;">
+                            <span class="stat-label">Food</span>
+                            <span class="stat-value food-value" id="food-text">0</span>
                         </div>
                         <div class="stat">
                             <span class="stat-label">HP</span>
@@ -119,6 +140,14 @@
                             <span class="char-name">더블Q</span>
                             <span class="char-algo">Double Q</span>
                         </button>
+                        <button class="char-card" data-char="treeback">
+                            <span class="char-name">트리백</span>
+                            <span class="char-algo">Tree Backup</span>
+                        </button>
+                        <button class="char-card" data-char="sweeper">
+                            <span class="char-name">스위퍼</span>
+                            <span class="char-algo">Pri. Sweep</span>
+                        </button>
                     </div>
                     <p class="character-desc" id="character-desc">
                         좌표를 외워서 학습합니다. 던전별 전문가.
@@ -157,8 +186,21 @@
                         <option value="level_27_ice_maze">Lv.27 Ice Maze ❄️</option>
                         <option value="level_28_frozen_cliff">Lv.28 Frozen Cliff ❄️</option>
                         <option value="level_29_big_maze">Lv.29 Big Maze (25×25)</option>
+                        <option value="level_30_generated_cave">Lv.30 Cave (50×50)</option>
+                        <option value="level_31_generated_rooms">Lv.31 Rooms (50×50)</option>
                     </select>
                     <button id="btn-reset">Reset (R)</button>
+                </div>
+
+                <div class="control-section" id="provisions-section">
+                    <h3>Provisions</h3>
+                    <div class="provisions-controls">
+                        <span class="speed-label">Food:</span>
+                        <input type="number" id="food-amount" class="size-input" value="50" min="1" max="9999">
+                        <span class="speed-label provisions-cost" id="food-cost">(50G)</span>
+                        <button class="btn-small btn-buy-food" id="btn-buy-food">Buy</button>
+                    </div>
+                    <div class="provisions-info" id="provisions-info"></div>
                 </div>
 
                 <div class="control-section">
@@ -312,6 +354,10 @@
                                 <option value="qvkun">QV군 (QV-Learning)</option>
                                 <option value="acla">아클라 (ACLA)</option>
                                 <option value="ensemble">앙상블 (Ensemble)</option>
+                                <option value="exsa">에크사 (Exp SARSA)</option>
+                                <option value="doubleq">더블Q (Double Q)</option>
+                                <option value="treeback">트리백 (Tree Backup)</option>
+                                <option value="sweeper">스위퍼 (Pri. Sweep)</option>
                             </select>
                         </div>
                         <div class="quick-test-episodes">

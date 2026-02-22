@@ -53,7 +53,7 @@
 ### 3.1 던전 시스템 (Grid World)
 
 #### 3.1.1 기본 구조
-- **크기**: 최소 5x5 ~ 최대 50x50 (현재 구현: 5x5~19x12, 대규모 확장 예정)
+- **크기**: 최소 5x5 ~ 최대 50x50 (현재 구현: 5x5~50x50)
 - **시작점**: 모험가 스폰 위치 (S)
 - **목표점**: 클리어 조건 (G)
 - **시야**: 모험가 주변 N칸만 관측 가능 (부분 관측)
@@ -169,7 +169,7 @@ rewards = {
 
 David Silver UCL RL 강의 기반으로 알고리즘을 캐릭터화. 각 캐릭터는 실제 다른 RL 알고리즘으로 학습하며, 던전에서 눈에 보이는 행동 차이를 보여줌.
 
-**현재 구현된 캐릭터 (13종)**
+**현재 구현된 캐릭터 (15종)**
 
 | 캐릭터 | 알고리즘 | 강의/논문 | 핵심 특성 | 설명 |
 |--------|---------|------|----------|------|
@@ -186,10 +186,14 @@ David Silver UCL RL 강의 기반으로 알고리즘을 캐릭터화. 각 캐릭
 | **앙상블** | Ensemble (BM) | 논문¹ | 5알고리즘 합의 | 볼츠만 곱으로 최적 행동을 선택. |
 | **에크사** | Expected SARSA | 논문² | 기대값 업데이트 | 분산 0 업데이트. Q군과 사르사를 모두 지배. |
 | **더블Q** | Double Q-Learning | 논문³ | 과대추정 해결 | 두 Q-table로 편향 없는 판단. |
+| **트리백** | n-step Tree Backup | 교과서⁴ | n-step off-policy | n걸음 앞을 내다보는 전략가. 기대값의 나무를 키움. |
+| **스위퍼** | Prioritized Sweeping | 논문⁵ | 우선순위 계획 | 중요한 것부터 정리하는 효율주의자. 다이나의 진화형. |
 
 > ¹ QV-Learning, ACLA, Ensemble: Wiering & van Hasselt (2008) "Ensemble Algorithms in Reinforcement Learning"
 > ² Expected SARSA: van Seijen et al. (2009) "A Theoretical and Empirical Analysis of Expected Sarsa"
 > ³ Double Q-Learning: van Hasselt (2010) "Double Q-learning", NeurIPS
+> ⁴ n-step Tree Backup: Sutton & Barto (2018) Section 7.5 "A Unifying Algorithm: n-step Tree Backup"
+> ⁵ Prioritized Sweeping: Moore & Atkeson (1993) "Prioritized Sweeping", Machine Learning
 
 **DQN 실험 (UI 미등록, 코드만 보존)**
 
@@ -203,9 +207,9 @@ DQN(Mnih et al. 2015)을 Vanilla JS로 실험적 구현 완료 (`nn.js`, `dqn.js
 | 절벽/위험 인접 경로 | SARSA | On-policy로 탐험 실수 고려 (Sutton & Barto Ch.6) |
 | 확률적 전이 | Expected SARSA | 분산 0 업데이트 (van Seijen et al., 2009) |
 | 희소/지연 보상 | SARSA(λ) | 적격 흔적으로 크레딧 전파 |
-| 넓은 개방 공간 | Dyna-Q | 모델 기반 계획으로 10배 빠른 수렴 (Sutton, 1991) |
+| 넓은 개방 공간 | Dyna-Q, Prioritized Sweeping | 모델 기반 계획으로 빠른 수렴 (Sutton 1991; Moore & Atkeson 1993) |
 | 대규모 (50×50) | MC > Dyna-Q > Q-Learning | TDS 벤치마킹 연구 |
-| 다양한 미로 | Ensemble (BM) | 단일 알고리즘은 모든 문제에서 우세하지 않음 (Wiering & van Hasselt, 2008) |
+| 다양한 미로 | Ensemble (BM), Tree Backup | 단일 알고리즘은 모든 문제에서 우세하지 않음 (Wiering & van Hasselt, 2008) |
 
 > 50×50 벤치마크 순위: Value Iteration > MC > Dyna-Q > Q-Learning > SARSA-n (TDS Benchmarking Study, 2025)
 
@@ -217,14 +221,14 @@ DQN(Mnih et al. 2015)을 Vanilla JS로 실험적 구현 완료 (`nn.js`, `dqn.js
 | 25×25~50×50 | 625~2,500 | ⚠️ 느림 | 대등~약간 우수 |
 | ≥50×50 | ≥2,500 | ❌ 비실용적 | ✅ 필수 |
 
-**추가 예정 알고리즘 (Phase 14+)**
+**Phase 14~15에서 추가된 알고리즘**
 
-| 알고리즘 | 출처 | 우선순위 | 이유 |
-|---------|------|:--------:|------|
-| Expected SARSA | van Seijen et al. (2009) | 🥇 | Q-Learning과 SARSA를 포함하는 일반화, 분산 0 |
-| Double Q-Learning | van Hasselt (2010) | 🥈 | 확률적 환경에서 과대추정 해결 |
-| n-step Tree Backup | Sutton & Barto Ch.7 | 🥉 | 벤치마크 전체 1위 tabular 알고리즘 |
-| Prioritized Sweeping | Moore & Atkeson (1993) | 4위 | Dyna-Q 개선, 희소 보상 최적 |
+| 알고리즘 | 출처 | Phase | 핵심 |
+|---------|------|:-----:|------|
+| Expected SARSA | van Seijen et al. (2009) | 14 | Q-Learning과 SARSA를 포함하는 일반화, 분산 0 |
+| Double Q-Learning | van Hasselt (2010) | 14 | 확률적 환경에서 과대추정 해결 |
+| n-step Tree Backup | Sutton & Barto Ch.7 | 15 | 벤치마크 전체 1위 tabular 알고리즘 |
+| Prioritized Sweeping | Moore & Atkeson (1993) | 15 | Dyna-Q 개선, 희소 보상 최적 |
 
 **쇼케이스 던전 (알고리즘별 차이 확인용)**
 
@@ -247,6 +251,8 @@ DQN(Mnih et al. 2015)을 Vanilla JS로 실험적 구현 완료 (`nn.js`, `dqn.js
 | Lv.27 Ice Maze | Double Q-Learning | 미끄러운 미로, 벽이 안전장치 역할, 과대추정 편향 비교 |
 | Lv.28 Frozen Cliff | Exp SARSA vs SARSA | 미끄러운 절벽, 확률적 전이에서 on-policy 안전성 비교 |
 | Lv.29 Big Maze | 스케일링 테스트 | 25×25 대규모 미로, tabular 알고리즘 수렴 속도 비교 |
+| Lv.30 Cave | 절차적 생성 | 50×50 BSP+CA 동굴, 대규모 tabular 스케일링 한계 시연 |
+| Lv.31 Rooms | 절차적 생성 | 50×50 BSP 방+복도, 모델 기반(Dyna-Q/Sweeper) 강점 환경 |
 
 **골드 소비 메커니즘**: 골드 타일은 에피소드 내 최초 방문 시에만 보상을 부여하고 사라짐 (몬스터 처치와 동일 패턴). 반복 방문 시 보상 없음.
 
@@ -662,35 +668,113 @@ Boltzmann Multiplication은 확률을 **곱**하므로, 하나의 서브 알고�
 | 표준 환경 | 핵심 테스트 속성 | RLD 커버 | 해당 던전 |
 |----------|----------------|:---:|----------|
 | CliffWalking | on-policy 안전성 | ✅ | Lv.13, 19, 20 |
-| WindyGridworld | 확률적 전이 | ❌ | 미구현 (추가 예정) |
-| FrozenLake | 미끄러운 바닥 | ❌ | 미구현 (추가 예정) |
+| WindyGridworld | 확률적 전이 | ✅ | Lv.26, 27, 28 (Slippery) |
+| FrozenLake | 미끄러운 바닥 | ✅ | Lv.26 Frozen Lake |
 | MiniGrid Empty | 기본 탐색 | ✅ | Lv.01, 16 |
 | MiniGrid FourRooms | 다중 방 | ✅ | Lv.15 |
 | MiniGrid DoorKey | 열쇠-문 퍼즐 | ❌ | GDD 설계만 존재 |
 | MiniGrid LavaGap | 위험 회피 | ✅ | Lv.04, 19 |
 | Wiering Paper Maze | 앙상블 벤치마크 | ✅ | Lv.24, 25 |
 
-### 14.2 누락된 환경 패턴 (추가 예정)
+### 14.2 환경 패턴 커버리지
 
-1. **확률적 전이**: WindyGridworld/FrozenLake 스타일 — Expected SARSA, Double Q-Learning 쇼케이스
-2. **열쇠-문 퍼즐**: 상태 공간 확장 (인벤토리)
-3. **대규모 미로** (25×25, 50×50): tabular 스케일링 한계 시연
-4. **절차적 생성 던전**: BSP Tree + Cellular Automata 하이브리드
+| 패턴 | 상태 | 해당 던전 |
+|------|:----:|----------|
+| 확률적 전이 (FrozenLake/WindyGridworld) | ✅ | Lv.26, 27, 28 (Slippery) |
+| 대규모 미로 (25×25) | ✅ | Lv.29 Big Maze |
+| 대규모 절차적 생성 (50×50) | ✅ | Lv.30 Cave, Lv.31 Rooms |
+| 열쇠-문 퍼즐 | ❌ | GDD 설계만 존재 (상태 공간 확장 필요) |
 
-### 14.3 절차적 던전 생성 (디아블로 스타일)
+### 14.3 절차적 던전 생성 (구현 완료 → Section 15.2 참조)
 
-기존 직사각형 그리드에 벽(#) 배치로 불규칙 공간 표현 가능 (시스템 확장 불필요).
-
-| 생성 방법 | 용도 | 파라미터 |
-|----------|------|---------|
-| BSP Tree | 방+복도 구조 | 분할 4~9회, 비율 0.45 |
-| Cellular Automata | 유기적 동굴 | 밀도 45%, birth≥5, survival≥4 |
-| Drunkard's Walk | 유기적 통로 | 목표 바닥 비율 ~22% |
-
-추천 하이브리드: BSP(대구조) → CA(방 내부 형태) → Drunkard's Walk(복도)
+BSP + Cellular Automata 하이브리드로 50×50 대규모 던전 자동 생성 구현 완료. 상세는 Section 15.2 참조.
 
 ---
 
-*Document Version: 0.7*
-*Last Updated: 2026-02-20*
+## 15. 대규모 던전 + 절차적 생성 (Phase 15 구현 완료)
+
+### 15.1 새 알고리즘
+
+| 알고리즘 | 캐릭터 | 핵심 로직 | 참조 |
+|---------|--------|----------|------|
+| n-step Tree Backup | 트리백 | Expected SARSA의 n-step 확장. importance sampling 없이 off-policy n-step return 계산. | Sutton & Barto (2018) Section 7.5 |
+| Prioritized Sweeping | 스위퍼 | Dyna-Q의 개선판. TD-error 크기 순 우선순위 큐로 가장 영향력 큰 상태부터 업데이트. | Moore & Atkeson (1993) |
+
+### 15.2 절차적 던전 생성기 (BSP + CA 하이브리드)
+
+**5단계 파이프라인:**
+1. BSP 분할: 그리드를 재귀적으로 이등분 → 12~20개 리프 파티션
+2. 방 배치: 각 리프에 최소 4×4 방 (패딩 1)
+3. 복도 연결: 형제 노드의 방을 L자 복도로 연결
+4. CA 보정 (cave 스타일): R1≥5 규칙으로 유기적 동굴 형태 생성
+5. 요소 배치: BFS 거리 기반 확률 배치 (S, G, T, M, $, H, P)
+
+시드 고정으로 재현 가능한 레이아웃 생성. `dungeon-generator.js`에서 export.
+
+### 15.3 새 던전
+
+| 던전 | 크기 | 스타일 | maxSteps |
+|------|------|--------|----------|
+| Lv.30 Cave | 50×50 | BSP + CA 동굴형 | 2000 |
+| Lv.31 Rooms | 50×50 | BSP 방+복도형 | 2000 |
+
+---
+
+## 16. 로그라이크 뼈대 (Phase A 구현 완료)
+
+런 시스템, 세르파 잠금/해금, 식량 시스템, 게임오버를 추가하여 로그라이크 기본 루프를 완성.
+
+### 16.1 런 시스템 (RunState)
+
+`web/js/game/run-state.js` 모듈로 분리. 두 종류의 저장 영역:
+
+| 구분 | localStorage 키 | 내용 | 런 리셋 시 |
+|------|-----------------|------|-----------|
+| 런 상태 | `rld_run_state` | gold, food, hiredCharacters, clearedDungeons, unlockedDungeons | 초기화 |
+| 메타 | `rld_run_meta` | runNumber, totalSteps | 유지 |
+
+- 기존 `rld_save_data` → 새 포맷 자동 마이그레이션
+- Q-table은 RunState와 독립 (캐릭터+던전별 별도 저장, 런 리셋 영향 없음)
+
+### 16.2 세르파 잠금/해금
+
+| 분류 | 캐릭터 | 조건 |
+|------|--------|------|
+| 무료 3인조 | Q군, 사르사, 몬테 | 항상 사용 가능 |
+| 고용 필요 | 그라디(200G), 트레이서/다이나(600G), 크리틱/Q벡군/아클라/엑사/더블Q(1000G), 앙상블/트리백/스위퍼(2000G) | 골드 소모 |
+| 숨김 | 스카우트 | Act 1 미등장, UI에서 완전 숨김 |
+
+- 잠긴 캐릭터 클릭 시 `confirm()` 다이얼로그로 고용 확인
+- 고용 후 즉시 해당 캐릭터로 전환
+- 런 리셋 시 고용 캐릭터 전부 초기화 (무료 3인조만 남음)
+
+### 16.3 식량 시스템
+
+- **구매**: 1G = 1식량, 던전 진입 전 Provisions 섹션에서 수량 지정
+- **소모**: 매뉴얼 플레이 중 빌트인 던전에서만 스텝당 1식량 소모
+- **고갈**: 식량 0 + 다음 스텝 시도 → 게임 오버 ("Ran out of food!")
+- **면제**: AI Training, 커스텀 던전, 프리셋 던전에서는 식량 미소모
+
+### 16.4 게임 오버
+
+| 원인 | 조건 | 메시지 |
+|------|------|--------|
+| 식량 고갈 | food=0 & 스텝 시도 | "Ran out of food!" |
+| 함정 사망 | HP ≤ 0 (PIT/TRAP/MONSTER) | "Fell into a pit!" / "HP depleted!" |
+
+- **적용 범위**: 빌트인 던전 매뉴얼 플레이만 (AI Training, 에디터, 커스텀/프리셋 면제)
+- **게임 오버 화면**: 반투명 오버레이 + 런 통계 (진행 스텝, 획득 골드, 클리어 던전)
+- **New Run**: 런 넘버 증가, 골드 500G 리셋, 식량/고용/클리어/해금 초기화
+- **입력 차단**: 게임 오버 중 방향키, R키, 던전 선택, 캐릭터 선택 모두 차단
+
+### 16.5 UI 추가
+
+- **Stats 바**: Run #N, Food 표시 추가 (골드 앞)
+- **Provisions 섹션**: 던전/AI Training 사이에 배치, 식량 수량 입력 + 비용 표시 + 구매 버튼
+- **캐릭터 카드**: 잠금 시 반투명 + 🔒 표시, 숨김 시 `display: none`
+
+---
+
+*Document Version: 0.9*
+*Last Updated: 2026-02-22*
 *Author: RLD Team*
