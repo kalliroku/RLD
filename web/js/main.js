@@ -20,9 +20,12 @@ import { ACLA } from './game/acla.js';
 import { Ensemble } from './game/ensemble.js';
 import { ExpectedSarsa } from './game/expected-sarsa.js';
 import { DoubleQLearning } from './game/double-qlearning.js';
+import { TreeBackup } from './game/tree-backup.js';
+import { PrioritizedSweeping } from './game/prioritized-sweeping.js';
 import { sound } from './game/sound.js';
 import { DungeonEditor } from './game/editor.js';
 import { MultiStageGrid } from './game/multi-stage-grid.js';
+import { RunState } from './game/run-state.js';
 
 // Character registry
 const CHARACTERS = {
@@ -39,6 +42,8 @@ const CHARACTERS = {
     ensemble: { name: '앙상블', algo: 'Ensemble',     cls: Ensemble,       desc: '5개 알고리즘의 합의. 볼츠만 곱으로 최적 행동을 선택합니다.' },
     exsa:     { name: '에크사', algo: 'Expected SARSA', cls: ExpectedSarsa, desc: '기대값으로 학습. 분산 없는 업데이트로 Q군과 사르사를 모두 지배합니다.' },
     doubleq:  { name: '더블Q', algo: 'Double Q',     cls: DoubleQLearning, desc: '두 개의 눈으로 편향 없이 판단. 과대추정의 해결사.' },
+    treeback: { name: '트리백', algo: 'Tree Backup',  cls: TreeBackup,      desc: 'n걸음 앞을 내다보는 전략가. 기대값의 나무를 키웁니다.' },
+    sweeper:  { name: '스위퍼', algo: 'Pri. Sweep',   cls: PrioritizedSweeping, desc: '중요한 것부터 정리하는 효율주의자. 다이나의 진화형.' },
 };
 
 // Dungeon config: cost to enter, first clear reward, repeat reward
@@ -71,7 +76,9 @@ const DUNGEON_CONFIG = {
     level_26_frozen_lake: { cost: 0, firstReward: 150, repeatReward: 15, slippery: true },
     level_27_ice_maze: { cost: 0, firstReward: 200, repeatReward: 20, slippery: true },
     level_28_frozen_cliff: { cost: 0, firstReward: 200, repeatReward: 20, slippery: true },
-    level_29_big_maze: { cost: 0, firstReward: 500, repeatReward: 50, maxSteps: 1000 }
+    level_29_big_maze: { cost: 0, firstReward: 500, repeatReward: 50, maxSteps: 1000 },
+    level_30_generated_cave: { cost: 0, firstReward: 500, repeatReward: 50, maxSteps: 2000 },
+    level_31_generated_rooms: { cost: 0, firstReward: 500, repeatReward: 50, maxSteps: 2000 }
 };
 
 // Dungeon order for unlock progression
@@ -104,7 +111,9 @@ const DUNGEON_ORDER = [
     'level_26_frozen_lake',
     'level_27_ice_maze',
     'level_28_frozen_cliff',
-    'level_29_big_maze'
+    'level_29_big_maze',
+    'level_30_generated_cave',
+    'level_31_generated_rooms'
 ];
 
 const PRESET_MULTI_DUNGEONS = {
@@ -120,6 +129,7 @@ const PRESET_MULTI_DUNGEONS = {
     }
 };
 
+// Legacy key - migration handled by RunState
 const STORAGE_KEY = 'rld_save_data';
 
 // Training speed delays (ms per step)
@@ -146,14 +156,14 @@ class Game {
         this.currentDungeon = 'level_01_easy';
         this.currentCharacter = 'qkun';
 
-        // Gold system & Progress
-        this.gold = 100;
+        // Run state (gold, food, hired characters, cleared/unlocked dungeons)
+        this.runState = new RunState();
         this.pendingGold = 0;
-        this.clearedDungeons = new Set();
-        this.unlockedDungeons = new Set(['level_01_easy']);
 
-        // Load saved progress
-        this.loadProgress();
+        // Game over state
+        this.isGameOver = false;
+
+        // Migrate old Q-tables
         this.migrateOldQTables();
 
         // Algorithm instance (was qlearning, now generic)
@@ -209,6 +219,18 @@ class Game {
         // Character UI
         this.characterDesc = document.getElementById('character-desc');
 
+        // Run/Food/GameOver UI
+        this.runText = document.getElementById('run-text');
+        this.foodText = document.getElementById('food-text');
+        this.foodStat = document.getElementById('food-stat');
+        this.foodAmountInput = document.getElementById('food-amount');
+        this.foodCostText = document.getElementById('food-cost');
+        this.provisionsSection = document.getElementById('provisions-section');
+        this.provisionsInfo = document.getElementById('provisions-info');
+        this.gameOverOverlay = document.getElementById('game-over-overlay');
+        this.gameOverCause = document.getElementById('game-over-cause');
+        this.gameOverStats = document.getElementById('game-over-stats');
+
         // Clear Rate UI
         this.clearRateStat = document.getElementById('clear-rate-stat');
         this.clearRateText = document.getElementById('clear-rate-text');
@@ -226,6 +248,7 @@ class Game {
         this.setupEditor();
         this.updateDungeonSelect();
         this.loadCustomDungeonOptions();
+        this.updateCharacterGrid();
         this.loadDungeon('level_01_easy');
     }
 
@@ -977,31 +1000,8 @@ class Game {
         });
     }
 
-    loadProgress() {
-        try {
-            const saved = localStorage.getItem(STORAGE_KEY);
-            if (saved) {
-                const data = JSON.parse(saved);
-                this.gold = data.gold ?? 100;
-                this.clearedDungeons = new Set(data.clearedDungeons ?? []);
-                this.unlockedDungeons = new Set(data.unlockedDungeons ?? ['level_01_easy']);
-            }
-        } catch (e) {
-            console.warn('Failed to load save data:', e);
-        }
-    }
-
     saveProgress() {
-        try {
-            const data = {
-                gold: this.gold,
-                clearedDungeons: Array.from(this.clearedDungeons),
-                unlockedDungeons: Array.from(this.unlockedDungeons)
-            };
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-        } catch (e) {
-            console.warn('Failed to save progress:', e);
-        }
+        this.runState.saveRunState();
     }
 
     // Q-Table persistence (keyed by character + dungeon)
@@ -1073,8 +1073,8 @@ class Game {
         const options = this.dungeonSelect.querySelectorAll('option');
         options.forEach(option => {
             const dungeonId = option.value;
-            const isUnlocked = this.unlockedDungeons.has(dungeonId);
-            const isCleared = this.clearedDungeons.has(dungeonId);
+            const isUnlocked = this.runState.unlockedDungeons.has(dungeonId);
+            const isCleared = this.runState.clearedDungeons.has(dungeonId);
 
             option.disabled = !isUnlocked;
 
@@ -1124,7 +1124,9 @@ class Game {
             level_26_frozen_lake: 'Frozen Lake',
             level_27_ice_maze: 'Ice Maze',
             level_28_frozen_cliff: 'Frozen Cliff',
-            level_29_big_maze: 'Big Maze (25×25)'
+            level_29_big_maze: 'Big Maze (25×25)',
+            level_30_generated_cave: 'Cave (50×50)',
+            level_31_generated_rooms: 'Rooms (50×50)'
         };
         return names[dungeonId] || dungeonId;
     }
@@ -1166,6 +1168,10 @@ class Game {
                 return new SarsaLambda(this.grid, { ...baseOpts, lambda: 0.9 });
             case 'dyna':
                 return new DynaQ(this.grid, { ...baseOpts, planningSteps: 10 });
+            case 'treeback':
+                return new TreeBackup(this.grid, { ...baseOpts, alpha: 0.5, n: 4 });
+            case 'sweeper':
+                return new PrioritizedSweeping(this.grid, { ...baseOpts, alpha: 0.5, planningSteps: 5, theta: 0.0001 });
             case 'acla':
                 return new ACLA(this.grid, {
                     ...baseOpts,
@@ -1183,6 +1189,25 @@ class Game {
         if (charName === this.currentCharacter) return;
         if (!CHARACTERS[charName]) return;
 
+        // Hidden characters cannot be selected
+        if (this.runState.isCharacterHidden(charName)) return;
+
+        // Locked characters: prompt to hire
+        if (this.runState.isCharacterLocked(charName)) {
+            const cost = this.runState.getHireCost(charName);
+            const charDef = CHARACTERS[charName];
+            if (this.runState.gold < cost) {
+                this.showMessage(`Not enough gold to hire ${charDef.name}! Need ${cost}G (have ${this.runState.gold}G)`, 'danger');
+                return;
+            }
+            const ok = confirm(`Hire ${charDef.name} (${charDef.algo}) for ${cost}G?`);
+            if (!ok) return;
+            this.runState.hireCharacter(charName);
+            this.updateCharacterGrid();
+            this.updateUI();
+            this.showMessage(`${charDef.name} hired! -${cost}G`, 'success');
+        }
+
         // Stop training if running
         if (this.isTraining) {
             this.stopTraining();
@@ -1198,6 +1223,14 @@ class Game {
 
         // Reload dungeon with new character's algorithm
         this.loadDungeon(this.currentDungeon);
+    }
+
+    updateCharacterGrid() {
+        document.querySelectorAll('.char-card').forEach(btn => {
+            const charName = btn.dataset.char;
+            btn.classList.toggle('locked', this.runState.isCharacterLocked(charName));
+            btn.classList.toggle('char-hidden', this.runState.isCharacterHidden(charName));
+        });
     }
 
     setupEventListeners() {
@@ -1233,6 +1266,7 @@ class Game {
         this.canvas.addEventListener('touchend', (e) => {
             if (this.currentMode === 'editor') return;
             if (this.isTraining) return;
+            if (this.isGameOver) return;
             const dx = e.changedTouches[0].clientX - this.touchStartX;
             const dy = e.changedTouches[0].clientY - this.touchStartY;
             const minSwipe = 30;
@@ -1259,6 +1293,7 @@ class Game {
         dpadBtns.forEach(btn => {
             btn.addEventListener('click', (e) => {
                 if (this.isTraining) return;
+                if (this.isGameOver) return;
                 const action = parseInt(e.currentTarget.dataset.action);
                 if (this.done) {
                     this.tryEnterDungeon();
@@ -1270,13 +1305,17 @@ class Game {
 
         // UI controls
         this.dungeonSelect.addEventListener('change', (e) => {
+            if (this.isGameOver) {
+                e.target.value = this.currentDungeon;
+                return;
+            }
             const selected = e.target.value;
             // Custom/dungeon/preset entries don't need unlock check
             if (selected.startsWith('custom_') || selected.startsWith('dungeon_') || selected.startsWith('preset_')) {
                 this.loadDungeon(selected);
                 return;
             }
-            if (!this.unlockedDungeons.has(selected)) {
+            if (!this.runState.unlockedDungeons.has(selected)) {
                 e.target.value = this.currentDungeon;
                 this.showMessage('🔒 Clear previous dungeons first!', 'warning');
                 return;
@@ -1284,7 +1323,10 @@ class Game {
             this.loadDungeon(selected);
         });
 
-        this.resetBtn.addEventListener('click', () => this.tryEnterDungeon());
+        this.resetBtn.addEventListener('click', () => {
+            if (this.isGameOver) return;
+            this.tryEnterDungeon();
+        });
 
         // Speed buttons
         const speedBtns = document.querySelectorAll('.btn-speed');
@@ -1299,6 +1341,31 @@ class Game {
         // Training controls
         this.startTrainBtn.addEventListener('click', () => this.startTraining());
         this.stopTrainBtn.addEventListener('click', () => this.stopTraining());
+
+        // New Run button
+        document.getElementById('btn-new-run').addEventListener('click', () => this.startNewRun());
+
+        // Provisions: food amount input updates cost display
+        this.foodAmountInput.addEventListener('input', () => {
+            const amount = parseInt(this.foodAmountInput.value) || 0;
+            this.foodCostText.textContent = `(${amount}G)`;
+        });
+
+        // Buy food button
+        document.getElementById('btn-buy-food').addEventListener('click', () => {
+            const amount = parseInt(this.foodAmountInput.value) || 0;
+            if (amount <= 0) {
+                this.showMessage('Enter a valid amount', 'warning');
+                return;
+            }
+            if (this.runState.gold < amount) {
+                this.showMessage(`Not enough gold! Need ${amount}G`, 'danger');
+                return;
+            }
+            this.runState.buyFood(amount);
+            this.updateUI();
+            this.showMessage(`Bought ${amount} food. Total: ${this.runState.food}`, 'success');
+        });
 
         // Fog of War toggle
         this.fogOfWarCheck.addEventListener('change', (e) => {
@@ -1334,6 +1401,8 @@ class Game {
         // In editor mode, let the editor handle keys
         if (this.currentMode === 'editor') return;
         if (this.isTraining) return;
+        // Block all input during game over overlay
+        if (this.isGameOver) return;
 
         if (this.done) {
             if (e.key === 'r' || e.key === 'R') {
@@ -1541,24 +1610,28 @@ class Game {
 
     tryEnterDungeon() {
         const config = DUNGEON_CONFIG[this.currentDungeon] || { cost: 0, firstReward: 0, repeatReward: 0 };
+        const isBuiltIn = !this.currentDungeon.startsWith('custom_') && !this.currentDungeon.startsWith('dungeon_') && !this.currentDungeon.startsWith('preset_');
 
-        if (this.gold < config.cost) {
+        if (isBuiltIn && this.runState.gold < config.cost) {
             this.showMessage(`Not enough gold! Need ${config.cost}G`, 'danger');
             this.renderer.flash('rgba(239, 68, 68, 0.3)');
             return;
         }
 
-        // Deduct entry cost
-        this.gold -= config.cost;
+        // Deduct entry cost for built-in dungeons
+        if (isBuiltIn && config.cost > 0) {
+            this.runState.gold -= config.cost;
+        }
+
         this.saveProgress();
         this.updateUI();
         this.reset();
 
         sound.start();
-        if (config.cost > 0) {
-            this.showMessage(`Paid ${config.cost}G to enter. Good luck!`, 'warning');
+        if (isBuiltIn && config.cost > 0) {
+            this.showMessage(`Paid ${config.cost}G to enter. Food: ${this.runState.food}. Good luck!`, 'warning');
         } else {
-            this.showMessage('Game Reset! Reach the green goal.', 'info');
+            this.showMessage(`Game Reset! Food: ${this.runState.food}. Reach the green goal.`, 'info');
         }
     }
 
@@ -1605,7 +1678,21 @@ class Game {
     }
 
     handleAction(action) {
-        if (this.done) return;
+        if (this.done || this.isGameOver) return;
+
+        const isBuiltIn = !this.currentDungeon.startsWith('custom_') && !this.currentDungeon.startsWith('dungeon_') && !this.currentDungeon.startsWith('preset_');
+
+        // Food consumption (manual play only, built-in dungeons only)
+        if (!this.isTraining && isBuiltIn && this.runState.food > 0) {
+            this.runState.consumeFood();
+        } else if (!this.isTraining && isBuiltIn && this.runState.food <= 0 && this.steps > 0) {
+            // Food ran out — game over
+            this.triggerGameOver('Food depleted! Stranded in the dungeon.');
+            return;
+        }
+
+        // Total step counter
+        this.runState.totalSteps++;
 
         // Learning from Demonstration: save state before action
         const prevState = [this.agent.x, this.agent.y, this.agent.hp];
@@ -1643,13 +1730,22 @@ class Game {
                 sound.pit();
                 const lostMsg = this.pendingGold > 0 ? ` ${this.pendingGold}G lost!` : '';
                 this.pendingGold = 0;
-                this.showMessage(`FELL INTO PIT! Instant death...${lostMsg}`, 'danger');
+                if (!this.isTraining && isBuiltIn) {
+                    this.triggerGameOver('Fell into a pit! Instant death.');
+                } else {
+                    this.showMessage(`FELL INTO PIT! Instant death...${lostMsg}`, 'danger');
+                }
                 this.renderer.flash('rgba(0, 0, 0, 0.8)');
             } else {
+                // HP death
                 sound.death();
                 const lostMsg = this.pendingGold > 0 ? ` ${this.pendingGold}G lost!` : '';
                 this.pendingGold = 0;
-                this.showMessage(`DIED! Steps: ${this.steps}${lostMsg}`, 'danger');
+                if (!this.isTraining && isBuiltIn) {
+                    this.triggerGameOver('HP reached 0! The party leader has fallen.');
+                } else {
+                    this.showMessage(`DIED! Steps: ${this.steps}${lostMsg}`, 'danger');
+                }
                 this.renderer.flash('rgba(239, 68, 68, 0.5)');
             }
         } else if (!result.success) {
@@ -1681,7 +1777,7 @@ class Game {
                 this.pendingGold += 5;
                 this.showMessage(`MONSTER! HP -30, Defeated! +5G (Pending)`, 'warning');
             } else {
-                this.gold += 5;
+                this.runState.gold += 5;
                 this.showMessage(`MONSTER! HP -30, Defeated! +5G`, 'warning');
             }
             this.renderer.flash('rgba(147, 51, 234, 0.4)');
@@ -1700,7 +1796,7 @@ class Game {
             const floorInfo = this.grid.getTotalStages ? ` (${this.grid.getTotalStages()} Floors)` : '';
             let goldMsg = '';
             if (this.pendingGold > 0) {
-                this.gold += this.pendingGold;
+                this.runState.gold += this.pendingGold;
                 goldMsg = ` +${this.pendingGold}G confirmed!`;
                 this.pendingGold = 0;
                 this.saveProgress();
@@ -1712,22 +1808,22 @@ class Game {
         }
 
         const config = DUNGEON_CONFIG[this.currentDungeon];
-        const isFirstClear = !this.clearedDungeons.has(this.currentDungeon);
+        const isFirstClear = !this.runState.clearedDungeons.has(this.currentDungeon);
 
         let reward;
         let unlockedNext = false;
 
         if (isFirstClear) {
             reward = config.firstReward;
-            this.clearedDungeons.add(this.currentDungeon);
-            this.gold += reward;
+            this.runState.clearedDungeons.add(this.currentDungeon);
+            this.runState.gold += reward;
 
             // Unlock next dungeon
             const currentIndex = DUNGEON_ORDER.indexOf(this.currentDungeon);
             if (currentIndex >= 0 && currentIndex < DUNGEON_ORDER.length - 1) {
                 const nextDungeon = DUNGEON_ORDER[currentIndex + 1];
-                if (!this.unlockedDungeons.has(nextDungeon)) {
-                    this.unlockedDungeons.add(nextDungeon);
+                if (!this.runState.unlockedDungeons.has(nextDungeon)) {
+                    this.runState.unlockedDungeons.add(nextDungeon);
                     unlockedNext = true;
                 }
             }
@@ -1736,7 +1832,7 @@ class Game {
                 sound.victory();
                 setTimeout(() => sound.unlock(), 600);
                 const nextName = this.getDungeonDisplayName(DUNGEON_ORDER[DUNGEON_ORDER.indexOf(this.currentDungeon) + 1]);
-                this.showMessage(`FIRST CLEAR! +${reward}G 🔓 ${nextName} Unlocked!`, 'success');
+                this.showMessage(`FIRST CLEAR! +${reward}G ${nextName} Unlocked!`, 'success');
             } else {
                 sound.victory();
                 this.showMessage(`FIRST CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
@@ -1746,7 +1842,7 @@ class Game {
         } else {
             sound.victory();
             reward = config.repeatReward;
-            this.gold += reward;
+            this.runState.gold += reward;
             this.showMessage(`CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
         }
 
@@ -1755,10 +1851,57 @@ class Game {
         this.updateUI();
     }
 
+    // ========== Game Over & New Run ==========
+
+    triggerGameOver(cause) {
+        this.isGameOver = true;
+        this.done = true;
+
+        // Save meta (totalSteps) before showing overlay
+        this.runState.saveMeta();
+
+        // Show overlay
+        this.gameOverCause.textContent = cause;
+        this.gameOverStats.innerHTML = [
+            `Run #${this.runState.runNumber}`,
+            `Gold: ${this.runState.gold}G`,
+            `Cleared: ${this.runState.clearedDungeons.size} dungeons`,
+            `Steps this run: ${this.steps}`
+        ].join('<br>');
+
+        this.gameOverOverlay.style.display = 'flex';
+        sound.death();
+    }
+
+    startNewRun() {
+        this.isGameOver = false;
+        this.gameOverOverlay.style.display = 'none';
+
+        this.runState.startNewRun();
+        this.updateCharacterGrid();
+        this.updateDungeonSelect();
+        this.loadCustomDungeonOptions();
+        this.updateUI();
+
+        // Switch to first available character if current is locked
+        if (!this.runState.isCharacterAvailable(this.currentCharacter)) {
+            this.currentCharacter = 'qkun';
+            document.querySelectorAll('.char-card').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.char === 'qkun');
+            });
+            this.characterDesc.textContent = CHARACTERS.qkun.desc;
+        }
+
+        this.loadDungeon('level_01_easy');
+        this.dungeonSelect.value = 'level_01_easy';
+        this.showMessage(`Run #${this.runState.runNumber} started! Gold: ${this.runState.gold}G`, 'info');
+    }
+
     // ========== Training System ==========
 
     startTraining() {
         if (this.isTraining) return;
+        if (this.isGameOver) return;
 
         this.isTraining = true;
         this.startTrainBtn.disabled = true;
@@ -1883,6 +2026,7 @@ class Game {
         const result = agent.move(action, this.grid);
         this.trainingSteps++;
         this.steps = this.trainingSteps;
+        this.runState.totalSteps++;
 
         if (result.tile === TileType.MONSTER && !this.trainingKilledMonsters.has(nextKey)) {
             this.trainingKilledMonsters.add(nextKey);
@@ -1980,6 +2124,7 @@ class Game {
         while (running && this.isTraining && this.trainingEpisode < MAX_EPISODES) {
             for (let i = 0; i < batchSize && this.isTraining && this.trainingEpisode < MAX_EPISODES; i++) {
                 const result = this.qlearning.runEpisode();
+                this.runState.totalSteps += (result.steps || 0);
                 this.trainingEpisode++;
                 this.recentResults.push(result.success);
                 if (this.recentResults.length > CONVERGENCE_WINDOW) {
@@ -2047,6 +2192,7 @@ class Game {
         this.showClearRate(finalClearRate);
 
         this.saveQTable();
+        this.runState.saveMeta();
         this.renderer.fogOfWar = this.fogOfWarCheck.checked;
         this.reset();
         this.updateVisualization();
@@ -2133,8 +2279,22 @@ class Game {
 
     updateUI() {
         this.goldText.textContent = this.pendingGold > 0
-            ? `${this.gold} (+${this.pendingGold})`
-            : this.gold;
+            ? `${this.runState.gold} (+${this.pendingGold})`
+            : this.runState.gold;
+
+        // Run number
+        this.runText.textContent = `#${this.runState.runNumber}`;
+
+        // Food display (show only during manual play on built-in dungeons)
+        const isBuiltIn = !this.currentDungeon.startsWith('custom_') && !this.currentDungeon.startsWith('dungeon_') && !this.currentDungeon.startsWith('preset_');
+        const showFood = isBuiltIn && !this.isTraining;
+        this.foodStat.style.display = showFood ? '' : 'none';
+        this.foodText.textContent = this.runState.food;
+
+        // Provisions section visibility
+        if (this.provisionsSection) {
+            this.provisionsSection.style.display = (isBuiltIn && this.currentMode === 'play') ? '' : 'none';
+        }
 
         if (!this.agent) return;
 
