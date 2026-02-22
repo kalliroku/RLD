@@ -22,6 +22,10 @@ export class Renderer {
         // Fog of War
         this.fogOfWar = false;
 
+        // Treasure
+        this.treasurePosition = null;  // {x, y} or null
+        this.carryingTreasure = false;
+
         // Stage viewport (multi-stage: show one floor at a time)
         this.viewportYOffset = 0;   // current stage's virtual y start
         this.viewportHeight = null; // null = show entire grid (single stage compat)
@@ -256,6 +260,53 @@ export class Renderer {
         ctx.fillRect(barX, barY, barWidth * hpPercent, barHeight);
     }
 
+    renderTreasure() {
+        if (!this.treasurePosition || this.carryingTreasure) return;
+
+        const { ctx, tileSize } = this;
+        const { x, y } = this.treasurePosition;
+
+        // Apply viewport offset
+        const cy = y - this.viewportYOffset;
+        const visibleRows = this.viewportHeight != null ? this.viewportHeight : this.grid.height;
+        if (cy < 0 || cy >= visibleRows) return;
+
+        // Fog check
+        if (this.fogOfWar && this.agent) {
+            const vis = this.agent.getVisibility(x, y);
+            if (vis === 0) return;
+        }
+
+        const centerX = x * tileSize + tileSize / 2;
+        const centerY = cy * tileSize + tileSize / 2;
+
+        // Diamond shape with golden glow
+        ctx.save();
+        ctx.shadowColor = '#fbbf24';
+        ctx.shadowBlur = 14;
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        const s = tileSize * 0.25;
+        ctx.moveTo(centerX, centerY - s);
+        ctx.lineTo(centerX + s, centerY);
+        ctx.lineTo(centerX, centerY + s);
+        ctx.lineTo(centerX - s, centerY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.strokeStyle = '#f59e0b';
+        ctx.lineWidth = 2;
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // "T" label
+        ctx.font = `bold ${tileSize * 0.25}px monospace`;
+        ctx.fillStyle = '#000';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('T', centerX, centerY);
+        ctx.restore();
+    }
+
     render() {
         this.clear();
         this.renderGrid();
@@ -269,6 +320,7 @@ export class Renderer {
             this.renderPolicy();
         }
 
+        this.renderTreasure();
         this.renderAgent();
         this.renderFloorIndicator();
     }

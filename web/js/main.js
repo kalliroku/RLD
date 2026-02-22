@@ -3083,10 +3083,12 @@ class Game {
     computeTreasurePosition(dungeonId) {
         if (!this.isBuiltInDungeon(dungeonId)) {
             this.treasurePosition = null;
+            this.renderer.treasurePosition = null;
             return;
         }
         if (!this.runState.hasDungeonTreasure(dungeonId)) {
             this.treasurePosition = null;
+            this.renderer.treasurePosition = null;
             return;
         }
 
@@ -3101,12 +3103,14 @@ class Game {
         }
         if (emptyTiles.length === 0) {
             this.treasurePosition = null;
+            this.renderer.treasurePosition = null;
             return;
         }
 
         const failCount = this.runState.getTreasureFailCount(dungeonId);
         const idx = failCount % emptyTiles.length;
         this.treasurePosition = emptyTiles[idx];
+        this.renderer.treasurePosition = this.treasurePosition;
     }
 
     // ========== C-5: Item UI ==========
@@ -3181,6 +3185,7 @@ class Game {
     }
 
     render() {
+        this.renderer.carryingTreasure = this.carryingTreasure;
         this.renderer.render();
     }
 }
