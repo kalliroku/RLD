@@ -1231,6 +1231,405 @@ body.editor-mode .dpad-container {
     line-height: 1.4;
 }
 
+/* ========== B-5: Map Choice Overlay ========== */
+.map-choice-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.88);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    border-radius: 12px;
+}
+
+.map-choice-box {
+    text-align: center;
+    padding: 28px 36px;
+    max-width: 380px;
+}
+
+.map-choice-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: var(--success);
+    text-shadow: 0 0 20px rgba(74, 222, 128, 0.6);
+    margin-bottom: 12px;
+}
+
+.map-choice-dungeon {
+    font-size: 1.1rem;
+    color: var(--text-primary);
+    margin-bottom: 10px;
+}
+
+.map-choice-details {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.7;
+    margin-bottom: 18px;
+}
+
+.map-unlock-msg {
+    color: #a78bfa;
+    font-weight: bold;
+    margin-bottom: 6px;
+}
+
+.map-choice-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.btn-sell-map {
+    background: var(--warning);
+    color: #000;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: auto;
+}
+
+.btn-sell-map:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.5);
+}
+
+.btn-keep-map {
+    background: #3b82f6;
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 10px 24px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: auto;
+}
+
+.btn-keep-map:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.5);
+}
+
+/* ========== B-3: Serpa Stats ========== */
+.stats-list {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.stat-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 6px;
+    background: var(--bg-tertiary);
+    border-radius: 4px;
+    font-size: 0.78rem;
+    flex-wrap: wrap;
+}
+
+.stat-char-name {
+    font-weight: bold;
+    color: var(--text-primary);
+    min-width: 80px;
+}
+
+.stat-char-details {
+    color: var(--text-secondary);
+    flex: 1;
+}
+
+.stat-max {
+    color: var(--success);
+    font-weight: bold;
+    font-size: 0.7rem;
+}
+
+.farming-tag {
+    color: #a3e635;
+    font-size: 0.7rem;
+}
+
+.btn-upgrade {
+    background: #7c3aed !important;
+    color: white !important;
+    border-color: #7c3aed !important;
+    font-weight: bold;
+    font-size: 0.7rem;
+    padding: 3px 8px;
+}
+
+.btn-upgrade:hover:not(:disabled) {
+    background: #6d28d9 !important;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-upgrade:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ========== B-4: Farming ========== */
+.farming-empty {
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    opacity: 0.6;
+    padding: 4px;
+}
+
+.farming-row {
+    padding: 6px;
+    background: var(--bg-tertiary);
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
+
+.farming-info {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.farming-dungeon {
+    font-size: 0.8rem;
+    font-weight: bold;
+    color: var(--text-primary);
+}
+
+.farming-steps {
+    font-size: 0.72rem;
+    color: var(--text-secondary);
+}
+
+.farming-controls {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+}
+
+.farming-char-select {
+    flex: 1;
+    padding: 4px 6px;
+    font-size: 0.78rem;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border: 1px solid #334155;
+    border-radius: 4px;
+    margin-bottom: 0;
+}
+
+.btn-farm {
+    background: #65a30d !important;
+    color: white !important;
+    border-color: #65a30d !important;
+    font-weight: bold;
+    font-size: 0.72rem;
+    padding: 4px 8px;
+    white-space: nowrap;
+}
+
+.btn-farm:hover:not(:disabled) {
+    background: #4d7c0f !important;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-farm:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.btn-unassign {
+    background: var(--danger) !important;
+    color: white !important;
+    font-weight: bold;
+    font-size: 0.72rem;
+    padding: 4px 6px;
+    width: auto;
+}
+
+.btn-unassign:hover {
+    background: #dc2626 !important;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ========== B-6: Hints ========== */
+.hint-area {
+    margin-top: 8px;
+}
+
+.hint-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 0;
+    font-size: 0.82rem;
+}
+
+.hint-text {
+    color: #a78bfa;
+    font-style: italic;
+}
+
+.hint-hidden {
+    color: var(--text-secondary);
+    opacity: 0.5;
+}
+
+.btn-hint {
+    background: #7c3aed !important;
+    color: white !important;
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    width: auto;
+    margin-bottom: 0;
+}
+
+.btn-hint:hover:not(:disabled) {
+    background: #6d28d9 !important;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-hint:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ========== C-3: Ending Overlay ========== */
+.ending-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    border-radius: 12px;
+}
+
+.ending-box {
+    text-align: center;
+    padding: 30px 40px;
+    max-width: 400px;
+}
+
+.ending-title {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #fbbf24;
+    text-shadow: 0 0 20px rgba(251, 191, 36, 0.6);
+    margin-bottom: 16px;
+}
+
+.ending-stats {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    line-height: 1.8;
+    margin-bottom: 16px;
+}
+
+.ending-note {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    opacity: 0.7;
+    font-style: italic;
+    margin-bottom: 20px;
+}
+
+.btn-new-game-plus {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #000;
+    font-weight: bold;
+    font-size: 1.1rem;
+    padding: 12px 32px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: auto;
+}
+
+.btn-new-game-plus:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(251, 191, 36, 0.5);
+}
+
+/* ========== C-2: Chapter Join Message ========== */
+.chapter-join-msg {
+    color: #a78bfa;
+    font-weight: bold;
+    margin-top: 4px;
+}
+
+/* ========== C-5: Item Shop ========== */
+.item-shop {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+}
+
+.btn-buy-item {
+    background: #7c3aed !important;
+    color: white !important;
+    border-color: #7c3aed !important;
+    font-weight: bold;
+    font-size: 0.72rem;
+    padding: 4px 8px;
+}
+
+.btn-buy-item:hover:not(:disabled) {
+    background: #6d28d9 !important;
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-buy-item:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.inventory-display {
+    font-size: 0.78rem;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    line-height: 1.4;
+}
+
+.inventory-item {
+    color: #a78bfa;
+}
+
+.active-contract {
+    color: #4ade80;
+    font-weight: bold;
+}
+
+/* ========== Character Farming Badge ========== */
+.char-card.char-farming {
+    border: 2px solid #a3e635;
+    opacity: 0.7;
+}
+
+.char-card.char-farming .char-name::after {
+    content: ' \1F33E';
+    font-size: 0.65rem;
+}
+
 /* ========== Responsive for Editor ========== */
 @media (max-width: 700px) {
     .tile-palette {

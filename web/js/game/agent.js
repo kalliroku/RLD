@@ -28,6 +28,7 @@ export class Agent {
         this.maxHp = maxHp;
         this.totalReward = 0;
         this.turnCount = 0;
+        this.actionHistory = [];
         this.visitHistory = new Map(); // "x,y" -> last visit turn
         this._recordVisit();
     }
@@ -107,6 +108,7 @@ export class Agent {
 
         // Stochastic transition: resolve actual action
         const resolvedAction = this._resolveAction(action, grid);
+        this.actionHistory.push(resolvedAction);
 
         if (!this.canMove(resolvedAction, grid)) {
             // Wall bump (stay in place, still penalized)
@@ -167,6 +169,7 @@ export class Agent {
         this.hp = this.maxHp;
         this.totalReward = 0;
         this.turnCount = 0;
+        this.actionHistory = [];
         this.visitHistory.clear();
         this._recordVisit();
     }

@@ -28,7 +28,7 @@ AI 모험가를 훈련시켜 던전을 공략하거나, 자신만의 던전을 �
 | Phase 12 | Wiering & van Hasselt 앙상블 (QV, ACLA, Ensemble) | ✅ 완료 |
 | Phase 13 | DQN 실험 (Vanilla JS MLP) — 코드 완성, UI 미등록 | 🔬 실험 |
 | Phase 14 | 논문 기반 검토 + Expected SARSA, Double Q-Learning, 확률적 던전, 25×25 미로 | ✅ 완료 |
-| Phase 15 | 대규모 던전 + 절차적 생성 | ⏳ 예정 |
+| Phase 15 | n-step Tree Backup, Prioritized Sweeping, BSP+CA 절차적 생성, 50×50 던전 | ✅ 완료 |
 | Phase 16 | NPC 가차 시스템 | ⏳ 예정 |
 
 ## 설치
@@ -121,9 +121,9 @@ RLD/
 │   ├── css/style.css   # 스타일
 │   └── js/
 │       ├── main.js     # 게임 엔트리포인트
-│       └── game/       # 그리드, 에이전트, 11개 RL 알고리즘 + DQN(실험), 렌더러, 에디터, 사운드
+│       └── game/       # 그리드, 에이전트, 15개 RL 알고리즘 + DQN(실험), 렌더러, 에디터, 사운드, 절차적 생성기
 ├── assets/
-│   └── dungeons/       # 던전 파일들 (12개)
+│   └── dungeons/       # 던전 파일들 (3개, 나머지 28개는 grid.js 하드코딩)
 ├── tests/
 ├── docs/
 │   ├── GDD.md          # 게임 디자인 문서
@@ -159,7 +159,7 @@ RLD/
 
 ## 주요 기능
 
-- **29개 던전**: 튜토리얼부터 논문 벤치마크, 확률적 전이 환경, 25×25 대규모 미로까지
+- **31개 던전**: 튜토리얼부터 논문 벤치마크, 확률적 전이 환경, 50×50 절차적 생성 던전까지
 - **골드 이코노미**: 던전 입장비, 클리어 보상, 몬스터 처치 보상
 - **던전 언락**: 이전 던전 클리어 시 다음 던전 해금
 - **전장의 안개**: 방문한 칸만 보이는 탐험 시스템
@@ -170,18 +170,18 @@ RLD/
 - **모바일 터치 컨트롤**: 스와이프 + D-pad
 - **AI 학습 시각화**: 4단계 속도로 학습 과정 실시간 관찰
 - **8비트 사운드**: Web Audio API 기반 효과음
-- **13개 RL 알고리즘**: Q-Learning, SARSA, Monte Carlo, SARSA(λ), Dyna-Q, REINFORCE, Actor-Critic, Local Q-Learning, QV-Learning, ACLA, Ensemble, Expected SARSA, Double Q-Learning
+- **15개 RL 알고리즘**: Q-Learning, SARSA, Monte Carlo, SARSA(λ), Dyna-Q, REINFORCE, Actor-Critic, Local Q-Learning, QV-Learning, ACLA, Ensemble, Expected SARSA, Double Q-Learning, n-step Tree Backup, Prioritized Sweeping
 - **확률적 전이 환경**: FrozenLake 스타일 미끄러운 바닥 (Slippery) 지원
 - **앙상블 시스템**: Boltzmann Multiplication으로 5개 알고리즘 결합 (Wiering & van Hasselt, 2008)
 - **멀티스테이지 던전**: 여러 층을 묶어 하나의 던전으로 구성, HP 계승, 골드 보류
 - **던전 에디터**: 브라우저 내 타일 배치, BFS 검증, 저장/불러오기, 커스텀 던전 AI 훈련
+- **절차적 던전 생성**: BSP + Cellular Automata 하이브리드로 50×50 대규모 던전 생성
 
 ## 향후 계획
 
-1. **추가 Tabular 알고리즘**: n-step Tree Backup, Prioritized Sweeping
-2. **대규모 던전**: 50×50 미로, 절차적 생성 (BSP + Cellular Automata)
-3. **NPC 가차**: 알고리즘 캐릭터화 (피피오/PPO, 삭/SAC 등)
-4. **Neural 알고리즘**: DQN 재활성화 (50×50+), PPO, A2C
+1. **NPC 가차**: 알고리즘 캐릭터화 (피피오/PPO, 삭/SAC 등)
+2. **Neural 알고리즘**: DQN 재활성화 (50×50+), PPO, A2C
+3. **동적 환경**: 시간에 따라 변하는 장애물, 기억 의존 과제
 
 ## 참고 자료 / 논문 출처
 
@@ -201,14 +201,18 @@ RLD/
 - Mnih et al. (2015) "Human-level control through deep reinforcement learning", Nature 518 — DQN (실험적)
 - Farama Foundation, MiniGrid — 로컬 관측(egocentric partial observation) 상태 인코딩 참조
 
-**논문 — 추가 예정 알고리즘**
+**논문 — Phase 14~15 추가 알고리즘**
 - van Seijen et al. (2009) "A Theoretical and Empirical Analysis of Expected Sarsa" — Expected SARSA
 - van Hasselt (2010) "Double Q-learning", NeurIPS — Double Q-Learning
 - Moore & Atkeson (1993) "Prioritized Sweeping", Machine Learning — Prioritized Sweeping
+- Sutton & Barto (2018) Section 7.5 "A Unifying Algorithm: n-step Tree Backup" — n-step Tree Backup
 
 **벤치마킹 연구**
 - "Benchmarking Tabular RL Algorithms" (TDS, 2025) — 25×25까지 체계적 비교
 - "Revisiting Benchmarking of Tabular RL Methods" (TDS) — n-step Tree Backup 최우수
+
+**절차적 생성**
+- BSP Tree + Cellular Automata 하이브리드 — 50×50 던전 자동 생성
 
 **표준 벤치마크 환경**
 - Gymnasium: CliffWalking, WindyGridworld, FrozenLake

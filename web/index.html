@@ -35,6 +35,29 @@
                     </div>
                 </div>
 
+                <!-- Ending Overlay (C-3) -->
+                <div class="ending-overlay" id="ending-overlay" style="display:none;">
+                    <div class="ending-box">
+                        <div class="ending-title">ALL DUNGEONS CLEARED!</div>
+                        <div class="ending-stats" id="ending-stats"></div>
+                        <div class="ending-note">Q-tables preserved. Can you beat your record?</div>
+                        <button class="btn-new-game-plus" id="btn-new-game-plus">New Game+</button>
+                    </div>
+                </div>
+
+                <!-- Map Choice Overlay (B-5) -->
+                <div class="map-choice-overlay" id="map-choice-overlay" style="display:none;">
+                    <div class="map-choice-box">
+                        <div class="map-choice-title">FIRST CLEAR!</div>
+                        <div class="map-choice-dungeon" id="map-choice-dungeon"></div>
+                        <div class="map-choice-details" id="map-choice-details"></div>
+                        <div class="map-choice-buttons">
+                            <button class="btn-sell-map" id="btn-sell-map">Sell Map</button>
+                            <button class="btn-keep-map" id="btn-keep-map">Keep Map</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="dpad-container" id="dpad-container">
                     <div class="dpad">
                         <button class="dpad-btn dpad-up" data-action="0">&#9650;</button>
@@ -154,6 +177,11 @@
                     </p>
                 </div>
 
+                <div class="control-section" id="stats-section">
+                    <h3>Serpa Stats</h3>
+                    <div class="stats-list"></div>
+                </div>
+
                 <div class="control-section">
                     <h3>Dungeon</h3>
                     <select id="dungeon-select">
@@ -190,6 +218,7 @@
                         <option value="level_31_generated_rooms">Lv.31 Rooms (50×50)</option>
                     </select>
                     <button id="btn-reset">Reset (R)</button>
+                    <div class="hint-area" id="hint-area"></div>
                 </div>
 
                 <div class="control-section" id="provisions-section">
@@ -201,6 +230,18 @@
                         <button class="btn-small btn-buy-food" id="btn-buy-food">Buy</button>
                     </div>
                     <div class="provisions-info" id="provisions-info"></div>
+                    <div class="item-shop" id="item-shop">
+                        <span class="speed-label">Items:</span>
+                        <button class="btn-small btn-buy-item" data-item="escape_rope">Escape 100G</button>
+                        <button class="btn-small btn-buy-item" data-item="defense_contract">Defense 150G</button>
+                        <button class="btn-small btn-buy-item" data-item="trap_nullify">Anti-Trap 200G</button>
+                    </div>
+                    <div class="inventory-display" id="inventory-display"></div>
+                </div>
+
+                <div class="control-section" id="farming-section">
+                    <h3>Farming</h3>
+                    <div id="farming-list"></div>
                 </div>
 
                 <div class="control-section">
