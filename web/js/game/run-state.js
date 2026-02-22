@@ -24,7 +24,7 @@ const HIRE_COSTS = {
     sweeper: 2000
 };
 
-const STARTING_GOLD = 500;
+const STARTING_GOLD = 800;
 
 // B-3: Character base stats and upgrade costs
 const CHARACTER_STATS = {
