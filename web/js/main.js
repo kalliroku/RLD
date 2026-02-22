@@ -25,7 +25,7 @@ import { PrioritizedSweeping } from './game/prioritized-sweeping.js';
 import { sound } from './game/sound.js';
 import { DungeonEditor } from './game/editor.js';
 import { MultiStageGrid } from './game/multi-stage-grid.js';
-import { RunState } from './game/run-state.js';
+import { RunState, CHARACTER_STATS, CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS } from './game/run-state.js';
 
 // Character registry
 const CHARACTERS = {
@@ -132,6 +132,129 @@ const PRESET_MULTI_DUNGEONS = {
 // Legacy key - migration handled by RunState
 const STORAGE_KEY = 'rld_save_data';
 
+// B-1: Operating cost per episode (base cost × dungeon level)
+const BASE_OP_COST = {
+    qkun: 10, sarsa: 10, monte: 10,
+    gradi: 5,
+    tracer: 12, dyna: 16,
+    critic: 15, qvkun: 15, acla: 15, exsa: 15, doubleq: 15,
+    ensemble: 20, treeback: 18, sweeper: 18
+};
+
+// B-6: Dungeon hints (purchasable information)
+const DUNGEON_HINTS = {
+    level_01_easy: [
+        { text: '5x5 크기의 작은 미로입니다.', cost: 50 },
+    ],
+    level_02_trap: [
+        { text: '함정이 있습니다. 신중하게.', cost: 50 },
+    ],
+    level_03_maze: [
+        { text: '7x7 미로. 길을 잃기 쉽습니다.', cost: 50 },
+    ],
+    level_04_pit: [
+        { text: '낙사 구간이 있습니다. 즉사 주의!', cost: 50 },
+    ],
+    level_05_gold: [
+        { text: '7x7 규모입니다. 함정에 주의.', cost: 50 },
+        { text: '"낙관적인 녀석이면 충분합니다."', cost: 100 },
+    ],
+    level_06_risk: [
+        { text: '보상이 크지만 위험도 큽니다.', cost: 50 },
+        { text: '치유 타일을 잘 활용하세요.', cost: 100 },
+    ],
+    level_07_gauntlet: [
+        { text: '연속 함정 구간입니다.', cost: 50 },
+        { text: 'HP 관리가 핵심입니다.', cost: 100 },
+    ],
+    level_08_deadly: [
+        { text: '미로 + 함정 + 구덩이.', cost: 80 },
+        { text: '"체력이 좋은 녀석을 보내라."', cost: 120 },
+    ],
+    level_09_treasure: [
+        { text: '보물이 숨겨져 있습니다.', cost: 80 },
+        { text: '몬스터를 피하면 안전합니다.', cost: 120 },
+    ],
+    level_10_final: [
+        { text: '최종 시험. 모든 요소가 등장합니다.', cost: 100 },
+        { text: '"최고의 세르파가 필요합니다."', cost: 150 },
+    ],
+    level_11_hp_test: [
+        { text: 'HP 상태를 인식하는 던전입니다.', cost: 50 },
+    ],
+    level_12_hp_gauntlet: [
+        { text: 'HP 인식 + 연속 전투.', cost: 80 },
+        { text: '"힐러가 있으면 좋겠지만..."', cost: 120 },
+    ],
+    level_13_cliff: [
+        { text: '절벽 옆 좁은 길. 한 발짝 실수가 치명적.', cost: 80 },
+    ],
+    level_14_long_hall: [
+        { text: '긴 복도. 스텝 효율이 중요합니다.', cost: 80 },
+    ],
+    level_15_multi_room: [
+        { text: '여러 방을 연결하는 구조.', cost: 80 },
+    ],
+    level_16_open_field: [
+        { text: '넓은 공간. 탐색 범위가 넓습니다.', cost: 80 },
+    ],
+    level_17_two_paths: [
+        { text: '두 갈래 길. 하나는 안전, 하나는 위험.', cost: 80 },
+        { text: '"빠른 녀석이 유리합니다."', cost: 120 },
+    ],
+    level_18_dead_end: [
+        { text: '막다른 골목이 많습니다.', cost: 80 },
+        { text: '"상상력이 풍부한 녀석이 좋습니다."', cost: 120 },
+    ],
+    level_19_bridge: [
+        { text: '좁은 다리. 돌아갈 수 없습니다.', cost: 100 },
+    ],
+    level_20_sacrifice: [
+        { text: '절벽 걷기. 한쪽은 낭떠러지.', cost: 100 },
+        { text: '"신중한 녀석을 보내라."', cost: 150 },
+    ],
+    level_21_desert: [
+        { text: '사막 횡단. 식량이 많이 필요합니다.', cost: 100 },
+    ],
+    level_22_arena: [
+        { text: '몬스터 아레나. HP 관리 필수.', cost: 100 },
+        { text: '"체력이 좋은 녀석이 유리합니다."', cost: 150 },
+    ],
+    level_23_mirage: [
+        { text: '신기루. 길이 보이지 않습니다.', cost: 100 },
+    ],
+    level_24_paper_maze: [
+        { text: '종이 미로. 벽이 얇습니다.', cost: 80 },
+    ],
+    level_25_paper_hard: [
+        { text: '종이 미로 강화판.', cost: 100 },
+        { text: '"여러 알고리즘의 합의가 필요합니다."', cost: 150 },
+    ],
+    level_26_frozen_lake: [
+        { text: '얼음 호수. 미끄럽습니다! (확률적 이동)', cost: 100 },
+        { text: '"기대값으로 학습하는 녀석이 유리합니다."', cost: 150 },
+    ],
+    level_27_ice_maze: [
+        { text: '얼음 미로. 미끄러지면 벽에 부딪힙니다.', cost: 120 },
+    ],
+    level_28_frozen_cliff: [
+        { text: '얼음 절벽. 미끄러지면 추락.', cost: 120 },
+        { text: '"이중 학습으로 편향을 줄이는 게 핵심."', cost: 180 },
+    ],
+    level_29_big_maze: [
+        { text: '25x25 대형 미로. 스텝 한도 1000.', cost: 150 },
+        { text: '"모델 기반 학습이 효율적입니다."', cost: 200 },
+    ],
+    level_30_generated_cave: [
+        { text: '50x50 동굴. 자동 생성됩니다.', cost: 200 },
+        { text: '"우선순위 정리가 필요합니다."', cost: 300 },
+    ],
+    level_31_generated_rooms: [
+        { text: '50x50 방 구조. 자동 생성됩니다.', cost: 200 },
+        { text: '"n걸음 앞을 내다보는 전략이 필요합니다."', cost: 300 },
+    ],
+};
+
 // Training speed delays (ms per step)
 const SPEED_DELAYS = {
     1: 1500,  // 1x - slow observation
@@ -162,6 +285,17 @@ class Game {
 
         // Game over state
         this.isGameOver = false;
+
+        // C-2: Chapter progression
+        this.newChapterInfo = null;
+
+        // C-4: Treasure state
+        this.carryingTreasure = false;
+        this.treasurePosition = null;
+
+        // C-5: Item contracts (manual play only, per episode)
+        this.activeDefenseContract = false;
+        this.activeTrapNullify = false;
 
         // Migrate old Q-tables
         this.migrateOldQTables();
@@ -250,6 +384,12 @@ class Game {
         this.loadCustomDungeonOptions();
         this.updateCharacterGrid();
         this.loadDungeon('level_01_easy');
+
+        // B-3/B-4/B-6/C-5: Initialize economy UI
+        this.updateStatsUI();
+        this.updateFarmingUI();
+        this.updateHintUI();
+        this.updateItemUI();
     }
 
     // ========== Mode Tabs ==========
@@ -1131,6 +1271,66 @@ class Game {
         return names[dungeonId] || dungeonId;
     }
 
+    getDungeonLevel(dungeonId) {
+        const m = dungeonId.match(/level_(\d+)/);
+        return m ? parseInt(m[1]) : 1;
+    }
+
+    getOperatingCost(charName, dungeonId) {
+        const base = BASE_OP_COST[charName] ?? 10;
+        const level = this.getDungeonLevel(dungeonId);
+        return base * level;
+    }
+
+    isBuiltInDungeon(dungeonId) {
+        return !dungeonId.startsWith('custom_') && !dungeonId.startsWith('dungeon_') && !dungeonId.startsWith('preset_');
+    }
+
+    /**
+     * Run greedy episode to reconstruct answer path after instant training.
+     * Uses epsilon=0 to get the best learned policy, without modifying algorithm files.
+     */
+    reconstructAnswerPath() {
+        if (!this.qlearning || !this.grid) return;
+        const dungeonId = this.currentDungeon;
+        if (!this.isBuiltInDungeon(dungeonId)) return;
+
+        const startPos = this.grid.startPos;
+        if (!startPos) return;
+
+        const maxSteps = this.grid.suggestedMaxSteps || 200;
+        const agent = new Agent(startPos.x, startPos.y);
+
+        // Save and override epsilon for greedy run
+        const savedEpsilon = this.qlearning.epsilon;
+        this.qlearning.epsilon = 0;
+
+        let steps = 0;
+        let success = false;
+
+        while (steps < maxSteps) {
+            const action = this.qlearning.chooseAction
+                ? this.qlearning.chooseAction(agent.x, agent.y, agent.hp)
+                : this.qlearning.stepAction(agent.x, agent.y, agent.hp);
+
+            const result = agent.move(action, this.grid);
+            steps++;
+
+            if (result.done) {
+                if (agent.hp > 0 && this.grid.getTile(agent.x, agent.y) === TileType.GOAL) {
+                    success = true;
+                }
+                break;
+            }
+        }
+
+        this.qlearning.epsilon = savedEpsilon;
+
+        if (success) {
+            this.runState.recordAnswerPath(dungeonId, agent.actionHistory, steps, this.currentCharacter);
+        }
+    }
+
     /**
      * Create algorithm instance based on current character
      */
@@ -1230,6 +1430,7 @@ class Game {
             const charName = btn.dataset.char;
             btn.classList.toggle('locked', this.runState.isCharacterLocked(charName));
             btn.classList.toggle('char-hidden', this.runState.isCharacterHidden(charName));
+            btn.classList.toggle('char-farming', this.runState.isFarming(charName));
         });
     }
 
@@ -1345,6 +1546,33 @@ class Game {
         // New Run button
         document.getElementById('btn-new-run').addEventListener('click', () => this.startNewRun());
 
+        // C-3: New Game+ button
+        document.getElementById('btn-new-game-plus').addEventListener('click', () => this.startNewGamePlus());
+
+        // C-5: Item shop buttons
+        document.querySelectorAll('.btn-buy-item').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const itemId = e.currentTarget.dataset.item;
+                if (this.runState.buyItem(itemId)) {
+                    const item = ITEMS[itemId];
+                    // Contract items: activate + consume immediately (1 episode effect)
+                    if (itemId === 'defense_contract') {
+                        this.runState.useItem('defense_contract');
+                        this.activeDefenseContract = true;
+                    }
+                    if (itemId === 'trap_nullify') {
+                        this.runState.useItem('trap_nullify');
+                        this.activeTrapNullify = true;
+                    }
+                    this.showMessage(`Bought ${item.name}! -${item.cost}G`, 'success');
+                    this.updateUI();
+                    this.updateItemUI();
+                } else {
+                    this.showMessage('Not enough gold!', 'danger');
+                }
+            });
+        });
+
         // Provisions: food amount input updates cost display
         this.foodAmountInput.addEventListener('input', () => {
             const amount = parseInt(this.foodAmountInput.value) || 0;
@@ -1364,6 +1592,7 @@ class Game {
             }
             this.runState.buyFood(amount);
             this.updateUI();
+            this.updateItemUI();
             this.showMessage(`Bought ${amount} food. Total: ${this.runState.food}`, 'success');
         });
 
@@ -1599,13 +1828,19 @@ class Game {
         const slipNote = config.slippery ? ' [Slippery ❄️]' : '';
         const charNote = charDef ? ` [${charDef.name}]` : '';
         const loadNote = loaded ? ' (Data loaded)' : '';
-        this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G${hpNote}${slipNote}${charNote}${loadNote}`, 'info');
+        // B-1: Show operating cost in dungeon info
+        const opCost = this.getOperatingCost(this.currentCharacter, name);
+        const opNote = ` | Train: ${opCost}G/ep`;
+        this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G${hpNote}${slipNote}${charNote}${loadNote}${opNote}`, 'info');
 
         if (loaded) {
             this.updateVisualization();
         }
 
         this.reset();
+
+        // B-6: Update hint UI on dungeon change
+        this.updateHintUI();
     }
 
     tryEnterDungeon() {
@@ -1657,9 +1892,13 @@ class Game {
 
         const { x, y } = this.grid.startPos;
 
+        // B-3: Apply character maxHp
+        const maxHp = this.runState.getMaxHp(this.currentCharacter);
+
         if (!this.agent) {
-            this.agent = new Agent(x, y);
+            this.agent = new Agent(x, y, maxHp, maxHp);
         } else {
+            this.agent.maxHp = maxHp;
             this.agent.reset(x, y);
         }
 
@@ -1672,6 +1911,14 @@ class Game {
         if (this.grid.getTotalStages && this.grid.getTotalStages() > 1) {
             this.renderer.setViewportStage(0);
         }
+
+        // C-4: Treasure position
+        this.carryingTreasure = false;
+        this.computeTreasurePosition(this.currentDungeon);
+
+        // C-5: Reset item contract flags (consumed at episode end, not start)
+        this.activeDefenseContract = false;
+        this.activeTrapNullify = false;
 
         this.updateUI();
         this.render();
@@ -1686,6 +1933,20 @@ class Game {
         if (!this.isTraining && isBuiltIn && this.runState.food > 0) {
             this.runState.consumeFood();
         } else if (!this.isTraining && isBuiltIn && this.runState.food <= 0 && this.steps > 0) {
+            // C-5: Escape rope — prevent game over
+            if (this.runState.hasItem('escape_rope')) {
+                this.runState.useItem('escape_rope');
+                this.done = true;
+                if (this.carryingTreasure) {
+                    const val = this.runState.collectTreasure(this.currentDungeon);
+                    this.carryingTreasure = false;
+                    this.showMessage(`Emergency escape! Rope consumed. Treasure +${val}G!`, 'warning');
+                } else {
+                    this.showMessage('Emergency escape! Rope consumed.', 'warning');
+                }
+                this.updateUI(); this.updateItemUI(); this.render();
+                return;
+            }
             // Food ran out — game over
             this.triggerGameOver('Food depleted! Stranded in the dungeon.');
             return;
@@ -1699,6 +1960,28 @@ class Game {
 
         const result = this.agent.move(action, this.grid);
         this.steps++;
+
+        // C-5: Defense contract — recover half damage from monster/trap
+        if (!this.isTraining && this.activeDefenseContract && result.success) {
+            if (result.tile === TileType.MONSTER) {
+                this.agent.hp = Math.min(this.agent.hp + 15, this.agent.maxHp);
+            } else if (result.tile === TileType.TRAP) {
+                this.agent.hp = Math.min(this.agent.hp + 5, this.agent.maxHp);
+            }
+        }
+        // C-5: Trap nullify — recover full trap damage
+        if (!this.isTraining && this.activeTrapNullify && result.success && result.tile === TileType.TRAP) {
+            this.agent.hp = Math.min(this.agent.hp + 10, this.agent.maxHp);
+        }
+
+        // C-4: Treasure pickup (manual play, on move success)
+        if (!this.isTraining && result.success && !result.done && this.treasurePosition) {
+            if (this.agent.x === this.treasurePosition.x && this.agent.y === this.treasurePosition.y && !this.carryingTreasure) {
+                this.carryingTreasure = true;
+                this.showMessage(`Found treasure! Reach the exit to collect it.`, 'success');
+                this.renderer.flash('rgba(251, 191, 36, 0.4)');
+            }
+        }
 
         // Learning from Demonstration: teach algorithm from user play
         if (this.qlearning && !this.isTraining) {
@@ -1731,6 +2014,24 @@ class Game {
                 const lostMsg = this.pendingGold > 0 ? ` ${this.pendingGold}G lost!` : '';
                 this.pendingGold = 0;
                 if (!this.isTraining && isBuiltIn) {
+                    // C-5: Escape rope — prevent pit death
+                    if (this.runState.hasItem('escape_rope')) {
+                        this.runState.useItem('escape_rope');
+                        if (this.carryingTreasure) {
+                            const val = this.runState.collectTreasure(this.currentDungeon);
+                            this.carryingTreasure = false;
+                            this.showMessage(`Emergency escape from pit! Rope consumed. Treasure +${val}G!`, 'warning');
+                        } else {
+                            this.showMessage('Emergency escape from pit! Rope consumed.', 'warning');
+                        }
+                        this.updateUI(); this.updateItemUI(); this.render();
+                        return;
+                    }
+                    // C-4: Treasure fail on death
+                    if (this.carryingTreasure) {
+                        this.runState.failTreasure(this.currentDungeon);
+                        this.carryingTreasure = false;
+                    }
                     this.triggerGameOver('Fell into a pit! Instant death.');
                 } else {
                     this.showMessage(`FELL INTO PIT! Instant death...${lostMsg}`, 'danger');
@@ -1742,6 +2043,24 @@ class Game {
                 const lostMsg = this.pendingGold > 0 ? ` ${this.pendingGold}G lost!` : '';
                 this.pendingGold = 0;
                 if (!this.isTraining && isBuiltIn) {
+                    // C-5: Escape rope — prevent HP death
+                    if (this.runState.hasItem('escape_rope')) {
+                        this.runState.useItem('escape_rope');
+                        if (this.carryingTreasure) {
+                            const val = this.runState.collectTreasure(this.currentDungeon);
+                            this.carryingTreasure = false;
+                            this.showMessage(`Emergency escape! Rope consumed. Treasure +${val}G!`, 'warning');
+                        } else {
+                            this.showMessage('Emergency escape! Rope consumed.', 'warning');
+                        }
+                        this.updateUI(); this.updateItemUI(); this.render();
+                        return;
+                    }
+                    // C-4: Treasure fail on death
+                    if (this.carryingTreasure) {
+                        this.runState.failTreasure(this.currentDungeon);
+                        this.carryingTreasure = false;
+                    }
                     this.triggerGameOver('HP reached 0! The party leader has fallen.');
                 } else {
                     this.showMessage(`DIED! Steps: ${this.steps}${lostMsg}`, 'danger');
@@ -1791,7 +2110,7 @@ class Game {
 
     handleVictory() {
         // Custom/preset dungeons: no economy impact (except pending gold)
-        if (this.currentDungeon.startsWith('custom_') || this.currentDungeon.startsWith('dungeon_') || this.currentDungeon.startsWith('preset_')) {
+        if (!this.isBuiltInDungeon(this.currentDungeon)) {
             sound.victory();
             const floorInfo = this.grid.getTotalStages ? ` (${this.grid.getTotalStages()} Floors)` : '';
             let goldMsg = '';
@@ -1807,16 +2126,34 @@ class Game {
             return;
         }
 
+        // C-1: Record serpa clear
+        this.runState.recordSerpaClear(this.currentCharacter);
+
+        // C-4: Collect treasure on victory
+        let treasureMsg = '';
+        if (this.carryingTreasure) {
+            const val = this.runState.collectTreasure(this.currentDungeon);
+            this.carryingTreasure = false;
+            if (val > 0) treasureMsg = ` Treasure +${val}G!`;
+        }
+
+        // B-2: Record answer path from manual play
+        if (this.agent && this.agent.actionHistory.length > 0) {
+            this.runState.recordAnswerPath(
+                this.currentDungeon,
+                this.agent.actionHistory,
+                this.agent.actionHistory.length,
+                this.currentCharacter
+            );
+        }
+
         const config = DUNGEON_CONFIG[this.currentDungeon];
         const isFirstClear = !this.runState.clearedDungeons.has(this.currentDungeon);
 
-        let reward;
         let unlockedNext = false;
 
         if (isFirstClear) {
-            reward = config.firstReward;
             this.runState.clearedDungeons.add(this.currentDungeon);
-            this.runState.gold += reward;
 
             // Unlock next dungeon
             const currentIndex = DUNGEON_ORDER.indexOf(this.currentDungeon);
@@ -1826,34 +2163,103 @@ class Game {
                     this.runState.unlockedDungeons.add(nextDungeon);
                     unlockedNext = true;
                 }
-            }
 
-            if (unlockedNext) {
-                sound.victory();
-                setTimeout(() => sound.unlock(), 600);
-                const nextName = this.getDungeonDisplayName(DUNGEON_ORDER[DUNGEON_ORDER.indexOf(this.currentDungeon) + 1]);
-                this.showMessage(`FIRST CLEAR! +${reward}G ${nextName} Unlocked!`, 'success');
-            } else {
-                sound.victory();
-                this.showMessage(`FIRST CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
+                // C-2: Detect chapter change
+                const prevCh = this.runState.getChapterForDungeon(this.currentDungeon);
+                const nextCh = this.runState.getChapterForDungeon(nextDungeon);
+                if (nextCh > prevCh) {
+                    this.newChapterInfo = this.runState.getChapterConfig(nextCh);
+                }
             }
 
             this.updateDungeonSelect();
+            this.updateCharacterGrid();
+
+            // C-3: Ending — all dungeons cleared?
+            if (this.runState.isAllDungeonsCleared()) {
+                sound.victory();
+                this.renderer.flash('rgba(34, 197, 94, 0.4)');
+                this.showEndingOverlay();
+                return;
+            }
+
+            // B-5: Show map choice overlay on first clear
+            sound.victory();
+            this.renderer.flash('rgba(34, 197, 94, 0.4)');
+            this.showMapChoiceOverlay(this.currentDungeon, config, unlockedNext);
         } else {
             sound.victory();
-            reward = config.repeatReward;
+            const reward = config.repeatReward;
             this.runState.gold += reward;
-            this.showMessage(`CLEAR! +${reward}G (Steps: ${this.steps})`, 'success');
+            this.showMessage(`CLEAR! +${reward}G (Steps: ${this.steps})${treasureMsg}`, 'success');
+            this.saveProgress();
+            this.renderer.flash('rgba(34, 197, 94, 0.4)');
         }
 
-        this.saveProgress();
-        this.renderer.flash('rgba(34, 197, 94, 0.4)');
         this.updateUI();
+        this.updateItemUI();
+    }
+
+    // B-5: Map choice overlay (sell vs keep map)
+    showMapChoiceOverlay(dungeonId, config, unlockedNext) {
+        const overlay = document.getElementById('map-choice-overlay');
+        const salePrice = this.runState.getMapSalePrice(dungeonId, DUNGEON_CONFIG);
+        const levelMatch = dungeonId.match(/level_(\d+)/);
+        const level = levelMatch ? parseInt(levelMatch[1]) : 1;
+        const exclusiveRuns = this.runState.getExclusiveRuns(level);
+        const exclusiveReward = 3 * config.repeatReward;
+        const dungeonName = this.getDungeonDisplayName(dungeonId);
+
+        let unlockMsg = '';
+        if (unlockedNext) {
+            const nextName = this.getDungeonDisplayName(DUNGEON_ORDER[DUNGEON_ORDER.indexOf(dungeonId) + 1]);
+            unlockMsg = `<div class="map-unlock-msg">${nextName} Unlocked!</div>`;
+        }
+        // C-2: Chapter join message
+        if (this.newChapterInfo) {
+            const names = this.newChapterInfo.storySerpas.map(s => CHARACTERS[s]?.name || s).join(', ');
+            unlockMsg += `<div class="chapter-join-msg">Ch.${this.newChapterInfo.chapter} "${this.newChapterInfo.name}": ${names} joined!</div>`;
+            this.newChapterInfo = null;
+        }
+
+        document.getElementById('map-choice-dungeon').textContent = `${dungeonName} (Lv.${level})`;
+        document.getElementById('map-choice-details').innerHTML =
+            `${unlockMsg}` +
+            `<div>Sell: +${salePrice}G (instant)</div>` +
+            `<div>Keep: ${exclusiveReward}G/farm x ${exclusiveRuns} runs (exclusive)</div>`;
+
+        document.getElementById('btn-sell-map').onclick = () => {
+            const earned = this.runState.sellMap(dungeonId, DUNGEON_CONFIG);
+            overlay.style.display = 'none';
+            this.showMessage(`FIRST CLEAR! Map sold for ${earned}G!`, 'success');
+            this.saveProgress();
+            this.updateUI();
+            this.updateFarmingUI();
+            this.updateItemUI();
+        };
+
+        document.getElementById('btn-keep-map').onclick = () => {
+            this.runState.keepMap(dungeonId);
+            overlay.style.display = 'none';
+            this.showMessage(`FIRST CLEAR! Map kept! Exclusive farming: ${exclusiveReward}G x ${exclusiveRuns} runs`, 'success');
+            this.saveProgress();
+            this.updateUI();
+            this.updateFarmingUI();
+            this.updateItemUI();
+        };
+
+        overlay.style.display = 'flex';
     }
 
     // ========== Game Over & New Run ==========
 
     triggerGameOver(cause) {
+        this.runState.recordDeath();
+        // C-4: Treasure fail on game over
+        if (this.carryingTreasure) {
+            this.runState.failTreasure(this.currentDungeon);
+            this.carryingTreasure = false;
+        }
         this.isGameOver = true;
         this.done = true;
 
@@ -1894,6 +2300,10 @@ class Game {
 
         this.loadDungeon('level_01_easy');
         this.dungeonSelect.value = 'level_01_easy';
+        this.updateFarmingUI();
+        this.updateStatsUI();
+        this.updateHintUI();
+        this.updateItemUI();
         this.showMessage(`Run #${this.runState.runNumber} started! Gold: ${this.runState.gold}G`, 'info');
     }
 
@@ -1902,6 +2312,21 @@ class Game {
     startTraining() {
         if (this.isTraining) return;
         if (this.isGameOver) return;
+
+        // B-4: Block if character is farming
+        if (this.runState.isFarming(this.currentCharacter)) {
+            this.showMessage(`${CHARACTERS[this.currentCharacter].name} is farming! Unassign first.`, 'warning');
+            return;
+        }
+
+        // B-1: Check gold for operating cost (built-in dungeons only)
+        if (this.isBuiltInDungeon(this.currentDungeon)) {
+            const opCost = this.getOperatingCost(this.currentCharacter, this.currentDungeon);
+            if (this.runState.gold < opCost) {
+                this.showMessage(`Not enough gold! Need ${opCost}G/episode`, 'danger');
+                return;
+            }
+        }
 
         this.isTraining = true;
         this.startTrainBtn.disabled = true;
@@ -1912,6 +2337,11 @@ class Game {
         // Disable fog of war during training
         this.renderer.fogOfWar = false;
 
+        // B-3: Apply agility multiplier to epsilon decay
+        // Higher agility → faster convergence: decay^agilityMul (e.g. 0.995^1.5 ≈ 0.9925)
+        const agilityMul = this.runState.getAgilityMultiplier(this.currentCharacter);
+        const epsilonDecay = Math.pow(0.995, agilityMul);
+
         // Reset algorithm with fresh parameters (based on character)
         const config = DUNGEON_CONFIG[this.currentDungeon] || {};
         this.qlearning = this.createAlgorithm(config, {
@@ -1919,7 +2349,7 @@ class Game {
             gamma: 0.99,
             epsilon: 1.0,
             epsilonMin: 0.01,
-            epsilonDecay: 0.995
+            epsilonDecay
         });
 
         this.trainingEpisode = 0;
@@ -1968,9 +2398,10 @@ class Game {
         }
         this.collectedGold.clear();
 
-        // Create training agent at start position
+        // Create training agent at start position (B-3: apply maxHp from character stats)
         const startPos = this.grid.startPos;
-        this.trainingAgent = new Agent(startPos.x, startPos.y);
+        const maxHp = this.runState.getMaxHp(this.currentCharacter);
+        this.trainingAgent = new Agent(startPos.x, startPos.y, maxHp, maxHp);
         this.trainingTotalReward = 0;
         this.trainingSteps = 0;
 
@@ -1978,6 +2409,9 @@ class Game {
         this.renderer.setAgent(this.agent);
         this.steps = 0;
         this.done = false;
+
+        // C-4: Reset treasure state for visual training episode
+        this.carryingTreasure = false;
 
         // Viewport: reset to stage 0 for multi-stage visual training
         if (this.grid.getTotalStages && this.grid.getTotalStages() > 1) {
@@ -2037,6 +2471,13 @@ class Game {
             this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
         }
 
+        // C-4: Treasure pickup during visual training
+        if (result.success && !result.done && this.treasurePosition) {
+            if (agent.x === this.treasurePosition.x && agent.y === this.treasurePosition.y && !this.carryingTreasure) {
+                this.carryingTreasure = true;
+            }
+        }
+
         const nextState = [agent.x, agent.y, agent.hp];
 
         // Learn
@@ -2066,6 +2507,26 @@ class Game {
     }
 
     finishVisualEpisode(success) {
+        // C-4: Treasure collect/fail on visual episode end
+        if (this.carryingTreasure && this.isBuiltInDungeon(this.currentDungeon)) {
+            if (success) {
+                this.runState.collectTreasure(this.currentDungeon);
+            } else {
+                this.runState.failTreasure(this.currentDungeon);
+            }
+            this.carryingTreasure = false;
+        }
+
+        // B-2: Record answer path from visual training success
+        if (success && this.trainingAgent && this.isBuiltInDungeon(this.currentDungeon)) {
+            this.runState.recordAnswerPath(
+                this.currentDungeon,
+                this.trainingAgent.actionHistory,
+                this.trainingAgent.actionHistory.length,
+                this.currentCharacter
+            );
+        }
+
         // Restore monsters
         for (const key of this.trainingKilledMonsters) {
             const [x, y] = key.split(',').map(Number);
@@ -2084,6 +2545,13 @@ class Game {
         this.qlearning.decayEpsilon();
         this.qlearning.episodeRewards.push(this.trainingTotalReward);
         this.qlearning.episodeSteps.push(this.trainingSteps);
+
+        // B-1: Deduct operating cost per episode
+        if (this.isBuiltInDungeon(this.currentDungeon)) {
+            const opCost = this.getOperatingCost(this.currentCharacter, this.currentDungeon);
+            this.runState.gold -= opCost;
+            this.saveProgress();
+        }
 
         this.trainingEpisode++;
         this.recentResults.push(success);
@@ -2110,6 +2578,15 @@ class Game {
             return;
         }
 
+        // B-1: Check gold for next episode
+        if (this.isBuiltInDungeon(this.currentDungeon)) {
+            const nextCost = this.getOperatingCost(this.currentCharacter, this.currentDungeon);
+            if (this.runState.gold < nextCost) {
+                this.finishTraining(`Out of gold! Need ${nextCost}G/ep. Clear: ${clearRate}%`);
+                return;
+            }
+        }
+
         this.beginVisualEpisode();
     }
 
@@ -2119,18 +2596,39 @@ class Game {
         this.showMessage(`Instant training... [${charDef ? charDef.name : this.currentCharacter}]`, 'info');
 
         const batchSize = 10;
+        const isBuiltIn = this.isBuiltInDungeon(this.currentDungeon);
+        const opCost = isBuiltIn ? this.getOperatingCost(this.currentCharacter, this.currentDungeon) : 0;
         let running = true;
 
         while (running && this.isTraining && this.trainingEpisode < MAX_EPISODES) {
             for (let i = 0; i < batchSize && this.isTraining && this.trainingEpisode < MAX_EPISODES; i++) {
+                // B-1: Check gold before each episode
+                if (isBuiltIn && this.runState.gold < opCost) {
+                    const successCount = this.recentResults.filter(r => r).length;
+                    const clearRate = this.recentResults.length > 0
+                        ? (successCount / this.recentResults.length * 100).toFixed(0)
+                        : 0;
+                    this.finishTraining(`Out of gold! Need ${opCost}G/ep. Clear: ${clearRate}%`);
+                    running = false;
+                    break;
+                }
+
                 const result = this.qlearning.runEpisode();
                 this.runState.totalSteps += (result.steps || 0);
+
+                // B-1: Deduct operating cost
+                if (isBuiltIn) {
+                    this.runState.gold -= opCost;
+                }
+
                 this.trainingEpisode++;
                 this.recentResults.push(result.success);
                 if (this.recentResults.length > CONVERGENCE_WINDOW) {
                     this.recentResults.shift();
                 }
             }
+
+            if (!running) break;
 
             const successCount = this.recentResults.filter(r => r).length;
             const clearRate = this.recentResults.length > 0
@@ -2164,8 +2662,14 @@ class Game {
         const epsilon = this.qlearning.epsilon;
         const charDef = CHARACTERS[this.currentCharacter];
         const charLabel = charDef ? charDef.name : this.currentCharacter;
+        // B-1: Show operating cost in training stats
+        let costInfo = '';
+        if (this.isBuiltInDungeon(this.currentDungeon)) {
+            const opCost = this.getOperatingCost(this.currentCharacter, this.currentDungeon);
+            costInfo = ` | Cost: ${opCost}G/ep | Gold: ${this.runState.gold}G`;
+        }
         this.trainStats.innerHTML =
-            `[${charLabel}] Episode: ${this.trainingEpisode} | Clear: ${clearRate}% | ε: ${epsilon.toFixed(2)}`;
+            `[${charLabel}] Episode: ${this.trainingEpisode} | Clear: ${clearRate}% | ε: ${epsilon.toFixed(2)}${costInfo}`;
 
         const percent = Math.min(100, (this.trainingEpisode / MAX_EPISODES) * 100);
         this.progressFill.style.width = `${percent}%`;
@@ -2193,9 +2697,15 @@ class Game {
 
         this.saveQTable();
         this.runState.saveMeta();
+        this.saveProgress();
+
+        // B-2: Reconstruct answer path after training
+        this.reconstructAnswerPath();
+
         this.renderer.fogOfWar = this.fogOfWarCheck.checked;
         this.reset();
         this.updateVisualization();
+        this.updateFarmingUI();
 
         this.showMessage(message, 'success');
     }
@@ -2277,6 +2787,363 @@ class Game {
         this.render();
     }
 
+    // ========== B-4: Farming UI ==========
+
+    updateFarmingUI() {
+        const container = document.getElementById('farming-list');
+        if (!container) return;
+
+        container.innerHTML = '';
+
+        // Show dungeons that have answer paths
+        const dungeonIds = Object.keys(this.runState.answerPaths);
+        if (dungeonIds.length === 0) {
+            container.innerHTML = '<div class="farming-empty">No answer paths recorded yet. Clear dungeons first!</div>';
+            return;
+        }
+
+        for (const dungeonId of dungeonIds) {
+            const path = this.runState.answerPaths[dungeonId];
+            const config = DUNGEON_CONFIG[dungeonId];
+            if (!config) continue;
+
+            const mapInfo = this.runState.getMapStatus(dungeonId);
+            const isExclusive = mapInfo && mapInfo.status === 'exclusive' && mapInfo.exclusiveRunsLeft > 0;
+            const reward = isExclusive ? 3 * config.repeatReward : config.repeatReward;
+            const exclusiveTag = isExclusive ? ` [Exclusive x${mapInfo.exclusiveRunsLeft}]` : '';
+            const dungeonName = this.getDungeonDisplayName(dungeonId);
+            const level = this.getDungeonLevel(dungeonId);
+
+            // Find who is farming this dungeon
+            const assignedChar = Object.entries(this.runState.farmingAssignments)
+                .find(([_, did]) => did === dungeonId)?.[0] || null;
+
+            const row = document.createElement('div');
+            row.className = 'farming-row';
+
+            // Build character options for dropdown
+            const availableChars = Object.keys(CHARACTERS).filter(name => {
+                if (this.runState.isCharacterHidden(name)) return false;
+                if (!this.runState.isCharacterAvailable(name)) return false;
+                if (this.runState.isFarming(name) && this.runState.getFarmingDungeon(name) !== dungeonId) return false;
+                return true;
+            });
+
+            let charSelect = `<select class="farming-char-select" data-dungeon="${dungeonId}">`;
+            charSelect += `<option value="">-- assign --</option>`;
+            for (const cn of availableChars) {
+                const charDef = CHARACTERS[cn];
+                const canF = this.runState.canFarm(cn, dungeonId, DUNGEON_CONFIG);
+                const str = this.runState.getStrength(cn);
+                const selected = (assignedChar === cn) ? ' selected' : '';
+                const disabled = (!canF && assignedChar !== cn) ? ' disabled' : '';
+                charSelect += `<option value="${cn}"${selected}${disabled}>${charDef.name} (Str:${str})</option>`;
+            }
+            charSelect += `</select>`;
+
+            row.innerHTML = `
+                <div class="farming-info">
+                    <span class="farming-dungeon">Lv.${level} ${dungeonName}</span>
+                    <span class="farming-steps">[${path.steps} steps]${exclusiveTag}</span>
+                </div>
+                <div class="farming-controls">
+                    ${charSelect}
+                    <button class="btn-small btn-farm" data-dungeon="${dungeonId}" ${!assignedChar ? 'disabled' : ''}>Farm +${reward}G</button>
+                    ${assignedChar ? `<button class="btn-small btn-unassign" data-char="${assignedChar}">X</button>` : ''}
+                </div>
+            `;
+
+            container.appendChild(row);
+        }
+
+        // Wire events
+        container.querySelectorAll('.farming-char-select').forEach(sel => {
+            sel.addEventListener('change', (e) => {
+                const dungeonId = e.target.dataset.dungeon;
+                const charName = e.target.value;
+
+                // Remove old assignment for this dungeon
+                const oldChar = Object.entries(this.runState.farmingAssignments)
+                    .find(([_, did]) => did === dungeonId)?.[0];
+                if (oldChar) this.runState.removeFarming(oldChar);
+
+                if (charName) {
+                    this.runState.assignFarming(charName, dungeonId, DUNGEON_CONFIG);
+                }
+                this.updateFarmingUI();
+                this.updateCharacterGrid();
+            });
+        });
+
+        container.querySelectorAll('.btn-farm').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const dungeonId = e.target.dataset.dungeon;
+                const assignedChar = Object.entries(this.runState.farmingAssignments)
+                    .find(([_, did]) => did === dungeonId)?.[0];
+                if (!assignedChar) return;
+
+                const result = this.runState.executeFarming(assignedChar, DUNGEON_CONFIG);
+                if (result.gold > 0) {
+                    const charDef = CHARACTERS[assignedChar];
+                    let msg = `${charDef.name} farmed +${result.gold}G!`;
+                    if (result.message === 'exclusive_expired') {
+                        msg += ' Map leaked to market!';
+                    }
+                    this.showMessage(msg, 'success');
+                }
+                this.updateUI();
+                this.updateFarmingUI();
+                this.updateItemUI();
+            });
+        });
+
+        container.querySelectorAll('.btn-unassign').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const charName = e.target.dataset.char;
+                this.runState.removeFarming(charName);
+                this.updateFarmingUI();
+                this.updateCharacterGrid();
+            });
+        });
+    }
+
+    // ========== B-3: Character Stats UI ==========
+
+    updateStatsUI() {
+        const container = document.getElementById('stats-section');
+        if (!container) return;
+
+        const list = container.querySelector('.stats-list');
+        if (!list) return;
+        list.innerHTML = '';
+
+        const availableChars = Object.keys(CHARACTERS).filter(name => {
+            if (this.runState.isCharacterHidden(name)) return false;
+            if (!this.runState.isCharacterAvailable(name)) return false;
+            return true;
+        });
+
+        for (const name of availableChars) {
+            const charDef = CHARACTERS[name];
+            const stats = CHARACTER_STATS[name];
+            if (!stats) continue;
+
+            const level = this.runState.getCharacterLevel(name);
+            const str = this.runState.getStrength(name);
+            const maxHp = this.runState.getMaxHp(name);
+            const canUpgrade = this.runState.canUpgradeCharacter(name);
+            const atMax = level >= 3;
+            const isFarming = this.runState.isFarming(name);
+
+            let secondaryText = '';
+            if (stats.secondary === 'hp') {
+                secondaryText = ` | HP: ${maxHp}`;
+            } else if (stats.secondary === 'agility') {
+                const mul = this.runState.getAgilityMultiplier(name);
+                secondaryText = ` | Agility: x${mul.toFixed(1)}`;
+            }
+
+            const farmTag = isFarming ? ' <span class="farming-tag">[Farming]</span>' : '';
+
+            const row = document.createElement('div');
+            row.className = 'stat-row';
+            row.innerHTML = `
+                <span class="stat-char-name">[${charDef.name}] Lv.${level}</span>
+                <span class="stat-char-details">Str: ${str}${secondaryText}${farmTag}</span>
+                ${atMax
+                    ? '<span class="stat-max">MAX</span>'
+                    : `<button class="btn-small btn-upgrade" data-char="${name}" ${canUpgrade ? '' : 'disabled'}>Upgrade ${stats.cost}G</button>`
+                }
+            `;
+            list.appendChild(row);
+        }
+
+        // Wire upgrade buttons
+        list.querySelectorAll('.btn-upgrade').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const charName = e.target.dataset.char;
+                if (this.runState.upgradeCharacter(charName)) {
+                    const charDef = CHARACTERS[charName];
+                    const newLevel = this.runState.getCharacterLevel(charName);
+                    this.showMessage(`${charDef.name} upgraded to Lv.${newLevel}!`, 'success');
+                    this.updateStatsUI();
+                    this.updateUI();
+                    this.updateFarmingUI();
+                }
+            });
+        });
+    }
+
+    // ========== B-6: Hint UI ==========
+
+    updateHintUI() {
+        const container = document.getElementById('hint-area');
+        if (!container) return;
+
+        const dungeonId = this.currentDungeon;
+        const hints = DUNGEON_HINTS[dungeonId];
+
+        if (!hints || !this.isBuiltInDungeon(dungeonId)) {
+            container.innerHTML = '';
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = '';
+        container.innerHTML = '';
+
+        for (let i = 0; i < hints.length; i++) {
+            const hint = hints[i];
+            const purchased = this.runState.hasHint(dungeonId, i);
+
+            const row = document.createElement('div');
+            row.className = 'hint-row';
+
+            if (purchased) {
+                row.innerHTML = `<span class="hint-text">"${hint.text}"</span>`;
+            } else {
+                row.innerHTML = `
+                    <button class="btn-small btn-hint" data-dungeon="${dungeonId}" data-index="${i}" data-cost="${hint.cost}"
+                        ${this.runState.gold < hint.cost ? 'disabled' : ''}>
+                        ${hint.cost}G
+                    </button>
+                    <span class="hint-hidden">???</span>
+                `;
+            }
+            container.appendChild(row);
+        }
+
+        // Wire hint purchase
+        container.querySelectorAll('.btn-hint').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                const dId = e.target.dataset.dungeon;
+                const idx = parseInt(e.target.dataset.index);
+                const cost = parseInt(e.target.dataset.cost);
+                if (this.runState.purchaseHint(dId, idx, cost)) {
+                    this.updateHintUI();
+                    this.updateUI();
+                    this.showMessage(`Hint purchased! -${cost}G`, 'success');
+                }
+            });
+        });
+    }
+
+    // ========== C-3: Ending + NG+ ==========
+
+    showEndingOverlay() {
+        const stats = this.runState.getEndingStats();
+        const statsEl = document.getElementById('ending-stats');
+        const mvp = stats.mostActiveSerpa;
+        const mvpName = mvp ? (CHARACTERS[mvp.name]?.name || mvp.name) : '-';
+        const ngLabel = stats.ngPlusCount > 0 ? ` (NG+${stats.ngPlusCount})` : '';
+        const bestLabel = stats.bestTotalSteps !== null ? `Best: ${stats.bestTotalSteps} steps` : '';
+
+        statsEl.innerHTML = [
+            `Run #${stats.runNumber}${ngLabel}`,
+            `Total Steps: ${stats.totalSteps}`,
+            `Deaths: ${stats.deathCount}`,
+            `Serpas Used: ${stats.usedSerpaCount}`,
+            `MVP: ${mvpName}${mvp ? ` (${mvp.clears} clears)` : ''}`,
+            `Farming Steps: ${stats.totalFarmingSteps}`,
+            bestLabel,
+        ].filter(Boolean).join('<br>');
+
+        document.getElementById('ending-overlay').style.display = 'flex';
+    }
+
+    startNewGamePlus() {
+        document.getElementById('ending-overlay').style.display = 'none';
+        this.runState.startNewGamePlus();
+
+        this.isGameOver = false;
+        this.updateCharacterGrid();
+        this.updateDungeonSelect();
+        this.loadCustomDungeonOptions();
+        this.updateUI();
+
+        if (!this.runState.isCharacterAvailable(this.currentCharacter)) {
+            this.currentCharacter = 'qkun';
+            document.querySelectorAll('.char-card').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.char === 'qkun');
+            });
+            this.characterDesc.textContent = CHARACTERS.qkun.desc;
+        }
+
+        this.loadDungeon('level_01_easy');
+        this.dungeonSelect.value = 'level_01_easy';
+        this.updateFarmingUI();
+        this.updateStatsUI();
+        this.updateHintUI();
+        this.updateItemUI();
+        this.showMessage(`New Game+ ${this.runState.ngPlusCount}! Q-tables preserved. Gold: ${this.runState.gold}G`, 'success');
+    }
+
+    // ========== C-4: Treasure System ==========
+
+    computeTreasurePosition(dungeonId) {
+        if (!this.isBuiltInDungeon(dungeonId)) {
+            this.treasurePosition = null;
+            return;
+        }
+        if (!this.runState.hasDungeonTreasure(dungeonId)) {
+            this.treasurePosition = null;
+            return;
+        }
+
+        // Scan for EMPTY tiles to place treasure deterministically
+        const emptyTiles = [];
+        for (let y = 0; y < this.grid.height; y++) {
+            for (let x = 0; x < this.grid.width; x++) {
+                if (this.grid.getTile(x, y) === TileType.EMPTY) {
+                    emptyTiles.push({ x, y });
+                }
+            }
+        }
+        if (emptyTiles.length === 0) {
+            this.treasurePosition = null;
+            return;
+        }
+
+        const failCount = this.runState.getTreasureFailCount(dungeonId);
+        const idx = failCount % emptyTiles.length;
+        this.treasurePosition = emptyTiles[idx];
+    }
+
+    // ========== C-5: Item UI ==========
+
+    updateItemUI() {
+        const display = document.getElementById('inventory-display');
+        if (!display) return;
+
+        const items = ['escape_rope', 'defense_contract', 'trap_nullify'];
+        const counts = items.map(id => ({ id, count: this.runState.getItemCount(id), info: ITEMS[id] }));
+        const hasAny = counts.some(c => c.count > 0);
+
+        if (!hasAny) {
+            display.textContent = '';
+        } else {
+            display.innerHTML = counts
+                .filter(c => c.count > 0)
+                .map(c => `<span class="inventory-item">${c.info.name} x${c.count}</span>`)
+                .join(' | ');
+        }
+
+        // Active contracts display
+        const activeItems = [];
+        if (this.activeDefenseContract) activeItems.push('Defense Active');
+        if (this.activeTrapNullify) activeItems.push('Anti-Trap Active');
+        if (activeItems.length > 0) {
+            display.innerHTML += (hasAny ? '<br>' : '') + `<span class="active-contract">${activeItems.join(' | ')}</span>`;
+        }
+
+        // Update buy buttons disabled state
+        document.querySelectorAll('.btn-buy-item').forEach(btn => {
+            const itemId = btn.dataset.item;
+            const item = ITEMS[itemId];
+            btn.disabled = this.runState.gold < item.cost;
+        });
+    }
+
     updateUI() {
         this.goldText.textContent = this.pendingGold > 0
             ? `${this.runState.gold} (+${this.pendingGold})`
@@ -2286,7 +3153,7 @@ class Game {
         this.runText.textContent = `#${this.runState.runNumber}`;
 
         // Food display (show only during manual play on built-in dungeons)
-        const isBuiltIn = !this.currentDungeon.startsWith('custom_') && !this.currentDungeon.startsWith('dungeon_') && !this.currentDungeon.startsWith('preset_');
+        const isBuiltIn = this.isBuiltInDungeon(this.currentDungeon);
         const showFood = isBuiltIn && !this.isTraining;
         this.foodStat.style.display = showFood ? '' : 'none';
         this.foodText.textContent = this.runState.food;
