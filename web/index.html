@@ -20,6 +20,7 @@
 
         <main>
             <div class="game-area">
+                <div class="toast-container" id="toast-container"></div>
                 <canvas id="game-canvas"></canvas>
 
                 <!-- Game Over Overlay -->
@@ -42,6 +43,21 @@
                         <div class="ending-stats" id="ending-stats"></div>
                         <div class="ending-note">Q-tables preserved. Can you beat your record?</div>
                         <button class="btn-new-game-plus" id="btn-new-game-plus">New Game+</button>
+                    </div>
+                </div>
+
+                <!-- Briefing Overlay (Step 5) -->
+                <div class="briefing-overlay" id="briefing-overlay" style="display:none;">
+                    <div class="briefing-box">
+                        <div class="briefing-title" id="briefing-title"></div>
+                        <div class="briefing-chapter" id="briefing-chapter"></div>
+                        <div class="briefing-details" id="briefing-details"></div>
+                        <div class="briefing-hints" id="briefing-hints"></div>
+                        <div class="briefing-provisions" id="briefing-provisions"></div>
+                        <div class="briefing-buttons">
+                            <button class="btn-briefing-back" id="btn-briefing-back">Back</button>
+                            <button class="btn-briefing-deploy" id="btn-briefing-deploy">Deploy</button>
+                        </div>
                     </div>
                 </div>
 
@@ -69,6 +85,7 @@
                 </div>
 
                 <div class="game-ui">
+                    <div class="food-warning" id="food-warning" style="display:none;">No food! Your serpa is starving!</div>
                     <div class="stats">
                         <div class="stat">
                             <span class="stat-label">Run</span>
@@ -184,7 +201,7 @@
 
                 <div class="control-section">
                     <h3>Dungeon</h3>
-                    <select id="dungeon-select">
+                    <select id="dungeon-select" style="display:none;">
                         <option value="level_01_easy">Lv.1 Tutorial</option>
                         <option value="level_02_trap">Lv.2 First Trap</option>
                         <option value="level_03_maze">Lv.3 Maze</option>
@@ -217,6 +234,7 @@
                         <option value="level_30_generated_cave">Lv.30 Cave (50×50)</option>
                         <option value="level_31_generated_rooms">Lv.31 Rooms (50×50)</option>
                     </select>
+                    <div class="dungeon-map-container" id="dungeon-map"></div>
                     <button id="btn-reset">Reset (R)</button>
                     <div class="hint-area" id="hint-area"></div>
                 </div>
