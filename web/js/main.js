@@ -1886,6 +1886,12 @@ class Game {
         if (isFirstClear) {
             this.runState.clearedDungeons.add(this.currentDungeon);
 
+            // First clear reward
+            const firstReward = config.firstReward || 0;
+            if (firstReward > 0) {
+                this.runState.gold += firstReward;
+            }
+
             // Unlock next dungeon
             const currentIndex = DUNGEON_ORDER.indexOf(this.currentDungeon);
             if (currentIndex >= 0 && currentIndex < DUNGEON_ORDER.length - 1) {
