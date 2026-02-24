@@ -14,6 +14,10 @@ import { RunState, CHARACTER_STATS, CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS } f
 import { CHARACTERS, DUNGEON_CONFIG, DUNGEON_ORDER, BASE_OP_COST, DUNGEON_HINTS,
          MAX_EPISODES, CONVERGENCE_WINDOW, CONVERGENCE_THRESHOLD,
          createAlgorithm as createAlgorithmFromConfig } from './game/game-config.js';
+import { ToastManager } from './game/toast.js';
+import { DungeonMap } from './game/dungeon-map.js';
+import { BriefingOverlay } from './game/briefing.js';
+import { TutorialManager } from './game/tutorial.js';
 
 const PRESET_MULTI_DUNGEONS = {
     preset_beginner_tower: {
@@ -152,6 +156,28 @@ class Game {
         this.showQValuesCheck = document.getElementById('show-qvalues');
         this.showPolicyCheck = document.getElementById('show-policy');
 
+        // Step 1: Toast system
+        this.toast = new ToastManager('toast-container');
+
+        // Step 2: Resource warning elements
+        this.foodWarning = document.getElementById('food-warning');
+
+        // Step 3: Dungeon map
+        this.dungeonMap = new DungeonMap('dungeon-map', (dungeonId) => {
+            this.selectDungeon(dungeonId);
+        });
+
+        // Step 5: Briefing overlay
+        this.briefing = new BriefingOverlay();
+        this.briefing.onDeploy = (dungeonId) => {
+            this.loadDungeon(dungeonId);
+            this.tryEnterDungeon();
+        };
+        this.briefing.onBack = () => {};
+
+        // Step 6: Tutorial
+        this.tutorial = new TutorialManager();
+
         // Migrate legacy custom dungeons to Stage Library
         DungeonEditor.migrateToStages();
 
@@ -168,6 +194,12 @@ class Game {
         this.updateFarmingUI();
         this.updateHintUI();
         this.updateItemUI();
+
+        // Step 6: Progressive disclosure initial state
+        this.updateProgressiveDisclosure();
+
+        // Step 6: Welcome tutorial
+        this.tutorial.tryShow('init');
     }
 
     // ========== Mode Tabs ==========
@@ -1010,6 +1042,41 @@ class Game {
                 }
             }
         });
+
+        // Step 3: Update visual dungeon map
+        if (this.dungeonMap) {
+            this.dungeonMap.render(this.runState, (id) => this.getDungeonDisplayName(id));
+            this.dungeonMap.setCurrentDungeon(this.currentDungeon);
+        }
+    }
+
+    // Step 3/5: Dungeon map node clicked
+    selectDungeon(dungeonId) {
+        if (this.isGameOver) return;
+        if (!this.runState.unlockedDungeons.has(dungeonId)) {
+            this.showMessage('Clear previous dungeons first!', 'warning');
+            return;
+        }
+
+        // Step 5: Show briefing for built-in dungeons (skip if training or custom)
+        if (this.isBuiltInDungeon(dungeonId) && !this.isTraining) {
+            this.showBriefing(dungeonId);
+            return;
+        }
+
+        this.loadDungeon(dungeonId);
+    }
+
+    // Step 5: Show pre-dungeon briefing overlay
+    showBriefing(dungeonId) {
+        if (!this.briefing) return;
+        this.briefing.onDeploy = (id) => {
+            this.loadDungeon(id);
+            this.tryEnterDungeon();
+            this.saveProgress();
+        };
+        this.briefing.show(dungeonId, this.runState, this.currentCharacter,
+            (id) => this.getDungeonDisplayName(id));
     }
 
     getDungeonDisplayName(dungeonId) {
@@ -1413,6 +1480,11 @@ class Game {
         }
 
         this.currentDungeon = name;
+
+        // Step 3: Sync dungeon map selection
+        if (this.dungeonMap) {
+            this.dungeonMap.setCurrentDungeon(name);
+        }
 
         // Load and display saved clear rate for this dungeon+character
         const savedRate = this.loadClearRate(name);
@@ -1911,6 +1983,15 @@ class Game {
 
             this.updateDungeonSelect();
             this.updateCharacterGrid();
+
+            // Step 6: Tutorial triggers on first clear
+            this.tutorial.tryShow('first_clear');
+            this.updateProgressiveDisclosure();
+            // Tutorial: economy when reaching chapter 2
+            const curChapter = this.runState.getCurrentChapter();
+            if (curChapter >= 2) this.tutorial.tryShow('chapter2');
+            // Tutorial: farming unlock
+            if (this.runState.clearedDungeons.size >= 1) this.tutorial.tryShow('first_farm_unlock');
 
             // C-3: Ending — all dungeons cleared?
             if (this.runState.isAllDungeonsCleared()) {
@@ -2445,6 +2526,9 @@ class Game {
         this.updateFarmingUI();
 
         this.showMessage(message, 'success');
+
+        // Step 6: Tutorial trigger on first training
+        this.tutorial.tryShow('first_train');
     }
 
     stopTraining() {
@@ -2904,12 +2988,32 @@ class Game {
             this.provisionsSection.style.display = (isBuiltIn && this.currentMode === 'play') ? '' : 'none';
         }
 
+        // Step 2: Gold flash warning
+        const goldEl = this.goldText;
+        if (goldEl) {
+            goldEl.classList.toggle('gold-flash', this.runState.gold < 50);
+        }
+
+        // Step 2: Food warning banner (only show when mid-dungeon, not at start)
+        if (this.foodWarning) {
+            const showFoodWarn = isBuiltIn && !this.isTraining && this.runState.food === 0 && !this.done && this.steps > 0;
+            this.foodWarning.style.display = showFoodWarn ? '' : 'none';
+        }
+
         if (!this.agent) return;
 
         const hpPercent = (this.agent.hp / this.agent.maxHp) * 100;
         this.hpFill.style.width = `${hpPercent}%`;
         this.hpText.textContent = `${this.agent.hp}/${this.agent.maxHp}`;
         this.stepsText.textContent = this.steps;
+
+        // Step 2: HP color classes
+        const hpBar = this.hpFill.parentElement;
+        hpBar.classList.remove('hp-high', 'hp-medium', 'hp-low', 'hp-critical');
+        if (hpPercent > 60) hpBar.classList.add('hp-high');
+        else if (hpPercent > 30) hpBar.classList.add('hp-medium');
+        else if (hpPercent > 15) hpBar.classList.add('hp-low');
+        else hpBar.classList.add('hp-critical');
 
         const reward = this.agent.totalReward;
         this.rewardText.textContent = reward.toFixed(1);
@@ -2919,6 +3023,53 @@ class Game {
     showMessage(text, type = 'info') {
         this.messageEl.textContent = text;
         this.messageEl.className = 'message ' + type;
+
+        // Step 1: Toast (skip during instant training to avoid spam)
+        if (this.toast && !(this.isTraining && this.trainingSpeed === 0)) {
+            const toastType = type === 'danger' ? 'damage' : type;
+            this.toast.show(text, toastType);
+        }
+    }
+
+    // Step 6: Progressive disclosure — show/hide sections based on progress
+    updateProgressiveDisclosure() {
+        const chapter = this.runState.getCurrentChapter();
+        const hasAnyCleared = this.runState.clearedDungeons.size > 0;
+
+        // Farming: show after first clear
+        const farmingSection = document.getElementById('farming-section');
+        if (farmingSection) {
+            const wasHidden = farmingSection.classList.contains('section-hidden');
+            farmingSection.classList.toggle('section-hidden', !hasAnyCleared);
+            if (wasHidden && hasAnyCleared) this._addNewBadge(farmingSection);
+        }
+
+        // Stats section: show after Ch.2
+        const statsSection = document.getElementById('stats-section');
+        if (statsSection) {
+            const wasHidden = statsSection.classList.contains('section-hidden');
+            statsSection.classList.toggle('section-hidden', chapter < 2);
+            if (wasHidden && chapter >= 2) this._addNewBadge(statsSection);
+        }
+
+        // Item shop: show after Ch.2
+        const itemShop = document.getElementById('item-shop');
+        if (itemShop) {
+            const wasHidden = itemShop.classList.contains('section-hidden');
+            itemShop.classList.toggle('section-hidden', chapter < 2);
+            if (wasHidden && chapter >= 2) this._addNewBadge(itemShop);
+        }
+    }
+
+    _addNewBadge(section) {
+        const h3 = section.querySelector('h3');
+        if (h3 && !h3.querySelector('.badge-new')) {
+            const badge = document.createElement('span');
+            badge.className = 'badge-new';
+            badge.textContent = 'NEW!';
+            h3.appendChild(badge);
+            setTimeout(() => badge.remove(), 15000);
+        }
     }
 
     render() {

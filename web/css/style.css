@@ -1465,10 +1465,6 @@ body.editor-mode .dpad-container {
 }
 
 /* ========== B-6: Hints ========== */
-.hint-area {
-    margin-top: 8px;
-}
-
 .hint-row {
     display: flex;
     align-items: center;
@@ -1645,4 +1641,448 @@ body.editor-mode .dpad-container {
         padding: 8px 20px;
         font-size: 0.9rem;
     }
+}
+
+/* ========== Step 1: Toast Notifications ========== */
+.toast-container {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 200;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    pointer-events: none;
+    width: 90%;
+    max-width: 360px;
+}
+
+.toast {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    background: rgba(22, 33, 62, 0.95);
+    color: var(--text-primary);
+    border: 1px solid #334155;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transform: translateY(-12px);
+    transition: opacity 0.25s ease, transform 0.25s ease;
+    pointer-events: auto;
+}
+
+.toast.toast-show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast.toast-hide {
+    animation: toast-fade-out 0.3s ease forwards;
+}
+
+@keyframes toast-fade-out {
+    to { opacity: 0; transform: translateY(-12px); }
+}
+
+.toast-icon { font-size: 1rem; flex-shrink: 0; }
+.toast-text { flex: 1; }
+
+.toast-gold { border-color: #fbbf24; background: rgba(251, 191, 36, 0.15); color: #fbbf24; }
+.toast-damage { border-color: #ef4444; background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+.toast-success { border-color: #4ade80; background: rgba(74, 222, 128, 0.15); color: #4ade80; }
+.toast-warning { border-color: #fbbf24; background: rgba(251, 191, 36, 0.1); color: #fbbf24; }
+.toast-info { border-color: #60a5fa; background: rgba(59, 130, 246, 0.1); color: #93c5fd; }
+
+/* ========== Step 2: Resource Warnings ========== */
+.hp-high .hp-fill { background: linear-gradient(90deg, #22c55e, #4ade80); }
+.hp-medium .hp-fill { background: linear-gradient(90deg, #eab308, #fbbf24); }
+.hp-low .hp-fill { background: linear-gradient(90deg, #dc2626, #ef4444); }
+.hp-critical .hp-fill { background: #ef4444; animation: hp-pulse 0.6s ease-in-out infinite alternate; }
+
+@keyframes hp-pulse {
+    from { opacity: 1; }
+    to { opacity: 0.4; }
+}
+
+.gold-flash {
+    animation: gold-blink 0.8s ease-in-out infinite alternate;
+}
+
+@keyframes gold-blink {
+    from { color: #fbbf24; text-shadow: 0 0 8px rgba(251, 191, 36, 0.5); }
+    to { color: #ef4444; text-shadow: 0 0 12px rgba(239, 68, 68, 0.6); }
+}
+
+.food-warning {
+    background: rgba(239, 68, 68, 0.2);
+    border: 1px solid #ef4444;
+    color: #ef4444;
+    font-size: 0.82rem;
+    font-weight: bold;
+    padding: 6px 12px;
+    border-radius: 6px;
+    text-align: center;
+    margin-bottom: 8px;
+    animation: food-pulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes food-pulse {
+    from { opacity: 1; }
+    to { opacity: 0.6; }
+}
+
+/* ========== Step 3: Dungeon Map ========== */
+.dungeon-map-container {
+    max-height: 340px;
+    overflow-y: auto;
+    margin-bottom: 8px;
+    scrollbar-width: thin;
+    scrollbar-color: #334155 transparent;
+}
+
+.dungeon-map-container::-webkit-scrollbar { width: 6px; }
+.dungeon-map-container::-webkit-scrollbar-track { background: transparent; }
+.dungeon-map-container::-webkit-scrollbar-thumb { background: #334155; border-radius: 3px; }
+
+.dm-chapter {
+    font-size: 0.78rem;
+    font-weight: bold;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 6px 4px 3px;
+    border-bottom: 1px solid rgba(233, 69, 96, 0.3);
+    margin-top: 8px;
+}
+
+.dm-chapter:first-child { margin-top: 0; }
+
+.dm-chapter-locked {
+    color: #555;
+    border-bottom-color: #333;
+}
+
+.dm-chapter-icon { margin-right: 4px; }
+
+.dm-nodes {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 0;
+}
+
+.dm-node {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    background: var(--bg-tertiary);
+    border: 1px solid transparent;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    text-align: left;
+    margin-bottom: 0;
+    transition: background 0.15s, border-color 0.15s;
+    width: 100%;
+    position: relative;
+}
+
+.dm-node:hover:not(:disabled) {
+    background: #1e3a5f;
+    color: var(--text-primary);
+    transform: none;
+    box-shadow: none;
+}
+
+.dm-node.dm-current {
+    border-color: var(--accent);
+    background: rgba(233, 69, 96, 0.15);
+    color: var(--text-primary);
+}
+
+.dm-node.dm-cleared {
+    color: var(--text-secondary);
+}
+
+.dm-node.dm-locked {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.dm-node.dm-locked:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+}
+
+.dm-level {
+    font-weight: bold;
+    font-family: monospace;
+    min-width: 20px;
+    color: var(--text-primary);
+}
+
+.dm-node.dm-locked .dm-level { color: #555; }
+
+.dm-name { flex: 1; }
+
+.dm-check {
+    color: var(--success);
+    font-weight: bold;
+    font-size: 0.75rem;
+    margin-right: 2px;
+}
+
+.dm-hint-badge {
+    background: #7c3aed;
+    color: white;
+    font-size: 0.6rem;
+    font-weight: bold;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+/* ========== Step 4: Hint UI Polish ========== */
+.hint-area {
+    margin-top: 8px;
+    background: rgba(124, 58, 237, 0.08);
+    border: 1px solid rgba(124, 58, 237, 0.2);
+    border-radius: 6px;
+    padding: 6px 8px;
+}
+
+.hint-area:empty {
+    display: none !important;
+    padding: 0;
+    border: none;
+    background: none;
+}
+
+/* ========== Step 5: Briefing Overlay ========== */
+.briefing-overlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    border-radius: 12px;
+}
+
+.briefing-box {
+    text-align: center;
+    padding: 24px 32px;
+    max-width: 380px;
+    width: 100%;
+}
+
+.briefing-title {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.briefing-chapter {
+    font-size: 0.8rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 16px;
+}
+
+.brief-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 3px 0;
+    font-size: 0.85rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.brief-label { color: var(--text-secondary); }
+.brief-val { font-weight: bold; color: var(--text-primary); }
+.brief-gold { color: #fbbf24; }
+.brief-reward { color: #4ade80; }
+.brief-warn { color: #fbbf24; font-size: 0.78rem; }
+.brief-danger { color: #ef4444; }
+
+.brief-status { margin-top: 8px; border-top: 1px solid rgba(255, 255, 255, 0.1); padding-top: 6px; }
+
+.brief-section-title {
+    font-size: 0.75rem;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 12px;
+    margin-bottom: 4px;
+    text-align: left;
+}
+
+.brief-hint {
+    font-size: 0.8rem;
+    text-align: left;
+    padding: 2px 0;
+}
+
+.brief-hint-owned { color: #a78bfa; font-style: italic; }
+.brief-hint-locked { color: #555; }
+
+.brief-provisions-row {
+    display: flex;
+    gap: 6px;
+    margin-top: 4px;
+}
+
+.btn-brief-food {
+    flex: 1;
+    background: #065f46 !important;
+    color: #4ade80 !important;
+    border-color: #065f46 !important;
+    font-size: 0.72rem;
+    padding: 5px 6px;
+}
+
+.btn-brief-food:hover {
+    background: #047857 !important;
+    transform: none;
+    box-shadow: none;
+}
+
+.briefing-buttons {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-top: 18px;
+}
+
+.btn-briefing-back {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 10px 24px;
+    border: 1px solid #334155;
+    border-radius: 8px;
+    cursor: pointer;
+    width: auto;
+}
+
+.btn-briefing-back:hover {
+    background: #1e3a5f;
+    color: var(--text-primary);
+    transform: none;
+    box-shadow: none;
+}
+
+.btn-briefing-deploy {
+    background: linear-gradient(135deg, #22c55e, #16a34a);
+    color: white;
+    font-weight: bold;
+    font-size: 1rem;
+    padding: 10px 28px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    width: auto;
+}
+
+.btn-briefing-deploy:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(34, 197, 94, 0.4);
+}
+
+.btn-briefing-deploy:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ========== Step 6: Tutorial + Progressive Disclosure ========== */
+.tutorial-tip {
+    position: fixed;
+    bottom: 24px;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: rgba(22, 33, 62, 0.97);
+    border: 1px solid var(--accent);
+    border-radius: 10px;
+    padding: 14px 20px;
+    max-width: 400px;
+    z-index: 1000;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+}
+
+.tutorial-tip.tutorial-show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+
+.tutorial-tip.tutorial-hide {
+    opacity: 0;
+    transform: translateX(-50%) translateY(20px);
+}
+
+.tutorial-text {
+    font-size: 0.88rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+    margin-bottom: 10px;
+}
+
+.tutorial-dismiss {
+    background: var(--accent);
+    color: white;
+    font-weight: bold;
+    font-size: 0.82rem;
+    padding: 6px 18px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    width: auto;
+    display: block;
+    margin: 0 auto;
+}
+
+.tutorial-dismiss:hover {
+    transform: none;
+    box-shadow: none;
+    background: #d63851;
+}
+
+/* NEW badge */
+.badge-new {
+    display: inline-block;
+    background: var(--accent);
+    color: white;
+    font-size: 0.6rem;
+    font-weight: bold;
+    padding: 1px 5px;
+    border-radius: 8px;
+    margin-left: 6px;
+    vertical-align: middle;
+    animation: badge-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes badge-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+}
+
+/* Progressive disclosure: hidden sections */
+.section-hidden {
+    display: none !important;
 }
