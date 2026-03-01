@@ -6,6 +6,7 @@ import { loadDungeon } from './game/grid.js';
 import { Grid } from './game/grid.js';
 import { Agent, Action } from './game/agent.js';
 import { Renderer } from './game/renderer.js';
+import { TilemapRenderer } from './game/tilemap-renderer.js';
 import { TileType, TileProperties } from './game/tiles.js';
 import { sound } from './game/sound.js';
 import { DungeonEditor } from './game/editor.js';
@@ -52,7 +53,7 @@ const SPEED_DELAYS = {
 class Game {
     constructor() {
         this.canvas = document.getElementById('game-canvas');
-        this.renderer = new Renderer(this.canvas);
+        this.renderer = new TilemapRenderer(this.canvas);
 
         this.grid = null;
         this.agent = null;
