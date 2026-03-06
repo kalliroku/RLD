@@ -11,7 +11,7 @@ import { TileType, TileProperties } from './game/tiles.js';
 import { sound } from './game/sound.js';
 import { DungeonEditor } from './game/editor.js';
 import { MultiStageGrid } from './game/multi-stage-grid.js';
-import { RunState, CHARACTER_STATS, CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS } from './game/run-state.js';
+import { RunState, CHARACTER_STATS, CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS, HIRE_COSTS } from './game/run-state.js';
 import { CHARACTERS, DUNGEON_CONFIG, DUNGEON_ORDER, BASE_OP_COST, DUNGEON_HINTS,
          MAX_EPISODES, CONVERGENCE_WINDOW, CONVERGENCE_THRESHOLD,
          createAlgorithm as createAlgorithmFromConfig } from './game/game-config.js';
@@ -19,6 +19,7 @@ import { ToastManager } from './game/toast.js';
 import { DungeonMap } from './game/dungeon-map.js';
 import { BriefingOverlay } from './game/briefing.js';
 import { TutorialManager } from './game/tutorial.js';
+import { ScreenManager } from './game/screen-manager.js';
 
 const PRESET_MULTI_DUNGEONS = {
     preset_beginner_tower: {
@@ -182,6 +183,10 @@ class Game {
         // Migrate legacy custom dungeons to Stage Library
         DungeonEditor.migrateToStages();
 
+        // Screen manager
+        this.screenManager = new ScreenManager();
+        this.setupScreens();
+
         this.setupEventListeners();
         this.setupModeTabs();
         this.setupEditor();
@@ -199,8 +204,313 @@ class Game {
         // Step 6: Progressive disclosure initial state
         this.updateProgressiveDisclosure();
 
-        // Step 6: Welcome tutorial
-        this.tutorial.tryShow('init');
+        // Title screen: enable Continue if save exists
+        this._updateTitleButtons();
+    }
+
+    // ========== Screen System ==========
+
+    setupScreens() {
+        // Title buttons
+        document.getElementById('btn-new-game').addEventListener('click', () => {
+            this.runState = new RunState();
+            this.runState.saveRunState();
+            this._clearAllQTables();
+            this.loadDungeon('level_01_easy');
+            this.updateStatsUI();
+            this.updateFarmingUI();
+            this.updateCharacterGrid();
+            this.screenManager.show('screen-guild');
+            this.updateGuildHall();
+        });
+
+        document.getElementById('btn-continue').addEventListener('click', () => {
+            this.screenManager.show('screen-guild');
+            this.updateGuildHall();
+        });
+
+        document.getElementById('btn-dev-mode').addEventListener('click', () => {
+            this.screenManager.show('screen-dev');
+        });
+
+        // Dev mode back button
+        document.getElementById('btn-back-to-game').addEventListener('click', () => {
+            this.screenManager.show('screen-guild');
+            this.updateGuildHall();
+        });
+
+        // Guild tab switching
+        document.querySelectorAll('.guild-tab').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.guild-tab').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.guild-tab-panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('guild-tab-' + btn.dataset.gtab).classList.add('active');
+            });
+        });
+    }
+
+    _updateTitleButtons() {
+        const hasSave = localStorage.getItem('rld_run_state') !== null;
+        document.getElementById('btn-continue').disabled = !hasSave;
+    }
+
+    _clearAllQTables() {
+        const keys = [];
+        for (let i = 0; i < localStorage.length; i++) {
+            const key = localStorage.key(i);
+            if (key && key.startsWith('rld_qtable_')) keys.push(key);
+        }
+        keys.forEach(k => localStorage.removeItem(k));
+    }
+
+    // ========== Guild Hall ==========
+
+    updateGuildHall() {
+        this._updateGuildResources();
+        this._updateGuildQuests();
+        this._updateGuildParty();
+        this._updateGuildShop();
+        this._updateGuildMap();
+    }
+
+    _updateGuildResources() {
+        const rs = this.runState;
+        document.getElementById('guild-run').textContent = `Run #${rs.runNumber}`;
+        document.getElementById('guild-gold').textContent = `${rs.gold}G`;
+        document.getElementById('guild-food').textContent = `${rs.food} Food`;
+        // HP: show current agent HP if available, else maxHp from current character
+        const maxHp = rs.getMaxHp(this.currentCharacter);
+        const hp = this.agent ? this.agent.hp : maxHp;
+        document.getElementById('guild-hp').textContent = `HP ${hp}/${maxHp}`;
+    }
+
+    _updateGuildQuests() {
+        const panel = document.getElementById('guild-tab-quest');
+        const rs = this.runState;
+        let html = '';
+
+        // Group by chapter
+        for (const ch of CHAPTER_CONFIG) {
+            html += `<div class="quest-section-title">Ch.${ch.chapter} ${ch.name}</div>`;
+            for (const did of ch.dungeons) {
+                const config = DUNGEON_CONFIG[did];
+                const cleared = rs.clearedDungeons.has(did);
+                const unlocked = rs.unlockedDungeons.has(did);
+                const level = this.getDungeonLevel(did);
+                const name = this.getDungeonDisplayName(did);
+
+                let badge = '';
+                if (cleared) badge = '<span class="quest-card-badge cleared">CLEAR</span>';
+                else if (unlocked) badge = '<span class="quest-card-badge new">NEW</span>';
+                else badge = '<span class="quest-card-badge locked">LOCKED</span>';
+
+                const reward = cleared
+                    ? `Farming: +${config.repeatReward}G`
+                    : `First Clear: +${config.firstReward}G`;
+
+                const cardClass = cleared ? 'quest-card cleared' : (unlocked ? 'quest-card' : 'quest-card locked');
+
+                html += `<div class="${cardClass}" data-dungeon="${did}" ${unlocked || cleared ? '' : 'style="opacity:0.4;pointer-events:none"'}>
+                    <div class="quest-card-header">
+                        <span class="quest-card-name">Lv.${level} ${name}</span>
+                        ${badge}
+                    </div>
+                    <div class="quest-card-info">Cost: ${config.cost}G | ${this._getDungeonSize(did)}</div>
+                    <div class="quest-card-reward">${reward}</div>
+                </div>`;
+            }
+        }
+
+        panel.innerHTML = html;
+
+        // Click handlers for quest cards
+        panel.querySelectorAll('.quest-card:not(.locked)').forEach(card => {
+            card.addEventListener('click', () => {
+                const did = card.dataset.dungeon;
+                if (did && (rs.unlockedDungeons.has(did) || rs.clearedDungeons.has(did))) {
+                    this._showGuildBriefing(did);
+                }
+            });
+        });
+    }
+
+    _getDungeonSize(dungeonId) {
+        try {
+            const grid = loadDungeon(dungeonId);
+            return `${grid.width}x${grid.height}`;
+        } catch {
+            return '?x?';
+        }
+    }
+
+    _showGuildBriefing(dungeonId) {
+        // For now, load dungeon and switch to dev mode to play
+        // TODO: Full briefing screen in future phase
+        this.selectDungeon(dungeonId);
+        this.screenManager.show('screen-dev');
+    }
+
+    _updateGuildParty() {
+        const panel = document.getElementById('guild-tab-party');
+        const rs = this.runState;
+        let hiredHtml = '<div class="quest-section-title">Hired Serpas</div><div class="serpa-grid">';
+        let availableHtml = '<div class="quest-section-title">Available for Hire</div><div class="serpa-grid">';
+        let lockedHtml = '';
+
+        for (const [key, char] of Object.entries(CHARACTERS)) {
+            if (key === 'scout') continue; // hidden
+            const available = rs.isCharacterAvailable(key);
+            const stats = CHARACTER_STATS[key];
+            const opCost = BASE_OP_COST[key] || 3;
+            const charLevel = rs.characterLevels[key] || 1;
+
+            const card = `<div class="serpa-card hired">
+                <div class="serpa-card-name">${char.name}</div>
+                <div class="serpa-card-algo">${char.algo}</div>
+                <div class="serpa-card-stats">Op: ${opCost}G | Lv.${charLevel}</div>
+            </div>`;
+
+            if (available) {
+                hiredHtml += card;
+            } else {
+                const hireCost = this._getHireCost(key);
+                if (hireCost !== null) {
+                    const canAfford = rs.gold >= hireCost;
+                    availableHtml += `<div class="serpa-card">
+                        <div class="serpa-card-name">${char.name}</div>
+                        <div class="serpa-card-algo">${char.algo}</div>
+                        <div class="serpa-card-cost">${hireCost}G</div>
+                        <div class="serpa-card-stats">Op: ${opCost}G</div>
+                        <button class="btn-hire" data-char="${key}" ${canAfford ? '' : 'disabled'}>${canAfford ? 'Hire' : 'Not enough G'}</button>
+                    </div>`;
+                } else {
+                    lockedHtml += `<div class="serpa-card locked">
+                        <div class="serpa-card-name">${char.name}</div>
+                        <div class="serpa-card-algo">${char.algo}</div>
+                        <div class="serpa-card-stats">Locked</div>
+                    </div>`;
+                }
+            }
+        }
+
+        hiredHtml += '</div>';
+        availableHtml += '</div>';
+        if (lockedHtml) {
+            lockedHtml = '<div class="quest-section-title">Locked</div><div class="serpa-grid">' + lockedHtml + '</div>';
+        }
+
+        panel.innerHTML = hiredHtml + availableHtml + lockedHtml;
+
+        // Hire button handlers
+        panel.querySelectorAll('.btn-hire').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const charKey = btn.dataset.char;
+                const cost = this._getHireCost(charKey);
+                if (cost !== null && rs.gold >= cost) {
+                    rs.gold -= cost;
+                    rs.hiredCharacters.add(charKey);
+                    rs.saveRunState();
+                    this.updateGuildHall();
+                    this.updateCharacterGrid();
+                    this.updateStatsUI();
+                }
+            });
+        });
+    }
+
+    _getHireCost(charKey) {
+        return HIRE_COSTS[charKey] ?? null;
+    }
+
+    _updateGuildShop() {
+        const panel = document.getElementById('guild-tab-shop');
+        const rs = this.runState;
+
+        let html = '<div class="shop-section"><h4>Food</h4>';
+        html += `<div class="shop-food-row">
+            <input type="number" id="guild-food-amount" value="50" min="1" max="9999">
+            <span class="shop-cost" id="guild-food-cost">(50G)</span>
+            <button class="btn-shop" id="guild-btn-buy-food">Buy</button>
+        </div>`;
+        html += `<div style="font-size:0.8rem;color:var(--text-secondary);margin-top:6px">Current: ${rs.food} food</div>`;
+        html += '</div>';
+
+        html += '<div class="shop-section"><h4>Items</h4>';
+        for (const [itemKey, item] of Object.entries(ITEMS)) {
+            html += `<div class="shop-item-card">
+                <div>
+                    <div class="shop-item-info">${item.name}</div>
+                    <div class="shop-item-desc">${item.description}</div>
+                </div>
+                <div style="display:flex;align-items:center;gap:8px">
+                    <span class="shop-item-cost">${item.cost}G</span>
+                    <button class="btn-shop btn-shop-item" data-item="${itemKey}" ${rs.gold >= item.cost ? '' : 'disabled'}>Buy</button>
+                </div>
+            </div>`;
+        }
+        html += '</div>';
+
+        panel.innerHTML = html;
+
+        // Food amount → cost display
+        const foodInput = document.getElementById('guild-food-amount');
+        const foodCost = document.getElementById('guild-food-cost');
+        foodInput.addEventListener('input', () => {
+            const amt = parseInt(foodInput.value) || 0;
+            foodCost.textContent = `(${amt}G)`;
+        });
+
+        // Buy food
+        document.getElementById('guild-btn-buy-food').addEventListener('click', () => {
+            const amt = parseInt(foodInput.value) || 0;
+            if (amt > 0 && rs.gold >= amt) {
+                rs.gold -= amt;
+                rs.food += amt;
+                rs.saveRunState();
+                this.updateGuildHall();
+                this.updateStatsUI();
+            }
+        });
+
+        // Buy items
+        panel.querySelectorAll('.btn-shop-item').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const itemKey = btn.dataset.item;
+                const item = ITEMS[itemKey];
+                if (item && rs.gold >= item.cost) {
+                    rs.gold -= item.cost;
+                    if (!rs.inventory) rs.inventory = {};
+                    rs.inventory[itemKey] = (rs.inventory[itemKey] || 0) + 1;
+                    rs.saveRunState();
+                    this.updateGuildHall();
+                    this.updateStatsUI();
+                    this.updateItemUI();
+                }
+            });
+        });
+    }
+
+    _updateGuildMap() {
+        const panel = document.getElementById('guild-tab-map');
+        // Reuse the DungeonMap component — render a simple chapter-based overview
+        const rs = this.runState;
+        let html = '';
+        for (const ch of CHAPTER_CONFIG) {
+            html += `<div class="quest-section-title">Ch.${ch.chapter} ${ch.name}</div>`;
+            html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">';
+            for (const did of ch.dungeons) {
+                const cleared = rs.clearedDungeons.has(did);
+                const unlocked = rs.unlockedDungeons.has(did);
+                const level = this.getDungeonLevel(did);
+                const color = cleared ? 'var(--success)' : unlocked ? 'var(--accent)' : '#333';
+                const border = cleared ? 'var(--success)' : unlocked ? 'var(--accent)' : '#222';
+                html += `<div style="width:32px;height:32px;border-radius:6px;background:${color};border:2px solid ${border};display:flex;align-items:center;justify-content:center;font-size:0.7rem;font-weight:700;color:${cleared || unlocked ? '#fff' : '#444'}" title="${this.getDungeonDisplayName(did)}">${level}</div>`;
+            }
+            html += '</div>';
+        }
+        panel.innerHTML = html;
     }
 
     // ========== Mode Tabs ==========

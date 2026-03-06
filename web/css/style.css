@@ -2086,3 +2086,468 @@ body.editor-mode .dpad-container {
 .section-hidden {
     display: none !important;
 }
+
+/* ========================================
+   Screen System
+   ======================================== */
+
+.screen {
+    display: none;
+}
+
+.screen.active {
+    display: block;
+}
+
+/* ========================================
+   Title Screen
+   ======================================== */
+
+.title-container {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    background: linear-gradient(180deg, #0d0d1a 0%, var(--bg-primary) 40%, var(--bg-secondary) 100%);
+}
+
+.title-logo {
+    font-size: 3.5rem;
+    font-weight: 900;
+    letter-spacing: 6px;
+    color: var(--accent);
+    text-shadow: 0 0 30px rgba(233, 69, 96, 0.6), 0 0 60px rgba(233, 69, 96, 0.3);
+}
+
+.title-subtitle {
+    color: var(--text-secondary);
+    font-size: 1.1rem;
+    margin-bottom: 32px;
+}
+
+.title-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 220px;
+}
+
+.title-btn {
+    padding: 14px 24px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    border: 2px solid var(--bg-tertiary);
+    border-radius: 8px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.title-btn:hover:not(:disabled) {
+    background: var(--bg-tertiary);
+    border-color: var(--accent);
+}
+
+.title-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.title-btn-primary {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: white;
+}
+
+.title-btn-primary:hover {
+    background: #d63851;
+    border-color: #d63851;
+}
+
+.title-btn-dev {
+    margin-top: 40px;
+    padding: 8px 16px;
+    font-size: 0.8rem;
+    border: 1px solid #333;
+    border-radius: 4px;
+    background: transparent;
+    color: #666;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.title-btn-dev:hover {
+    color: var(--text-secondary);
+    border-color: #555;
+}
+
+/* ========================================
+   Dev Mode Back Bar
+   ======================================== */
+
+.dev-back-bar {
+    margin-bottom: 16px;
+}
+
+.btn-back {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 6px;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-back:hover {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+}
+
+/* ========================================
+   Guild Hall
+   ======================================== */
+
+.guild-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    min-height: 100vh;
+}
+
+.guild-header {
+    background: var(--bg-secondary);
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.guild-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.guild-title {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--accent);
+}
+
+.guild-run {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.guild-resources {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.guild-res {
+    font-size: 0.95rem;
+    font-weight: 600;
+    font-family: monospace;
+    padding: 4px 10px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.guild-gold { color: #f0c040; }
+.guild-food { color: #8bc34a; }
+.guild-hp { color: #4ade80; }
+
+/* Guild Tabs */
+.guild-tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 16px;
+}
+
+.guild-tab {
+    flex: 1;
+    padding: 10px 8px;
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: 2px solid transparent;
+    border-bottom: none;
+    border-radius: 8px 8px 0 0;
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.guild-tab:hover {
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.guild-tab.active {
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    border-color: var(--bg-tertiary);
+}
+
+/* Guild Tab Panels */
+.guild-tab-panel {
+    display: none;
+    background: var(--bg-secondary);
+    border-radius: 0 0 10px 10px;
+    padding: 20px;
+    min-height: 400px;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+}
+
+.guild-tab-panel.active {
+    display: block;
+}
+
+/* Quest List */
+.quest-section-title {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 16px 0 8px;
+    padding-bottom: 4px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.quest-section-title:first-child {
+    margin-top: 0;
+}
+
+.quest-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 8px;
+    padding: 14px;
+    margin-bottom: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.quest-card:hover {
+    border-color: var(--accent);
+    background: rgba(233, 69, 96, 0.05);
+}
+
+.quest-card.cleared {
+    border-color: rgba(74, 222, 128, 0.2);
+}
+
+.quest-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 4px;
+}
+
+.quest-card-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.quest-card-badge {
+    font-size: 0.75rem;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.quest-card-badge.cleared {
+    background: rgba(74, 222, 128, 0.15);
+    color: var(--success);
+}
+
+.quest-card-badge.new {
+    background: rgba(233, 69, 96, 0.15);
+    color: var(--accent);
+}
+
+.quest-card-badge.locked {
+    background: rgba(255, 255, 255, 0.05);
+    color: #666;
+}
+
+.quest-card-info {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+}
+
+.quest-card-reward {
+    font-size: 0.82rem;
+    color: #f0c040;
+    margin-top: 4px;
+}
+
+/* Serpa Cards (Party tab) */
+.serpa-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+}
+
+.serpa-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    transition: all 0.2s;
+}
+
+.serpa-card.hired {
+    border-color: rgba(74, 222, 128, 0.3);
+}
+
+.serpa-card.locked {
+    opacity: 0.5;
+}
+
+.serpa-card-name {
+    font-weight: 700;
+    font-size: 0.95rem;
+    margin-bottom: 2px;
+}
+
+.serpa-card-algo {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    margin-bottom: 6px;
+}
+
+.serpa-card-cost {
+    font-size: 0.8rem;
+    color: #f0c040;
+    margin-bottom: 4px;
+}
+
+.serpa-card-stats {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.btn-hire {
+    margin-top: 8px;
+    padding: 6px 12px;
+    font-size: 0.8rem;
+    border: 1px solid var(--accent);
+    border-radius: 4px;
+    background: transparent;
+    color: var(--accent);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-hire:hover {
+    background: var(--accent);
+    color: white;
+}
+
+.btn-hire:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Shop Tab */
+.shop-section {
+    margin-bottom: 20px;
+}
+
+.shop-section h4 {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    margin-bottom: 10px;
+}
+
+.shop-food-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.shop-food-row input {
+    width: 70px;
+    padding: 6px 8px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 4px;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+}
+
+.shop-food-row .shop-cost {
+    color: #f0c040;
+    font-size: 0.85rem;
+    min-width: 50px;
+}
+
+.btn-shop {
+    padding: 6px 14px;
+    font-size: 0.85rem;
+    border: 1px solid var(--bg-tertiary);
+    border-radius: 4px;
+    background: var(--bg-tertiary);
+    color: var(--text-primary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.btn-shop:hover {
+    background: var(--accent);
+    border-color: var(--accent);
+}
+
+.shop-item-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 6px;
+    margin-bottom: 6px;
+}
+
+.shop-item-info {
+    font-size: 0.85rem;
+}
+
+.shop-item-desc {
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+}
+
+.shop-item-cost {
+    color: #f0c040;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Guild footer */
+.guild-footer {
+    margin-top: 20px;
+    text-align: center;
+}
+
+.btn-guild-dev {
+    padding: 6px 12px;
+    font-size: 0.75rem;
+    border: 1px solid #333;
+    border-radius: 4px;
+    background: transparent;
+    color: #555;
+    cursor: pointer;
+}
+
+.btn-guild-dev:hover {
+    color: var(--text-secondary);
+    border-color: #555;
+}

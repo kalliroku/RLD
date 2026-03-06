@@ -7,10 +7,58 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div class="container">
+    <!-- Title Screen -->
+    <div id="screen-title" class="screen active">
+        <div class="title-container">
+            <div class="title-logo">RL DUNGEON</div>
+            <p class="title-subtitle">멍청한 세르파와 던전 답파</p>
+            <div class="title-buttons">
+                <button id="btn-new-game" class="title-btn title-btn-primary">New Game</button>
+                <button id="btn-continue" class="title-btn" disabled>Continue</button>
+            </div>
+            <button id="btn-dev-mode" class="title-btn-dev">Dev Mode</button>
+        </div>
+    </div>
+
+    <!-- Guild Hall Screen -->
+    <div id="screen-guild" class="screen">
+        <div class="guild-container">
+            <div class="guild-header">
+                <div class="guild-header-top">
+                    <span class="guild-title">RL Dungeon</span>
+                    <span class="guild-run" id="guild-run">Run #1</span>
+                </div>
+                <div class="guild-resources">
+                    <span class="guild-res guild-gold" id="guild-gold">800G</span>
+                    <span class="guild-res guild-food" id="guild-food">50 Food</span>
+                    <span class="guild-res guild-hp" id="guild-hp">HP 100/100</span>
+                </div>
+            </div>
+            <nav class="guild-tabs">
+                <button class="guild-tab active" data-gtab="quest">Quest</button>
+                <button class="guild-tab" data-gtab="party">Party</button>
+                <button class="guild-tab" data-gtab="shop">Shop</button>
+                <button class="guild-tab" data-gtab="map">Map</button>
+            </nav>
+            <div class="guild-content">
+                <div id="guild-tab-quest" class="guild-tab-panel active"></div>
+                <div id="guild-tab-party" class="guild-tab-panel"></div>
+                <div id="guild-tab-shop" class="guild-tab-panel"></div>
+                <div id="guild-tab-map" class="guild-tab-panel"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dev Mode Screen (existing simulator UI) -->
+    <div id="screen-dev" class="screen">
+        <div class="container">
+        <div class="dev-back-bar">
+            <button id="btn-back-to-game" class="btn-back">Back to Game</button>
+        </div>
+
         <header>
             <h1>RL Dungeon</h1>
-            <p class="subtitle">강화학습 던전 탐험</p>
+            <p class="subtitle">강화학습 던전 탐험 — Dev Mode</p>
         </header>
 
         <nav class="mode-tabs">
@@ -509,7 +557,8 @@
         <footer>
             <p>Arrow keys to move | R to reset | Reach the green goal!</p>
         </footer>
-    </div>
+        </div>
+    </div><!-- /screen-dev -->
 
     <script type="module" src="js/main.js"></script>
 </body>
