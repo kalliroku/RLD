@@ -76,3 +76,8 @@ nul
 
 # Local context / scratch (not committed)
 .context/
+
+# Claude Code — track agents/skills/commands/hooks, ignore local state
+.claude/agent-memory/
+.claude/handoff/
+.claude/settings.local.json
