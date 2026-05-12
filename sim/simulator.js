@@ -69,7 +69,10 @@ function findPath(grid, maxHp) {
 // Human imperfection: extra step multiplier (exploration, backtracking)
 const HUMAN_STEP_MULTIPLIER = 1.3;
 
-// Estimate manual play cost (food = steps, food costs 1G each)
+// B-108 (D-4): 수동 플레이어 스텝당 식량 소비 (1 → 2)
+export const MANUAL_FOOD_PER_STEP = 2;
+
+// Estimate manual play cost (food costs 1G each; MANUAL_FOOD_PER_STEP food per step)
 export function estimateManualCost(grid, maxHp) {
     const result = findPath(grid, maxHp);
     if (!result) return null;
@@ -81,7 +84,7 @@ export function estimateManualCost(grid, maxHp) {
     successRate -= (hpLost / 10) * 0.03;
     if (grid.slippery) successRate *= 0.4;
     successRate = Math.max(0.05, Math.min(successRate, 0.95));
-    return { steps: result.steps, humanSteps, goldCost: humanSteps, finalHp: result.finalHp, successRate };
+    return { steps: result.steps, humanSteps, goldCost: humanSteps * MANUAL_FOOD_PER_STEP, finalHp: result.finalHp, successRate };
 }
 
 export class GameSimulator {
@@ -342,7 +345,7 @@ export class GameSimulator {
 
         // Human takes extra steps (exploration, backtracking)
         const humanSteps = Math.ceil(pathResult.steps * HUMAN_STEP_MULTIPLIER);
-        const foodNeeded = humanSteps;
+        const foodNeeded = humanSteps * MANUAL_FOOD_PER_STEP; // B-108
 
         // Check food
         if (this.runState.food < foodNeeded) {

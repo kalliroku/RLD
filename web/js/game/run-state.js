@@ -50,7 +50,7 @@ const CHAPTER_CONFIG = [
     { chapter: 2, name: '위험한 길', dungeons: ['level_04_pit', 'level_05_gold', 'level_06_risk', 'level_07_gauntlet'], storySerpas: ['sarsa'] },
     { chapter: 3, name: '넓은 세계', dungeons: ['level_08_deadly', 'level_09_treasure', 'level_10_final', 'level_11_hp_test', 'level_12_hp_gauntlet'], storySerpas: ['monte', 'tracer', 'dyna'] },
     { chapter: 4, name: '직감과 비평', dungeons: ['level_13_cliff', 'level_14_long_hall', 'level_15_multi_room', 'level_16_open_field', 'level_17_two_paths'], storySerpas: ['gradi', 'critic'] },
-    { chapter: 5, name: '합의의 힘', dungeons: ['level_18_dead_end', 'level_19_bridge', 'level_20_sacrifice', 'level_21_desert', 'level_22_arena', 'level_23_mirage', 'level_24_paper_maze', 'level_25_paper_hard'], storySerpas: ['qvkun', 'acla', 'ensemble'] },
+    { chapter: 5, name: '합의의 힘', dungeons: ['level_18_dead_end', 'level_19_bridge', 'level_24_paper_maze', 'level_25_paper_hard'], storySerpas: ['qvkun', 'acla', 'ensemble'] }, // B-103: 8→4 던전 축소
     { chapter: 6, name: '불확실한 바닥', dungeons: ['level_26_frozen_lake', 'level_27_ice_maze', 'level_28_frozen_cliff'], storySerpas: ['exsa', 'doubleq'] },
     { chapter: 7, name: '심연', dungeons: ['level_29_big_maze', 'level_30_generated_cave', 'level_31_generated_rooms'], storySerpas: ['treeback', 'sweeper'] },
 ];
@@ -61,7 +61,7 @@ const ALL_DUNGEON_IDS = [
     'level_04_pit', 'level_05_gold', 'level_06_risk', 'level_07_gauntlet',
     'level_08_deadly', 'level_09_treasure', 'level_10_final', 'level_11_hp_test', 'level_12_hp_gauntlet',
     'level_13_cliff', 'level_14_long_hall', 'level_15_multi_room', 'level_16_open_field', 'level_17_two_paths',
-    'level_18_dead_end', 'level_19_bridge', 'level_20_sacrifice', 'level_21_desert', 'level_22_arena', 'level_23_mirage', 'level_24_paper_maze', 'level_25_paper_hard',
+    'level_18_dead_end', 'level_19_bridge', 'level_24_paper_maze', 'level_25_paper_hard',
     'level_26_frozen_lake', 'level_27_ice_maze', 'level_28_frozen_cliff',
     'level_29_big_maze', 'level_30_generated_cave', 'level_31_generated_rooms'
 ];
@@ -72,8 +72,6 @@ const DUNGEON_TREASURES = {
     level_09_treasure:        { value: 300 },
     level_10_final:           { value: 500 },
     level_15_multi_room:      { value: 150 },
-    level_20_sacrifice:       { value: 250 },
-    level_22_arena:           { value: 400 },
     level_25_paper_hard:      { value: 200 },
     level_28_frozen_cliff:    { value: 350 },
     level_29_big_maze:        { value: 600 },
@@ -223,8 +221,10 @@ export class RunState {
     }
 
     consumeFood() {
+        // B-108 (D-4 T2A-1 축소판): 수동 플레이어 스텝당 식량 2 소비.
+        // AI 측 비용(BASE_OP_COST/MAX_EPISODES/CONVERGENCE_THRESHOLD)은 절대 수정 금지.
         if (this.food <= 0) return false;
-        this.food--;
+        this.food = Math.max(0, this.food - 2);
         return true;
     }
 

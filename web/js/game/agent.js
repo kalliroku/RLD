@@ -30,6 +30,10 @@ export class Agent {
         this.turnCount = 0;
         this.actionHistory = [];
         this.visitHistory = new Map(); // "x,y" -> last visit turn
+        // T2B-2: optional ModifierSet (slippery / heavy_fog). Set by main.js.
+        this.modifierSet = null;
+        // T2B-2: heavy_fog reduces this; default 5 reproduces legacy decay 1.0/0.8/0.6/0.4/0.2.
+        this.visibilityRange = 5;
         this._recordVisit();
     }
 
@@ -39,20 +43,17 @@ export class Agent {
     }
 
     getVisibility(x, y) {
-        // Returns opacity (0-1) based on how recently the cell was visited
+        // Returns opacity (0-1) based on how recently the cell was visited.
         const key = `${x},${y}`;
         if (!this.visitHistory.has(key)) {
             return 0; // Never visited - fog
         }
         const lastVisit = this.visitHistory.get(key);
         const turnsSince = this.turnCount - lastVisit;
-
-        if (turnsSince === 0) return 1.0;   // Current position
-        if (turnsSince === 1) return 0.8;
-        if (turnsSince === 2) return 0.6;
-        if (turnsSince === 3) return 0.4;
-        if (turnsSince === 4) return 0.2;
-        return 0; // 5+ turns ago - fog
+        const range = this.visibilityRange || 5;
+        if (turnsSince >= range) return 0;
+        // Linear decay; at range=5 yields 1.0/0.8/0.6/0.4/0.2 (legacy values).
+        return Math.max(0, 1 - turnsSince / range);
     }
 
     get position() {
@@ -83,10 +84,21 @@ export class Agent {
     }
 
     /**
-     * Apply stochastic transition if grid is slippery (FrozenLake style).
-     * With slippery: 1/3 intended, 1/3 perpendicular left, 1/3 perpendicular right.
+     * Apply stochastic transition.
+     *   - grid.slippery (FrozenLake config-driven, Lv.26~28): 1/3 intended,
+     *     1/3 perpendicular-left, 1/3 perpendicular-right (Math.random, legacy).
+     *   - Modifier 'slippery' (T2B-2 runtime): 30% sideways via seeded RNG.
+     *
+     * D-2026-05-12-10: grid.slippery takes precedence — the modifier path only
+     * runs when grid.slippery is false. We deliberately do NOT stack the two
+     * slip models even if both are present (the FrozenLake dungeons are
+     * already balanced around 2/3 slip).
      */
     _resolveAction(action, grid) {
+        if (this.modifierSet && !grid.slippery) {
+            const deflected = this.modifierSet.resolveMovement(action);
+            if (deflected != null) return deflected;
+        }
         if (!grid.slippery) return action;
 
         const r = Math.random();
@@ -171,6 +183,10 @@ export class Agent {
         this.turnCount = 0;
         this.actionHistory = [];
         this.visitHistory.clear();
+        // T2B-2: fail-safe defaults — callers (main.js) must re-apply modifiers
+        // via _syncAgentModifiers if a daily ModifierSet should persist.
+        this.modifierSet = null;
+        this.visibilityRange = 5;
         this._recordVisit();
     }
 }

@@ -2086,3 +2086,324 @@ body.editor-mode .dpad-container {
 .section-hidden {
     display: none !important;
 }
+
+/* B-106: success-rate sparkline (always visible — RL 양념의 시각 시그니처) */
+.sparkline-wrap {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 4px;
+    font-size: 0.85rem;
+}
+.sparkline-wrap canvas {
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 2px;
+    flex: 0 0 auto;
+}
+.sparkline-label {
+    color: var(--text-muted, #9ca3af);
+    flex: 0 0 auto;
+}
+.sparkline-value {
+    font-family: monospace;
+    color: #4ade80;
+    margin-left: auto;
+    min-width: 4ch;
+    text-align: right;
+}
+
+/* B-004: Step-0 inline hint (canvas overlay) */
+.step0-hint {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.72);
+    color: #fff;
+    font-size: 0.9rem;
+    padding: 8px 14px;
+    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    pointer-events: none;
+    z-index: 50;
+    max-width: 90%;
+    text-align: center;
+    animation: step0-hint-pulse 2.4s ease-in-out infinite;
+}
+
+@keyframes step0-hint-pulse {
+    0%, 100% { opacity: 0.92; }
+    50%      { opacity: 0.65; }
+}
+
+/* ========== T2B-1: Daily Mode ========== */
+.daily-controls .daily-intro h3,
+.daily-controls .daily-actions h3,
+.daily-controls .daily-yesterday h3,
+.daily-controls .daily-today h3,
+.daily-controls .daily-week h3 {
+    margin-top: 0;
+}
+
+.daily-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin: 8px 0 12px;
+    background: rgba(15, 23, 42, 0.6);
+    border-radius: 6px;
+    padding: 10px 12px;
+}
+
+.daily-date-row,
+.daily-seed-row,
+.daily-modifiers-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.daily-label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+
+.daily-date {
+    color: var(--text-primary);
+    font-family: monospace;
+    font-weight: 600;
+}
+
+.daily-seed {
+    color: var(--accent);
+    font-family: monospace;
+    font-weight: 600;
+}
+
+.daily-modifiers {
+    color: #fbbf24;
+    font-weight: 500;
+}
+
+.daily-desc {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+    margin: 4px 0 0;
+}
+
+.daily-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.btn-daily-start,
+.btn-daily-retry {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: bold;
+    background: var(--accent);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.btn-daily-start:hover,
+.btn-daily-retry:hover {
+    background: #d63851;
+}
+
+.btn-daily-retry {
+    background: #475569;
+}
+
+.btn-daily-retry:hover {
+    background: #64748b;
+}
+
+.daily-yesterday-content,
+.daily-today-content {
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.5;
+}
+
+.daily-today-content .row,
+.daily-yesterday-content .row {
+    display: flex;
+    justify-content: space-between;
+    padding: 2px 0;
+}
+
+.daily-today-content .row .label,
+.daily-yesterday-content .row .label {
+    color: var(--text-secondary);
+}
+
+.daily-result-toast {
+    background: rgba(34, 197, 94, 0.18);
+    border: 1px solid rgba(34, 197, 94, 0.5);
+    border-radius: 6px;
+    padding: 10px 12px;
+    margin-top: 8px;
+    color: #86efac;
+    font-size: 0.9rem;
+}
+
+.daily-result-toast.fail {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+}
+
+.daily-week-content {
+    display: flex;
+    gap: 4px;
+    flex-wrap: wrap;
+}
+
+.daily-week-cell {
+    width: 36px;
+    height: 36px;
+    border-radius: 4px;
+    background: rgba(15, 23, 42, 0.6);
+    border: 1px solid #334155;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    color: var(--text-secondary);
+    font-family: monospace;
+    flex-direction: column;
+    line-height: 1.1;
+}
+
+.daily-week-cell.cleared {
+    background: rgba(34, 197, 94, 0.18);
+    border-color: rgba(34, 197, 94, 0.5);
+    color: #86efac;
+}
+
+.daily-week-cell.attempted {
+    background: rgba(239, 68, 68, 0.18);
+    border-color: rgba(239, 68, 68, 0.5);
+    color: #fca5a5;
+}
+
+.daily-week-cell.today {
+    box-shadow: 0 0 0 2px var(--accent);
+}
+
+.daily-week-cell .day-num {
+    font-weight: 700;
+}
+
+/* T2B-2 — Modifier band (above game canvas in daily mode) */
+.modifier-band {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    background: linear-gradient(90deg, rgba(99, 102, 241, 0.18), rgba(168, 85, 247, 0.18));
+    border: 1px solid rgba(168, 85, 247, 0.45);
+    border-radius: 8px;
+    font-size: 13px;
+}
+
+.modifier-band .modifier-label {
+    font-weight: 700;
+    color: #c4b5fd;
+    letter-spacing: 0.02em;
+}
+
+.modifier-band .modifier-chip {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 6px;
+    padding: 4px 10px;
+    background: rgba(30, 27, 75, 0.55);
+    border: 1px solid rgba(168, 85, 247, 0.5);
+    border-radius: 999px;
+    color: #ede9fe;
+}
+
+.modifier-band .modifier-chip .modifier-name {
+    font-weight: 700;
+}
+
+.modifier-band .modifier-chip .modifier-desc {
+    font-weight: 400;
+    color: #c7d2fe;
+    opacity: 0.85;
+    font-size: 12px;
+}
+
+/* T2B-2 — Daily-panel modifier chips (smaller variant inside daily-controls) */
+.daily-modifiers .modifier-chip {
+    display: inline-block;
+    padding: 2px 8px;
+    margin: 2px 4px 2px 0;
+    background: rgba(30, 27, 75, 0.55);
+    border: 1px solid rgba(168, 85, 247, 0.5);
+    border-radius: 999px;
+    color: #ede9fe;
+    font-size: 12px;
+}
+
+/* T2B-2 — two_only character pool inside daily intro */
+.daily-pool-row {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 6px;
+}
+
+.daily-character-pool {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.daily-char-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+    padding: 6px 10px;
+    background: var(--bg-tertiary, rgba(15, 23, 42, 0.6));
+    border: 1px solid rgba(99, 102, 241, 0.5);
+    border-radius: 8px;
+    color: var(--text-primary, #e2e8f0);
+    cursor: pointer;
+    font-family: inherit;
+    transition: background 0.15s, border-color 0.15s;
+}
+
+.daily-char-btn:hover {
+    background: rgba(99, 102, 241, 0.18);
+}
+
+.daily-char-btn.active {
+    background: rgba(99, 102, 241, 0.3);
+    border-color: var(--accent, #818cf8);
+    box-shadow: 0 0 0 2px rgba(129, 140, 248, 0.35);
+}
+
+.daily-char-btn .daily-char-name {
+    font-weight: 700;
+    font-size: 13px;
+}
+
+.daily-char-btn .daily-char-personality {
+    font-size: 11px;
+    opacity: 0.75;
+}

@@ -73,3 +73,6 @@ runs/
 
 # nul file
 nul
+
+# Local context / scratch (not committed)
+.context/
