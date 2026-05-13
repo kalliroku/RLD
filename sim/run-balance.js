@@ -1,6 +1,11 @@
 /**
  * run-balance.js — CLI entry point for balance simulation
- * Usage: node sim/run-balance.js [runs=10] [strategy=all]
+ * Usage:
+ *   node sim/run-balance.js [runs=10] [strategy=all] [--modifier=slippery,heavy_fog,two_only] [--seed=N]
+ *
+ * --modifier  Comma-separated modifier ids. Empty = modifier-off (baseline).
+ * --seed      Seed for ModifierSet PRNG streams (defaults to a wall-clock seed
+ *             per process so runs are still independent unless explicitly fixed).
  */
 
 import { GameSimulator } from './simulator.js';
@@ -8,10 +13,19 @@ import { StraightForward, BalancedPlayer, FarmHeavy, HybridPlayer } from './stra
 
 const ALL_STRATEGIES = { StraightForward, BalancedPlayer, FarmHeavy, HybridPlayer };
 
-// Parse CLI args
-const args = process.argv.slice(2);
-const RUNS = parseInt(args[0]) || 10;
-const strategyFilter = args[1] || 'all';
+// Parse CLI args (positional + flags)
+const rawArgs = process.argv.slice(2);
+const positional = [];
+let modifierFlag = '';
+let seedFlag = null;
+for (const a of rawArgs) {
+    if (a.startsWith('--modifier=')) modifierFlag = a.slice('--modifier='.length);
+    else if (a.startsWith('--seed=')) seedFlag = parseInt(a.slice('--seed='.length), 10);
+    else positional.push(a);
+}
+const RUNS = parseInt(positional[0]) || 10;
+const strategyFilter = positional[1] || 'all';
+const modifierIds = modifierFlag ? modifierFlag.split(',').map(s => s.trim()).filter(Boolean) : [];
 
 const strategies = strategyFilter === 'all'
     ? Object.values(ALL_STRATEGIES)
@@ -35,6 +49,11 @@ function pct(num, denom) {
 
 console.log(`\n${'='.repeat(60)}`);
 console.log(`  RLD Balance Simulator — ${RUNS} runs per strategy`);
+if (modifierIds.length > 0) {
+    console.log(`  Modifiers ON: ${modifierIds.join(', ')}${seedFlag != null ? ` (fixed seed=${seedFlag})` : ''}`);
+} else {
+    console.log(`  Modifiers OFF (baseline)`);
+}
 console.log(`${'='.repeat(60)}\n`);
 
 for (const strategy of strategies) {
@@ -42,7 +61,11 @@ for (const strategy of strategies) {
     const t0 = Date.now();
 
     for (let i = 0; i < RUNS; i++) {
-        const sim = new GameSimulator(strategy);
+        // Each run gets an independent modifier seed by default so two_only
+        // sees varied character pools across runs (matches a player rolling a
+        // fresh daily). Use --seed=N to pin them all to one pool.
+        const modifierSeed = seedFlag != null ? seedFlag : (Date.now() ^ (i * 0x9E3779B1)) >>> 0;
+        const sim = new GameSimulator(strategy, { modifierIds, modifierSeed });
         const stats = sim.runPlaythrough();
         results.push(stats);
 

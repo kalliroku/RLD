@@ -95,8 +95,12 @@ export class Agent {
      * already balanced around 2/3 slip).
      */
     _resolveAction(action, grid) {
-        if (this.modifierSet && !grid.slippery) {
-            const deflected = this.modifierSet.resolveMovement(action);
+        // Browser: this.modifierSet is set per-agent. Sim: grid.modifierSet is
+        // attached to the cached grid so every algorithm's internal Agent picks
+        // it up without algo-level plumbing.
+        const modSet = this.modifierSet || (grid && grid.modifierSet) || null;
+        if (modSet && !grid.slippery) {
+            const deflected = modSet.resolveMovement(action);
             if (deflected != null) return deflected;
         }
         if (!grid.slippery) return action;

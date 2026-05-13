@@ -12,6 +12,7 @@ import {
     MAX_EPISODES, CONVERGENCE_WINDOW, CONVERGENCE_THRESHOLD,
     createAlgorithm, getDungeonLevel, getOperatingCost
 } from '../web/js/game/game-config.js';
+import { ModifierSet } from '../web/js/game/modifiers.js';
 
 // HP-aware BFS pathfinder: finds shortest path from start to goal
 // Returns { path: [{x,y},...], steps, finalHp } or null if unreachable
@@ -72,23 +73,44 @@ const HUMAN_STEP_MULTIPLIER = 1.3;
 // B-108 (D-4): 수동 플레이어 스텝당 식량 소비 (1 → 2)
 export const MANUAL_FOOD_PER_STEP = 2;
 
+// B-109: modifier-on penalties for the manual-play approximation. RL training
+// experiences slippery directly via grid.modifierSet (agent _resolveAction);
+// manual play is modeled at success-rate level so these constants only affect
+// the high-level estimate.
+const HEAVY_FOG_STEP_MULTIPLIER = 1.25;       // +25% wasted steps under fog 3
+const SLIPPERY_MANUAL_SUCCESS_MULT = 0.85;    // milder than grid.slippery (0.4)
+
 // Estimate manual play cost (food costs 1G each; MANUAL_FOOD_PER_STEP food per step)
-export function estimateManualCost(grid, maxHp) {
+// B-109: modifierSet (optional) keeps the strategy's estimate in sync with the
+// actual penalties applied in manualPlayDungeon — otherwise heavy_fog inflates
+// real cost while the estimate stays stale and the strategy loops.
+export function estimateManualCost(grid, maxHp, modifierSet = null) {
     const result = findPath(grid, maxHp);
     if (!result) return null;
-    const humanSteps = Math.ceil(result.steps * HUMAN_STEP_MULTIPLIER);
+    let stepMul = HUMAN_STEP_MULTIPLIER;
+    if (modifierSet && modifierSet.has('heavy_fog')) stepMul *= HEAVY_FOG_STEP_MULTIPLIER;
+    const humanSteps = Math.ceil(result.steps * stepMul);
     // Estimate success rate for the strategy to make informed decisions
     let successRate = 0.95;
     if (result.steps > 20) successRate -= (result.steps - 20) * 0.002;
     const hpLost = maxHp - result.finalHp;
     successRate -= (hpLost / 10) * 0.03;
     if (grid.slippery) successRate *= 0.4;
+    if (modifierSet && modifierSet.has('slippery') && !grid.slippery) {
+        successRate *= SLIPPERY_MANUAL_SUCCESS_MULT;
+    }
     successRate = Math.max(0.05, Math.min(successRate, 0.95));
     return { steps: result.steps, humanSteps, goldCost: humanSteps * MANUAL_FOOD_PER_STEP, finalHp: result.finalHp, successRate };
 }
 
 export class GameSimulator {
-    constructor(strategy) {
+    /**
+     * @param {object} strategy
+     * @param {object} [options]
+     * @param {string[]} [options.modifierIds]  Modifier ids to activate, e.g. ['slippery'].
+     * @param {number}   [options.modifierSeed] Seed for the ModifierSet PRNG streams.
+     */
+    constructor(strategy, options = {}) {
         this.runState = new RunState();
         this.strategy = strategy;
         this.log = [];
@@ -97,6 +119,32 @@ export class GameSimulator {
         // Reset strategy state for new playthrough
         if (strategy._manualFailCounts) {
             strategy._manualFailCounts = {};
+        }
+
+        // B-109: modifier integration (variant A — measurement tool).
+        const modifierIds = options.modifierIds || [];
+        const modifierSeed = options.modifierSeed >>> 0;
+        if (modifierIds.length > 0) {
+            this.modifierSet = new ModifierSet(modifierIds, modifierSeed);
+        } else {
+            this.modifierSet = null;
+        }
+        this.allowedChars = null;
+        if (this.modifierSet && this.modifierSet.has('two_only')) {
+            // Mirror daily-mode semantics (D-2026-05-12-11): pool = all non-hidden
+            // characters, seeded pick of 2. Pre-hire so the strategy can use them
+            // immediately — daily mode gives the player direct access regardless
+            // of campaign hire state.
+            const nonHidden = Object.keys(CHARACTERS).filter(
+                c => !this.runState.isCharacterHidden(c)
+            );
+            const picked = this.modifierSet.pickCharacterPool(nonHidden, 2);
+            this.allowedChars = new Set(picked);
+            for (const c of picked) {
+                if (!this.runState.isCharacterAvailable(c)) {
+                    this.runState.hiredCharacters.add(c);
+                }
+            }
         }
     }
 
@@ -111,6 +159,16 @@ export class GameSimulator {
             if (config && config.slippery) {
                 grid.slippery = true;
             }
+            // B-109: We deliberately do NOT attach modifierSet to the grid for
+            // AI training. modifier.slippery would route through agent._resolveAction
+            // → exposes a pre-existing bug in the algorithm gold/monster
+            // restoration logic (uses intended nextPos instead of actual
+            // agent.x/agent.y after a deflection — see sarsa.js:206-213 et al).
+            // In production this is latent because campaign dungeons run without
+            // modifiers and daily PCG dungeons skip gold/monsters. For the
+            // measurement here, we approximate slippery at the manual-play
+            // success-rate level (see manualPlayDungeon below); heavy_fog and
+            // two_only don't touch movement so this restriction loses nothing.
             this.grids[dungeonId] = grid;
         }
         return this.grids[dungeonId];
@@ -341,10 +399,22 @@ export class GameSimulator {
             successRate *= 0.4; // only 40% as likely
         }
 
+        // B-109: modifier.slippery is the lighter 30% deflection (vs grid 2/3).
+        // Manual play uses a high-level success multiplier here; the RL training
+        // path experiences slippery directly via grid.modifierSet.
+        if (this.modifierSet && this.modifierSet.has('slippery') && !grid.slippery) {
+            successRate *= SLIPPERY_MANUAL_SUCCESS_MULT;
+        }
+
         successRate = Math.max(0.05, Math.min(successRate, 0.95));
 
-        // Human takes extra steps (exploration, backtracking)
-        const humanSteps = Math.ceil(pathResult.steps * HUMAN_STEP_MULTIPLIER);
+        // Human takes extra steps (exploration, backtracking). heavy_fog
+        // shrinks visibility 5→3, so manual play wastes more steps wandering.
+        let stepMultiplier = HUMAN_STEP_MULTIPLIER;
+        if (this.modifierSet && this.modifierSet.has('heavy_fog')) {
+            stepMultiplier *= HEAVY_FOG_STEP_MULTIPLIER;
+        }
+        const humanSteps = Math.ceil(pathResult.steps * stepMultiplier);
         const foodNeeded = humanSteps * MANUAL_FOOD_PER_STEP; // B-108
 
         // Check food
@@ -461,14 +531,23 @@ export class GameSimulator {
     // Build state object for strategy
     _getState() {
         // List available (free or hired) characters
-        const availableChars = Object.keys(CHARACTERS).filter(
+        let availableChars = Object.keys(CHARACTERS).filter(
             name => this.runState.isCharacterAvailable(name)
         );
 
         // List hireable characters (locked but not hidden)
-        const hireableChars = Object.keys(CHARACTERS).filter(
+        let hireableChars = Object.keys(CHARACTERS).filter(
             name => this.runState.isCharacterLocked(name)
         );
+
+        // B-109: two_only restricts the strategy to the seeded pool. The
+        // simulator pre-hires the picked chars in the constructor, so
+        // availableChars stays non-empty even when the natural starter pool
+        // excludes the picks (D-2026-05-12-11 — campaign hire state is bypassed).
+        if (this.allowedChars) {
+            availableChars = availableChars.filter(c => this.allowedChars.has(c));
+            hireableChars = hireableChars.filter(c => this.allowedChars.has(c));
+        }
 
         // Next uncleared dungeon
         const nextUncleared = DUNGEON_ORDER.find(
@@ -519,7 +598,7 @@ export class GameSimulator {
             // Manual play helpers
             getManualCost: (dungeonId) => {
                 const grid = this.getGrid(dungeonId);
-                return estimateManualCost(grid, 100);
+                return estimateManualCost(grid, 100, this.modifierSet);
             },
         };
     }

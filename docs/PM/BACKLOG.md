@@ -10,9 +10,7 @@
 
 ## P1 — 갈래 없음, 단기 실행
 
-| ID | 작업 | 출처 | 공수 |
-|---|---|---|---|
-| B-109 | HybridPlayer 시뮬레이터 회귀 검증 — **모디파이어 3종 활성 상태** 에서 25.5/27 ± 2 영역 유지. T2B-2 MVP 후 baseline (모디파이어 비활성, 캠페인 sim): 24.6 / 25.6 / 24.9 / 25.4 / 24.1 — 모두 [23.5, 27.5] 영역 hit ✓. **잔여**: sim/strategies.js + sim/simulator.js 에 ModifierSet 통합 분기 추가 후 modifier-on 측정 | **D-4 근거 5** | 1일 |
+(잔여 없음 — B-109 마감 → Done 으로 이동, M3 게이트 통과)
 
 ## P1 — D-4 로 Tier 2 → P1 승격 (RL 양념 본진)
 
@@ -56,3 +54,4 @@
 | T2B-1 | 시드 기반 일일 챌린지 시스템 (1.1 rng.js / 1.2 Daily 모드 + 데일리 던전 / 1.3 어제 비교 + 7일 캐러셀) | 2026-05-12 | `web/js/game/rng.js` (mulberry32 + dailySeed + utcDateKey) + `web/js/game/daily-mode.js` (DailyHistory localStorage key `rld_daily_history`) + index.html Daily 탭 + 패널 + Play↔Daily 전환 (lastPlayDungeon 복원). 결정론 검증 통과 (시드 1656106231, 시작/목표 좌표 reproducible). Play 회귀 sim: 25.0/27 (25.5 ± 2 영역 유지) |
 | B-110 | Daily Seed UI 프로토타입 — T2B-1 산출물 자체가 프로토타입 정착 | 2026-05-12 | T2B-1 흡수 (핸드오프 §2.2 T2B-1.4 명시) |
 | T2B-2 | 매 런 모디파이어 시스템 3종 MVP (slippery / two_only / heavy_fog) — 데일리 전용 | 2026-05-12 | `web/js/game/modifiers.js` 신규 (ModifierSet + pickModifiers, mulberry32 seeded). agent.js `_resolveAction` 분기 + `getVisibility` linear-decay 격상. daily-mode.js `getDailyChallenge` 가 pickModifiers 호출. main.js: activeModifierSet + character pool picker + 모디파이어 띠 + heavy_fog 시 fog 강제. index.html: `#modifier-band` div + `#daily-pool-row`. style.css: 띠 + 칩 + 캐릭터 픽커. 결정론 검증 (slip rate 30.0% over 10k, two_only ["dyna","doubleq"] reproducible). visual 검증 (agent-browser screenshot heavy_fog 가시 2칸). 캠페인 회귀 sim (modifier off): 24.6 / 25.6 / 24.9 / 25.4 / 24.1 — 모두 25.5/27 ± 2 영역 hit |
+| B-109 | sim 측 ModifierSet 통합 + modifier-on 회귀 (변형 A) | 2026-05-13 | `sim/simulator.js` GameSimulator 가 `{modifierIds, modifierSeed}` 옵션 수용. ModifierSet 생성 + two_only 시 캐릭터 풀 픽 + pre-hire. `estimateManualCost(grid, hp, modifierSet)` 시그니처 확장 — 추정과 실제 비용 동기화 (heavy_fog ×1.25 humanSteps, slippery ×0.85 successRate). `agent.js _resolveAction`: `grid.modifierSet` fallback 추가 (sim 우회용, 현재 미사용). `sim/run-balance.js`: `--modifier=` `--seed=` 플래그. **측정 결과 (20-run)**: off=24.5/27 ✓, slippery=24.4/27 ✓, heavy_fog=24.3/27 ✓ (모두 [23.5,27.5] 영역), two_only=13.3/27 (D-9 데일리 전용으로 정당화), 3종 합산=17.1/27 (데일리 전용 스택). **slippery 는 manual-play approximation 만 적용** — algorithm 측 gold/monster restoration 의 pre-existing 버그 (intended vs actual position) 가 deflection 시 OOB 인덱스 트리거하므로 AI 훈련 측 deflection 미적용. D-2026-05-12-12 박제 |

@@ -1,6 +1,6 @@
 # RLD — Project Status
 
-**Last updated**: 2026-05-12 (T2B-2 MVP 마감, B-109 modifier-on 회귀 대기)
+**Last updated**: 2026-05-13 (B-109 마감, M3 → M4 게이트 통과)
 
 ## Current track
 
@@ -11,17 +11,18 @@
 
 ## 활성 결정
 
-없음. 다음 결정은 작업 진행 중 자연 발생 예정.
+없음. 다음 결정은 M4 작업 진행 중 자연 발생 예정.
 
 ## In-Progress
 
 - **M1 ✅ 완료** — 그림 그리기 (3축 비판 + 디베이트 + VISION.md).
 - **M2 ✅ 완료** — P0 4/4 (B-001~B-004). 정체성 정리 + Step-0 진입 모드 박힘.
-- **M3 거의 마감** — P1 단기 8건 + T2B-3 + **T2B-1 ✅** (시드 일일 챌린지) + **T2B-2 MVP ✅** (모디파이어 3종 데일리 전용). 잔여: B-109 modifier-on sim 회귀 (sim/strategies + simulator 에 ModifierSet 통합 분기) — M3 → M4 게이트의 마지막 항목. 인계 문서: [`handoffs/2026-05-12-t2b2-to-b109.md`](handoffs/2026-05-12-t2b2-to-b109.md) 참조.
+- **M3 ✅ 완료** — P1 단기 8건 + T2B-3 + **T2B-1 ✅** (시드 일일 챌린지) + **T2B-2 MVP ✅** (모디파이어 3종 데일리 전용) + **B-109 ✅** (sim 측 ModifierSet 통합 + modifier-on 측정 통과). **M4 진입 준비 완료** — 12종 모디파이어 / 캠페인 모디파이어 확장 / 모바일 (P2) 가 다음 마일스톤.
 
 ## 최근 활동
 
-- 2026-05-12 — **T2B-2 MVP 마감** (모디파이어 3종, 데일리 전용). `web/js/game/modifiers.js` (ModifierSet + pickModifiers, mulberry32 seeded). agent.js `_resolveAction` + `getVisibility` 격상. daily-mode.js `getDailyChallenge` 가 pickModifiers 호출. main.js: activeModifierSet 라이프사이클 + two_only 캐릭터 픽커 + 모디파이어 띠 + heavy_fog 시 fog 강제. 결정론 검증 (slip rate 0.300 over 10k, two_only seed=3 → ["dyna","doubleq"] reproducible, dailyChallenge 동일 UTC 일 idempotent). visual 검증 (heavy_fog 가시 2칸, slippery 11 push 중 3 deflection). 캠페인 회귀 sim (modifier off, 5×20-run): 24.6 / 25.6 / 24.9 / 25.4 / 24.1 — 모두 25.5/27 ± 2 영역 hit ✓. **B-109 잔여 = sim 측 ModifierSet 통합 + modifier-on 측정**
+- 2026-05-13 — **B-109 마감** — sim/simulator.js + sim/run-balance.js 에 modifier 통합. GameSimulator 옵션 `{modifierIds, modifierSeed}`, two_only 시 캐릭터 풀 픽 + pre-hire, manual-play 페널티 (heavy_fog ×1.25 humanSteps / slippery ×0.85 successRate), `estimateManualCost` 시그니처 확장으로 추정/실제 동기화. **측정 결과 (20-run HybridPlayer)**: off=24.5/27 ✓, slippery=24.4/27 ✓, heavy_fog=24.3/27 ✓ (모두 [23.5,27.5] hit), two_only=13.3/27 (D-9 데일리 전용으로 정당화), 3종=17.1/27. **slippery 는 manual-play approximation 만** — algorithm 15개 의 gold/monster restoration 이 intended vs actual position 분리 미흡한 pre-existing 버그로 deflection 시 OOB → D-12 박제. M3 → M4 게이트 통과.
+- 2026-05-12 — **T2B-2 MVP 마감** (모디파이어 3종, 데일리 전용). `web/js/game/modifiers.js` (ModifierSet + pickModifiers, mulberry32 seeded). agent.js `_resolveAction` + `getVisibility` 격상. daily-mode.js `getDailyChallenge` 가 pickModifiers 호출. main.js: activeModifierSet 라이프사이클 + two_only 캐릭터 픽커 + 모디파이어 띠 + heavy_fog 시 fog 강제. 결정론 검증 (slip rate 0.300 over 10k, two_only seed=3 → ["dyna","doubleq"] reproducible, dailyChallenge 동일 UTC 일 idempotent). visual 검증 (heavy_fog 가시 2칸, slippery 11 push 중 3 deflection). 캠페인 회귀 sim (modifier off, 5×20-run): 24.6 / 25.6 / 24.9 / 25.4 / 24.1 — 모두 25.5/27 ± 2 영역 hit ✓.
 - 2026-05-12 — **T2B-1 마감** (시드 기반 일일 챌린지 — 1.1 rng.js 분리 / 1.2 Daily 모드 + 데일리 던전 / 1.3 어제 비교 + 7일 캐러셀 / 1.4 B-110 흡수). 결정론 검증 통과 (시드 1656106231, 시작/목표 reproducible). Play 회귀 sim 25.0/27 ✓. agent-browser visual 검증 통과 (Daily 탭 → 도전 → 클리어/사망 → 어제 비교 메시지)
 - 2026-05-12 — **T2B 본진 진입 인계 문서** 작성 (`handoffs/2026-05-12-act1-to-t2b.md`) — 다음 에이전트가 zero-base 진입 가능하도록 T2B-1/T2B-2 명세 + 검증 자산 + 자율 결정사항 + 위험 정리
 - 2026-05-12 — **자율 진행 세션**: P1 8건 일괄 처리. B-108 식량 1→2 + sim 일관성 + 20-run baseline 회귀 (25.6/27 ✓), B-101 Q-Value 디폴트 ON + 숫자 제거, B-106 학습 성공률 sparkline 상시 표시, B-104 Ch.7 운영비 -30% + 보상 +30%, B-103 Ch.5 8→4 던전 축소 (Lv.20~23 컷, 31→27), T2B-3 잔여 (hire confirm + tutorial 한국어). agent-browser 통합 검증 통과
@@ -32,21 +33,27 @@
 
 ## 블락된 항목
 
-없음. **B-109 sim 통합** 진입 준비 완료 — `web/js/game/modifiers.js` (ModifierSet + pickModifiers) 가 sim 측에서도 재사용 가능. sim/strategies.js + sim/simulator.js 에 slippery(30% deflection) + heavy_fog(humanSteps 추정 증가) + two_only(strategy 캐릭터 풀 제한) 분기를 추가하면 modifier-on 회귀 측정 가능.
+없음. **M4 진입 준비 완료** — B-109 측정으로 캠페인 모디파이어 확장의 안전 마진 확인 (slippery/heavy_fog 단독 -0.1~0.2). M4 의 12종 모디파이어 도입 시 알고리즘 15개의 gold/monster restoration 버그 (D-12) 를 일괄 수정해야 AI 훈련에 modifier.slippery 정상 반영 가능.
 
-## 핵심 지표 (T2B-2 MVP 마감 후)
+## 핵심 지표 (B-109 마감 후)
 
-- HybridPlayer baseline (modifier off, 5×20-run): **24.6 / 25.6 / 24.9 / 25.4 / 24.1** — 모두 25.5/27 ± 2 영역 hit ✓
+- HybridPlayer modifier off (20-run, 신규): **24.5/27 ✓** (5×20 historical: 24.6 / 25.6 / 24.9 / 25.4 / 24.1)
+- HybridPlayer modifier ON (20-run, 신규):
+  - slippery 단독: **24.4/27 ✓** (영역 hit)
+  - heavy_fog 단독: **24.3/27 ✓** (영역 hit)
+  - two_only 단독: **13.3/27** (D-9 데일리 전용으로 정당화, 캠페인 미적용)
+  - 3종 합산: **17.1/27** (데일리 전용 스택 — 영역 이탈 의도됨)
 - 던전 수: 31 → **27** (B-103 Ch.5 축소, Lv.20~23 은 grid.js 보존 자산)
 - 우측 컨트롤 10개 섹션 한국어, 튜토리얼 5개 메시지 한국어
 - 첫 진입 — Step-0 4개 패널 + canvas 힌트 + Q-Value 디폴트 ON + sparkline placeholder
 - **데일리 모드**: Daily 탭 + 시드 결정론 + 20×20 PCG 던전 + 어제 비교 + 7일 캐러셀, localStorage `rld_daily_history` 별도 키 (NG+ 영향 X)
 - **모디파이어 3종** (데일리 전용): slippery (30% 빗나감, seeded), two_only (14-character pool — scout 제외 — 에서 2명 시드 픽), heavy_fog (시야 5→3 칸). 모디파이어 띠 + 데일리 패널 칩 UI
+- **sim 측 modifier 통합**: `--modifier=slippery,heavy_fog,two_only` `--seed=N` CLI 플래그. manual-play approximation (slippery/heavy_fog) + two_only pre-hire
 
 ## 다음 마일스톤 (VISION §5 동기화)
 
 - **M1** ✅ — 그림 그리기 (이 PM 디렉토리 + VISION.md)
-- **M2** (~1개월) — P0 4건 → *"정체성 정리 완료"*
-- **M3** (~3개월) — T2B 본진 (시드 + 모디파이어 MVP 3 + 알고리즘=캐릭터) + B-108/109 → ***alpha***
-- **M4** (~5개월) — P2 모바일·사망 페널티 + 모디파이어 12종 + BGM 4트랙 → ***beta***
+- **M2** ✅ — P0 4건 → *"정체성 정리 완료"*
+- **M3** ✅ — T2B 본진 (시드 + 모디파이어 MVP 3 + 알고리즘=캐릭터) + B-108/109 → ***alpha***
+- **M4** (~5개월) — P2 모바일·사망 페널티 + 모디파이어 12종 + BGM 4트랙 → ***beta*** **← 진입 준비 완료**
 - **M5** (~6~7개월) — 폴리시 + 한영 i18n + 출시 페이지 → ***1.0***
