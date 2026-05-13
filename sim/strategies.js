@@ -271,7 +271,7 @@ export const HybridPlayer = {
             && (manualCost.successRate || 0) > 0.3; // don't bother if too risky
 
         if (canManual) {
-            const foodNeeded = manualCost.humanSteps;
+            const foodNeeded = manualCost.goldCost; // B-108: humanSteps * MANUAL_FOOD_PER_STEP
             if (state.food < foodNeeded) {
                 const needed = foodNeeded - state.food;
                 if (state.gold >= needed + aiBudget * 0.3) {

@@ -23,8 +23,9 @@ export class NeuralNetwork {
     /**
      * @param {number[]} layerSizes - e.g. [3, 64, 32, 4]
      */
-    constructor(layerSizes) {
+    constructor(layerSizes, options = {}) {
         this.layerSizes = layerSizes;
+        this.clipGradient = options.clipGradient ?? true;
         this.layers = [];
 
         // Create layers (connections between adjacent sizes)
@@ -158,13 +159,15 @@ export class NeuralNetwork {
                 dz = delta.slice(); // linear: derivative = 1
             }
 
-            // Gradient clipping
-            for (let i = 0; i < dz.length; i++) {
-                if (dz[i] > 1) dz[i] = 1;
-                else if (dz[i] < -1) dz[i] = -1;
+            // Gradient clipping (option)
+            if (this.clipGradient) {
+                for (let i = 0; i < dz.length; i++) {
+                    if (dz[i] > 1) dz[i] = 1;
+                    else if (dz[i] < -1) dz[i] = -1;
+                }
             }
 
-            // Compute weight and bias gradients (with clipping)
+            // Compute weight and bias gradients
             const fanOut = layer.weights.length;
             const fanIn = aIn.length;
             const dW = [];
@@ -172,8 +175,10 @@ export class NeuralNetwork {
                 const row = new Array(fanIn);
                 for (let c = 0; c < fanIn; c++) {
                     let g = dz[r] * aIn[c];
-                    if (g > 1) g = 1;
-                    else if (g < -1) g = -1;
+                    if (this.clipGradient) {
+                        if (g > 1) g = 1;
+                        else if (g < -1) g = -1;
+                    }
                     row[c] = g;
                 }
                 dW.push(row);

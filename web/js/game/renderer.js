@@ -14,7 +14,8 @@ export class Renderer {
         this.agent = null;
 
         // Q-Learning visualization
-        this.showQValues = false;
+        // B-101 / D-4: 디폴트 ON — Q-value 히트맵은 RL 양념의 시각 시그니처
+        this.showQValues = true;
         this.showPolicy = false;
         this.qValues = null;  // 2D array of max Q-values
         this.policy = null;   // 2D array of best actions
@@ -179,9 +180,9 @@ export class Renderer {
                 ctx.fillText('+', centerX, centerY);
                 break;
             case TileType.PIT:
-                ctx.fillStyle = '#666';
+                // B-102: PIT 는 빨간 X 로 분화 (fog 의 회색 ? 와 색 충돌 해결)
+                ctx.fillStyle = '#ef4444';
                 ctx.fillText('X', centerX, centerY);
-                // Draw skull-like symbol
                 ctx.font = `${tileSize * 0.25}px monospace`;
                 ctx.fillText('PIT', centerX, centerY + tileSize * 0.25);
                 break;
@@ -438,6 +439,7 @@ export class Renderer {
                 const g = Math.floor(255 * normalized);
                 const b = 50;
 
+                // B-101: 색만 유지, 숫자 제거 — RL 양념의 시각 시그니처는 hue, 정량값은 노이즈
                 ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.4)`;
                 ctx.fillRect(
                     x * tileSize + 2,
@@ -445,13 +447,6 @@ export class Renderer {
                     tileSize - 4,
                     tileSize - 4
                 );
-
-                // Show Q-value text
-                ctx.font = `${tileSize * 0.22}px monospace`;
-                ctx.fillStyle = 'white';
-                ctx.textAlign = 'center';
-                ctx.textBaseline = 'bottom';
-                ctx.fillText(q.toFixed(1), x * tileSize + tileSize / 2, (cy + 1) * tileSize - 4);
             }
         }
     }

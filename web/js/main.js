@@ -20,6 +20,10 @@ import { DungeonMap } from './game/dungeon-map.js';
 import { BriefingOverlay } from './game/briefing.js';
 import { TutorialManager } from './game/tutorial.js';
 import { ScreenManager } from './game/screen-manager.js';
+import { generateDungeon } from './game/dungeon-generator.js';
+import { DailyHistory, getDailyChallenge, yesterdayKey } from './game/daily-mode.js';
+import { utcDateKey } from './game/rng.js';
+import { ModifierSet, MODIFIERS } from './game/modifiers.js';
 
 const PRESET_MULTI_DUNGEONS = {
     preset_beginner_tower: {
@@ -180,6 +184,17 @@ class Game {
         // Step 6: Tutorial
         this.tutorial = new TutorialManager();
 
+        // T2B-1: Daily mode state
+        this.dailyHistory = new DailyHistory();
+        this.dailyContext = null;  // { dateKey, seed, modifierIds, characterPool? } when daily challenge is active
+        this.dailyPhase = 'intro';  // 'intro' | 'playing' | 'done'
+        this.dailyResultEl = null;
+
+        // T2B-2: active modifier set (daily only for MVP; null in campaign).
+        this.activeModifierSet = null;
+        // Remember the campaign character so daily two_only doesn't permanently switch.
+        this.lastPlayCharacter = null;
+
         // Migrate legacy custom dungeons to Stage Library
         DungeonEditor.migrateToStages();
 
@@ -190,6 +205,7 @@ class Game {
         this.setupEventListeners();
         this.setupModeTabs();
         this.setupEditor();
+        this.setupDailyMode();
         this.updateDungeonSelect();
         this.loadCustomDungeonOptions();
         this.updateCharacterGrid();
@@ -206,6 +222,12 @@ class Game {
 
         // Title screen: enable Continue if save exists
         this._updateTitleButtons();
+
+        // B-106: initial sparkline placeholder
+        this.renderSparkline();
+
+        // Step 6: Welcome tutorial
+        this.tutorial.tryShow('init');
     }
 
     // ========== Screen System ==========
@@ -526,11 +548,16 @@ class Game {
     switchMode(mode, skipReload = false) {
         if (mode === this.currentMode) return;
 
-        // Stop training if switching away from play
+        // Stop training when leaving play
         if (this.currentMode === 'play' && this.isTraining) {
             this.stopTraining();
         }
+        // Stop training when leaving daily too (defensive — daily shouldn't train, but)
+        if (this.currentMode === 'daily' && this.isTraining) {
+            this.stopTraining();
+        }
 
+        const prevMode = this.currentMode;
         this.currentMode = mode;
 
         // Update tab UI
@@ -538,24 +565,362 @@ class Game {
             btn.classList.toggle('active', btn.dataset.mode === mode);
         });
 
-        const playControls = document.querySelector('.controls:not(.editor-controls)');
+        const playControls = document.querySelector('.controls:not(.editor-controls):not(.daily-controls)');
         const editorControls = document.getElementById('editor-controls');
+        const dailyControls = document.getElementById('daily-controls');
+
+        // Reset body classes
+        document.body.classList.remove('editor-mode', 'daily-mode');
 
         if (mode === 'editor') {
             document.body.classList.add('editor-mode');
             playControls.style.display = 'none';
             editorControls.style.display = '';
+            if (dailyControls) dailyControls.style.display = 'none';
             this.editor.activate();
+        } else if (mode === 'daily') {
+            document.body.classList.add('daily-mode');
+            playControls.style.display = 'none';
+            editorControls.style.display = 'none';
+            if (dailyControls) dailyControls.style.display = '';
+            if (prevMode === 'editor') this.editor.deactivate();
+            this.enterDailyMode();
         } else {
-            document.body.classList.remove('editor-mode');
+            // play
             playControls.style.display = '';
             editorControls.style.display = 'none';
-            this.editor.deactivate();
-            // Restore play canvas (unless caller will handle it)
-            if (!skipReload) {
+            if (dailyControls) dailyControls.style.display = 'none';
+            if (prevMode === 'editor') this.editor.deactivate();
+            // T2B-1: returning from daily — restore the campaign dungeon.
+            // T2B-2: also restore the campaign character if two_only forced a switch,
+            // and the fogOfWar checkbox state (heavy_fog may have forced it on).
+            if (prevMode === 'daily' && this.isDailyDungeon(this.currentDungeon)) {
+                if (this.fogOfWarCheck) {
+                    this.renderer.fogOfWar = this.fogOfWarCheck.checked;
+                }
+                if (this.lastPlayCharacter && this.lastPlayCharacter !== this.currentCharacter) {
+                    this.currentCharacter = this.lastPlayCharacter;
+                    document.querySelectorAll('.char-card').forEach(btn => {
+                        btn.classList.toggle('active', btn.dataset.char === this.currentCharacter);
+                    });
+                    if (this.characterDesc && CHARACTERS[this.currentCharacter]) {
+                        this.characterDesc.textContent = CHARACTERS[this.currentCharacter].desc;
+                    }
+                }
+                const restore = this.lastPlayDungeon || 'level_01_easy';
+                this.loadDungeon(restore);
+            } else if (!skipReload) {
+                // Restore play canvas (unless caller will handle it)
                 this.loadDungeon(this.currentDungeon);
             }
         }
+        this._renderModifierBand?.();
+    }
+
+    // ========== T2B-1: Daily Mode ==========
+
+    setupDailyMode() {
+        const startBtn = document.getElementById('btn-daily-start');
+        const retryBtn = document.getElementById('btn-daily-retry');
+        if (startBtn) startBtn.addEventListener('click', () => this.startDailyChallenge());
+        if (retryBtn) retryBtn.addEventListener('click', () => this.startDailyChallenge());
+    }
+
+    enterDailyMode() {
+        // Stop any ongoing training defensively (already done in switchMode but safe)
+        if (this.isTraining) this.stopTraining();
+        this.isGameOver = false;
+        const overlay = this.gameOverOverlay;
+        if (overlay) overlay.style.display = 'none';
+
+        // Remember the campaign dungeon we were on so we can restore it on exit.
+        if (!this.isDailyDungeon(this.currentDungeon)) {
+            this.lastPlayDungeon = this.currentDungeon;
+            this.lastPlayCharacter = this.currentCharacter;
+        }
+
+        // Resolve today's challenge + modifiers
+        this.dailyContext = getDailyChallenge();
+        this._resolveDailyCharacterPool();
+        this.dailyPhase = 'intro';
+        this.renderDailyIntro();
+        // Show a preview of the daily dungeon on canvas (read-only — no input until 도전)
+        this.loadDailyDungeon();
+    }
+
+    // T2B-2: If two_only is active, deterministically pick 2 character ids from
+    // the player's available pool and force currentCharacter into the pair.
+    _resolveDailyCharacterPool() {
+        if (!this.dailyContext) return;
+        const { seed, modifierIds } = this.dailyContext;
+        if (!modifierIds.includes('two_only')) {
+            this.dailyContext.characterPool = null;
+            return;
+        }
+        // D-2026-05-12-8: daily ≠ campaign progression. Pool draws from every
+        // non-hidden algorithm so the daily challenge is fair across save states.
+        const available = Object.keys(CHARACTERS).filter(name => !this.runState.isCharacterHidden(name));
+        const tmpSet = new ModifierSet(modifierIds, seed);
+        const pool = tmpSet.pickCharacterPool(available, 2);
+        this.dailyContext.characterPool = pool;
+        if (pool.length > 0 && !pool.includes(this.currentCharacter)) {
+            this.currentCharacter = pool[0];
+            document.querySelectorAll('.char-card').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.char === this.currentCharacter);
+            });
+            if (this.characterDesc && CHARACTERS[this.currentCharacter]) {
+                this.characterDesc.textContent = CHARACTERS[this.currentCharacter].desc;
+            }
+        }
+    }
+
+    renderDailyIntro() {
+        if (!this.dailyContext) return;
+        const { dateKey, seed, modifierIds } = this.dailyContext;
+        const dateEl = document.getElementById('daily-date');
+        const seedEl = document.getElementById('daily-seed');
+        const modsRow = document.getElementById('daily-modifiers-row');
+        const modsEl = document.getElementById('daily-modifiers');
+        if (dateEl) dateEl.textContent = dateKey;
+        if (seedEl) seedEl.textContent = '#' + seed;
+        if (modsRow) modsRow.style.display = modifierIds.length > 0 ? '' : 'none';
+        if (modsEl) {
+            if (modifierIds.length > 0) {
+                modsEl.innerHTML = modifierIds.map(id => {
+                    const m = MODIFIERS[id];
+                    return m ? `<span class="modifier-chip" title="${m.desc}">${m.name}</span>` : id;
+                }).join('');
+            } else {
+                modsEl.textContent = '—';
+            }
+        }
+
+        // two_only: render a 2-character picker so the player can pick which
+        // serpa to send into the daily attempt.
+        const poolRow = document.getElementById('daily-pool-row');
+        const poolEl = document.getElementById('daily-character-pool');
+        const pool = this.dailyContext.characterPool;
+        if (poolRow && poolEl) {
+            if (pool && pool.length > 0) {
+                poolRow.style.display = '';
+                poolEl.innerHTML = pool.map(id => {
+                    const def = CHARACTERS[id] || { name: id, personality: '' };
+                    const isActive = id === this.currentCharacter;
+                    return `<button class="daily-char-btn${isActive ? ' active' : ''}" data-char="${id}" title="${def.algo || ''} — ${def.desc || ''}"><span class="daily-char-name">${def.name}</span><span class="daily-char-personality">${def.personality || ''}</span></button>`;
+                }).join('');
+                poolEl.querySelectorAll('.daily-char-btn').forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const id = btn.dataset.char;
+                        if (!pool.includes(id)) return;
+                        this.currentCharacter = id;
+                        if (this.characterDesc && CHARACTERS[id]) {
+                            this.characterDesc.textContent = CHARACTERS[id].desc;
+                        }
+                        document.querySelectorAll('.char-card').forEach(c => {
+                            c.classList.toggle('active', c.dataset.char === id);
+                        });
+                        this.renderDailyIntro();
+                    });
+                });
+            } else {
+                poolRow.style.display = 'none';
+                poolEl.innerHTML = '';
+            }
+        }
+
+        // Yesterday record
+        const yesterdayEl = document.getElementById('daily-yesterday');
+        const yesterdayContent = document.getElementById('daily-yesterday-content');
+        const yRec = this.dailyHistory.getYesterday(dateKey);
+        if (yesterdayEl && yesterdayContent) {
+            if (yRec) {
+                yesterdayEl.style.display = '';
+                const yKey = yesterdayKey(dateKey);
+                yesterdayContent.innerHTML = this.renderDailyRecord(yKey, yRec);
+            } else {
+                yesterdayEl.style.display = 'none';
+            }
+        }
+
+        // Today's record (so far)
+        const todayEl = document.getElementById('daily-today');
+        const todayContent = document.getElementById('daily-today-content');
+        const tRec = this.dailyHistory.get(dateKey);
+        if (todayEl && todayContent) {
+            if (tRec) {
+                todayEl.style.display = '';
+                todayContent.innerHTML = this.renderDailyRecord(dateKey, tRec);
+            } else {
+                todayEl.style.display = 'none';
+            }
+        }
+
+        // 7-day carousel (T2B-1.3)
+        const weekEl = document.getElementById('daily-week');
+        const weekContent = document.getElementById('daily-week-content');
+        if (weekEl && weekContent) {
+            const recent = this.dailyHistory.getRecent(dateKey, 7);
+            const hasAny = recent.some(r => r.record !== null);
+            if (hasAny) {
+                weekEl.style.display = '';
+                weekContent.innerHTML = recent.map(({ dateKey: dk, record }) => {
+                    const dayPart = dk.slice(8);
+                    const isToday = dk === dateKey;
+                    let cls = 'daily-week-cell';
+                    let mark = '—';
+                    if (record) {
+                        if (record.cleared) { cls += ' cleared'; mark = '✓'; }
+                        else { cls += ' attempted'; mark = '✗'; }
+                    }
+                    if (isToday) cls += ' today';
+                    return `<div class="${cls}" title="${dk}"><span class="day-num">${dayPart}</span><span>${mark}</span></div>`;
+                }).join('');
+            } else {
+                weekEl.style.display = 'none';
+            }
+        }
+
+        // Button labels
+        const startBtn = document.getElementById('btn-daily-start');
+        const retryBtn = document.getElementById('btn-daily-retry');
+        if (startBtn) {
+            startBtn.style.display = '';
+            startBtn.textContent = tRec ? (tRec.cleared ? '다시 도전 (기록 갱신)' : '다시 도전') : '도전';
+        }
+        if (retryBtn) retryBtn.style.display = 'none';
+    }
+
+    renderDailyRecord(dateKey, rec) {
+        if (!rec) return '—';
+        const rows = [];
+        rows.push(`<div class="row"><span class="label">날짜</span><span>${dateKey}</span></div>`);
+        rows.push(`<div class="row"><span class="label">결과</span><span>${rec.cleared ? '✓ 클리어' : '✗ 미클리어'}</span></div>`);
+        if (rec.cleared && rec.bestSteps != null) {
+            rows.push(`<div class="row"><span class="label">최소 스텝</span><span>${rec.bestSteps}</span></div>`);
+        }
+        rows.push(`<div class="row"><span class="label">시도</span><span>${rec.attempts}회</span></div>`);
+        if (rec.deaths > 0) {
+            rows.push(`<div class="row"><span class="label">사망</span><span>${rec.deaths}회</span></div>`);
+        }
+        return rows.join('');
+    }
+
+    loadDailyDungeon() {
+        if (!this.dailyContext) return;
+        const { dateKey, seed, modifierIds } = this.dailyContext;
+        const gridStr = generateDungeon(20, 20, { seed });
+        this.grid = Grid.fromString(gridStr);
+        this.currentDungeon = `daily_${dateKey}`;
+        this.renderer.setGrid(this.grid);
+        this.qlearning = this.createAlgorithm({ cost: 0, firstReward: 0, repeatReward: 0 });
+        this.trainStats.innerHTML = '';
+        this.renderer.setQData(null, null);
+
+        // T2B-2: build the modifier set for this daily and apply to agent + renderer.
+        this.activeModifierSet = new ModifierSet(modifierIds, seed);
+        this.reset();
+        this._syncAgentModifiers();
+        // heavy_fog needs fog rendering even if user toggled it off in campaign.
+        if (this.activeModifierSet.has('heavy_fog')) {
+            this.renderer.fogOfWar = true;
+        }
+        this._renderModifierBand();
+    }
+
+    _syncAgentModifiers() {
+        if (!this.agent) return;
+        if (this.activeModifierSet && !this.activeModifierSet.isEmpty()) {
+            this.agent.modifierSet = this.activeModifierSet;
+            this.agent.visibilityRange = this.activeModifierSet.visibilityRange(5);
+        } else {
+            this.agent.modifierSet = null;
+            this.agent.visibilityRange = 5;
+        }
+    }
+
+    _renderModifierBand() {
+        const band = document.getElementById('modifier-band');
+        if (!band) return;
+        const items = this.activeModifierSet ? this.activeModifierSet.list() : [];
+        // Only daily mode surfaces the band today (campaign modifiers are MVP-out).
+        if (this.currentMode !== 'daily' || items.length === 0) {
+            band.style.display = 'none';
+            band.innerHTML = '';
+            return;
+        }
+        band.style.display = '';
+        const label = '<span class="modifier-label">이번 런:</span>';
+        const chips = items.map(m =>
+            `<span class="modifier-chip" title="${m.desc}"><span class="modifier-name">${m.name}</span><span class="modifier-desc">${m.desc}</span></span>`
+        ).join('');
+        band.innerHTML = `${label}${chips}`;
+    }
+
+    startDailyChallenge() {
+        if (!this.dailyContext) this.dailyContext = getDailyChallenge();
+        this.dailyPhase = 'playing';
+        this.isGameOver = false;
+        if (this.gameOverOverlay) this.gameOverOverlay.style.display = 'none';
+        // Always re-generate (safe even on retry) and reset state
+        this.loadDailyDungeon();
+        // Clear any lingering daily result toast in main message area
+        if (this.messageEl) this.messageEl.textContent = '';
+        this.showMessage(`오늘의 도전 시작 — 시드 #${this.dailyContext.seed}`, 'info');
+    }
+
+    handleDailyVictory() {
+        if (!this.dailyContext) return;
+        const { dateKey, seed, modifierIds } = this.dailyContext;
+        const yKey = yesterdayKey(dateKey);
+        const yRec = this.dailyHistory.get(yKey);
+        const result = this.dailyHistory.recordAttempt(dateKey, {
+            seed,
+            cleared: true,
+            steps: this.steps,
+            deaths: 0,
+            modifierIds,
+        });
+        this.dailyPhase = 'done';
+        sound.victory();
+        this.renderer.flash('rgba(34, 197, 94, 0.4)');
+
+        let msg = `오늘의 도전 클리어! ${this.steps} 스텝`;
+        if (result.isFirstClear) {
+            msg += ' (오늘 첫 성공!)';
+        } else if (result.isImprovement) {
+            msg += ` (최고 기록 갱신, 이전 ${result.prevBest})`;
+        }
+        if (yRec && yRec.cleared && yRec.bestSteps != null) {
+            const diff = this.steps - yRec.bestSteps;
+            if (diff === 0) msg += ' / 어제와 동일';
+            else if (diff < 0) msg += ` / 어제 ${diff} 스텝`;
+            else msg += ` / 어제 +${diff} 스텝`;
+        }
+        this.showMessage(msg, 'success');
+        if (this.toast) this.toast.show(msg, 'success');
+
+        // Update intro panel with new record and re-render
+        this.renderDailyIntro();
+    }
+
+    handleDailyGameOver(cause) {
+        if (!this.dailyContext) return;
+        const { dateKey, seed, modifierIds } = this.dailyContext;
+        this.dailyHistory.recordAttempt(dateKey, {
+            seed,
+            cleared: false,
+            steps: this.steps,
+            deaths: 1,
+            modifierIds,
+        });
+        this.isGameOver = true;
+        this.done = true;
+        this.dailyPhase = 'done';
+        sound.death();
+        this.renderer.flash('rgba(239, 68, 68, 0.3)');
+        this.showMessage(`오늘의 도전 실패 — ${cause}`, 'danger');
+        if (this.toast) this.toast.show(`오늘의 도전 실패: ${cause}`, 'warning');
+        this.renderDailyIntro();
     }
 
     // ========== Editor Setup ==========
@@ -1435,11 +1800,20 @@ class Game {
     getOperatingCost(charName, dungeonId) {
         const base = BASE_OP_COST[charName] ?? 10;
         const level = this.getDungeonLevel(dungeonId);
-        return base * level;
+        // B-104: Ch.7 (Lv.29~31, 심연) 운영비 -30% — D-4 후속 발란스 (BASE_OP_COST 자체는 수정 금지)
+        const chapter7Discount = level >= 29 ? 0.7 : 1.0;
+        return Math.ceil(base * level * chapter7Discount);
     }
 
     isBuiltInDungeon(dungeonId) {
-        return !dungeonId.startsWith('custom_') && !dungeonId.startsWith('dungeon_') && !dungeonId.startsWith('preset_');
+        return !dungeonId.startsWith('custom_')
+            && !dungeonId.startsWith('dungeon_')
+            && !dungeonId.startsWith('preset_')
+            && !dungeonId.startsWith('daily_');
+    }
+
+    isDailyDungeon(dungeonId = this.currentDungeon) {
+        return typeof dungeonId === 'string' && dungeonId.startsWith('daily_');
     }
 
     /**
@@ -1506,15 +1880,16 @@ class Game {
             const cost = this.runState.getHireCost(charName);
             const charDef = CHARACTERS[charName];
             if (this.runState.gold < cost) {
-                this.showMessage(`Not enough gold to hire ${charDef.name}! Need ${cost}G (have ${this.runState.gold}G)`, 'danger');
+                this.showMessage(`${charDef.name} 고용 골드 부족! ${cost}G 필요 (보유 ${this.runState.gold}G)`, 'danger');
                 return;
             }
-            const ok = confirm(`Hire ${charDef.name} (${charDef.algo}) for ${cost}G?`);
+            // T2B-3: 학명 → 성격 태그 (알고리즘=캐릭터, D-4)
+            const ok = confirm(`${charDef.name} (${charDef.personality}) 를 ${cost}G 에 고용할까요?`);
             if (!ok) return;
             this.runState.hireCharacter(charName);
             this.updateCharacterGrid();
             this.updateUI();
-            this.showMessage(`${charDef.name} hired! -${cost}G`, 'success');
+            this.showMessage(`${charDef.name} 고용 완료! -${cost}G`, 'success');
         }
 
         // Stop training if running
@@ -1556,10 +1931,16 @@ class Game {
         document.addEventListener('touchstart', initSound);
 
         // Character select cards
+        // B-105: 카드 표면 = 성격 태그, 학명은 hover 툴팁 (알고리즘=캐릭터, D-4)
         document.querySelectorAll('.char-card').forEach(btn => {
             btn.addEventListener('click', (e) => {
                 this.switchCharacter(e.currentTarget.dataset.char);
             });
+            const def = CHARACTERS[btn.dataset.char];
+            if (!def) return;
+            const algoSpan = btn.querySelector('.char-algo');
+            if (algoSpan && def.personality) algoSpan.textContent = def.personality;
+            btn.setAttribute('title', `${def.algo} — ${def.desc}`);
         });
 
         // Keyboard controls
@@ -1792,6 +2173,13 @@ class Game {
 
         this.currentDungeon = name;
 
+        // T2B-2 (D-9): every campaign / custom / preset path enters with no
+        // runtime modifier. Done once at the top so the custom_ / dungeon_ /
+        // preset_ early-return branches below can't leak a daily ModifierSet.
+        this.activeModifierSet = null;
+        this._syncAgentModifiers();
+        this._renderModifierBand?.();
+
         // Step 3: Sync dungeon map selection
         if (this.dungeonMap) {
             this.dungeonMap.setCurrentDungeon(name);
@@ -1959,7 +2347,8 @@ class Game {
 
     tryEnterDungeon() {
         const config = DUNGEON_CONFIG[this.currentDungeon] || { cost: 0, firstReward: 0, repeatReward: 0 };
-        const isBuiltIn = !this.currentDungeon.startsWith('custom_') && !this.currentDungeon.startsWith('dungeon_') && !this.currentDungeon.startsWith('preset_');
+        // T2B-1: daily_* must NOT charge entry fee or count as built-in
+        const isBuiltIn = this.isBuiltInDungeon(this.currentDungeon);
 
         if (isBuiltIn && this.runState.gold < config.cost) {
             this.showMessage(`Not enough gold! Need ${config.cost}G`, 'danger');
@@ -2041,7 +2430,8 @@ class Game {
     handleAction(action) {
         if (this.done || this.isGameOver) return;
 
-        const isBuiltIn = !this.currentDungeon.startsWith('custom_') && !this.currentDungeon.startsWith('dungeon_') && !this.currentDungeon.startsWith('preset_');
+        // T2B-1: daily_* must be excluded from "built-in" economy too
+        const isBuiltIn = this.isBuiltInDungeon(this.currentDungeon);
 
         // Food consumption (manual play only, built-in dungeons only)
         if (!this.isTraining && isBuiltIn && this.runState.food > 0) {
@@ -2209,9 +2599,12 @@ class Game {
             if (this.grid.getTotalStages && this.grid.getTotalStages() > 1) {
                 this.pendingGold += 5;
                 this.showMessage(`MONSTER! HP -30, Defeated! +5G (Pending)`, 'warning');
-            } else {
+            } else if (isBuiltIn) {
                 this.runState.gold += 5;
                 this.showMessage(`MONSTER! HP -30, Defeated! +5G`, 'warning');
+            } else {
+                // T2B-1: daily / custom — no campaign gold, just kill
+                this.showMessage(`MONSTER! HP -30, Defeated!`, 'warning');
             }
             this.renderer.flash('rgba(147, 51, 234, 0.4)');
         } else {
@@ -2223,6 +2616,13 @@ class Game {
     }
 
     handleVictory() {
+        // T2B-1: Daily challenge — record + intro panel, no campaign rewards
+        if (this.isDailyDungeon(this.currentDungeon)) {
+            this.handleDailyVictory();
+            this.updateUI();
+            return;
+        }
+
         // Custom/preset dungeons: no economy impact (except pending gold)
         if (!this.isBuiltInDungeon(this.currentDungeon)) {
             sound.victory();
@@ -2298,6 +2698,11 @@ class Game {
             // Step 6: Tutorial triggers on first clear
             this.tutorial.tryShow('first_clear');
             this.updateProgressiveDisclosure();
+
+            // B-004: First ever clear — guide player toward newly revealed AI Training
+            if (this.runState.clearedDungeons.size === 1 && this.toast) {
+                this.toast.show('이제 AI 에게 길을 외우게 시켜보세요.', 'info');
+            }
             // Tutorial: economy when reaching chapter 2
             const curChapter = this.runState.getCurrentChapter();
             if (curChapter >= 2) this.tutorial.tryShow('chapter2');
@@ -2383,6 +2788,12 @@ class Game {
     // ========== Game Over & New Run ==========
 
     triggerGameOver(cause) {
+        // T2B-1: Daily mode — never touch campaign run state
+        if (this.isDailyDungeon(this.currentDungeon)) {
+            this.handleDailyGameOver(cause);
+            return;
+        }
+
         this.runState.recordDeath();
         // C-4: Treasure fail on game over
         if (this.carryingTreasure) {
@@ -2804,6 +3215,73 @@ class Game {
         this.progressFill.style.width = `${percent}%`;
         this.progressText.textContent =
             `${this.trainingEpisode} ep (ε=${epsilon.toFixed(2)})`;
+
+        // B-106: live sparkline of last-N episode success rate
+        this.renderSparkline();
+    }
+
+    // B-106: sliding-window success-rate sparkline (D-4 근거 4 — RL 양념의 시각 시그니처)
+    renderSparkline() {
+        const canvas = document.getElementById('sparkline-canvas');
+        const valueEl = document.getElementById('sparkline-value');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+        ctx.clearRect(0, 0, w, h);
+
+        const results = this.recentResults || [];
+        if (results.length === 0) {
+            if (valueEl) valueEl.textContent = '—';
+            // dashed baseline placeholder
+            ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(2, h / 2);
+            ctx.lineTo(w - 2, h / 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+            return;
+        }
+
+        const W = 20;
+        const points = [];
+        let sum = 0;
+        for (let i = 0; i < results.length; i++) {
+            sum += results[i] ? 1 : 0;
+            if (i >= W) sum -= results[i - W] ? 1 : 0;
+            const denom = Math.min(i + 1, W);
+            points.push(sum / denom);
+        }
+
+        const lastVal = points[points.length - 1];
+        if (valueEl) valueEl.textContent = `${Math.round(lastVal * 100)}%`;
+
+        // Plot polyline
+        const pad = 2;
+        const usableW = w - pad * 2;
+        const usableH = h - pad * 2;
+        ctx.lineWidth = 2;
+        ctx.lineJoin = 'round';
+        ctx.strokeStyle = lastVal >= 0.7 ? '#4ade80'
+                        : lastVal >= 0.3 ? '#fbbf24'
+                        : '#ef4444';
+        ctx.beginPath();
+        for (let i = 0; i < points.length; i++) {
+            const x = pad + (points.length === 1 ? 0 : (i / (points.length - 1)) * usableW);
+            const y = pad + (1 - points[i]) * usableH;
+            if (i === 0) ctx.moveTo(x, y);
+            else ctx.lineTo(x, y);
+        }
+        ctx.stroke();
+
+        // Last point dot
+        const lastX = pad + usableW;
+        const lastY = pad + (1 - lastVal) * usableH;
+        ctx.fillStyle = ctx.strokeStyle;
+        ctx.beginPath();
+        ctx.arc(lastX, lastY, 2.5, 0, Math.PI * 2);
+        ctx.fill();
     }
 
     finishTraining(message) {
@@ -3343,17 +3821,32 @@ class Game {
     }
 
     // Step 6: Progressive disclosure — show/hide sections based on progress
+    // B-004 (Step-0): On first entry (no clears) only Character + Dungeon + Reset + Legend
+    // are visible. Everything else unfolds together on the first dungeon clear.
     updateProgressiveDisclosure() {
         const chapter = this.runState.getCurrentChapter();
         const hasAnyCleared = this.runState.clearedDungeons.size > 0;
 
-        // Farming: show after first clear
-        const farmingSection = document.getElementById('farming-section');
-        if (farmingSection) {
-            const wasHidden = farmingSection.classList.contains('section-hidden');
-            farmingSection.classList.toggle('section-hidden', !hasAnyCleared);
-            if (wasHidden && hasAnyCleared) this._addNewBadge(farmingSection);
+        // B-004: sections gated behind first clear
+        const firstClearGated = [
+            'provisions-section',
+            'farming-section',
+            'training-section',
+            'gamemode-section',
+            'visualization-section',
+            'controls-section',
+        ];
+        for (const id of firstClearGated) {
+            const el = document.getElementById(id);
+            if (!el) continue;
+            const wasHidden = el.classList.contains('section-hidden');
+            el.classList.toggle('section-hidden', !hasAnyCleared);
+            if (wasHidden && hasAnyCleared) this._addNewBadge(el);
         }
+
+        // B-004: inline canvas hint visible only in Step-0 (no clears yet)
+        const step0Hint = document.getElementById('step0-hint');
+        if (step0Hint) step0Hint.style.display = hasAnyCleared ? 'none' : '';
 
         // Stats section: show after Ch.2
         const statsSection = document.getElementById('stats-section');

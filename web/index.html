@@ -63,13 +63,23 @@
 
         <nav class="mode-tabs">
             <button class="mode-tab active" data-mode="play">Play</button>
+            <button class="mode-tab" data-mode="daily">오늘의 도전</button>
             <button class="mode-tab" data-mode="editor">Editor</button>
         </nav>
 
         <main>
             <div class="game-area">
                 <div class="toast-container" id="toast-container"></div>
+
+                <!-- T2B-2: per-run modifier band (daily-only for MVP) -->
+                <div class="modifier-band" id="modifier-band" style="display:none;"></div>
+
                 <canvas id="game-canvas"></canvas>
+
+                <!-- Step-0 inline hint (B-004): shown until first dungeon clear -->
+                <div class="step0-hint" id="step0-hint" style="display:none;">
+                    방향키 / WASD 로 세르파를 움직여 녹색 G 에 도달.
+                </div>
 
                 <!-- Game Over Overlay -->
                 <div class="game-over-overlay" id="game-over-overlay" style="display:none;">
@@ -169,12 +179,19 @@
                     </div>
 
                     <div class="message" id="message"></div>
+
+                    <!-- B-106: 상시 success-rate sparkline (RL 양념의 시각 시그니처, D-4 근거 4) -->
+                    <div class="sparkline-wrap" id="sparkline-wrap">
+                        <span class="sparkline-label">학습 성공률</span>
+                        <canvas id="sparkline-canvas" width="240" height="28"></canvas>
+                        <span class="sparkline-value" id="sparkline-value">—</span>
+                    </div>
                 </div>
             </div>
 
             <div class="controls">
                 <div class="control-section">
-                    <h3>Character</h3>
+                    <h3>캐릭터</h3>
                     <div class="character-grid">
                         <button class="char-card active" data-char="qkun">
                             <span class="char-name">Q군</span>
@@ -243,12 +260,12 @@
                 </div>
 
                 <div class="control-section" id="stats-section">
-                    <h3>Serpa Stats</h3>
+                    <h3>세르파 현황</h3>
                     <div class="stats-list"></div>
                 </div>
 
                 <div class="control-section">
-                    <h3>Dungeon</h3>
+                    <h3>던전</h3>
                     <select id="dungeon-select" style="display:none;">
                         <option value="level_01_easy">Lv.1 Tutorial</option>
                         <option value="level_02_trap">Lv.2 First Trap</option>
@@ -269,10 +286,6 @@
                         <option value="level_17_two_paths">Lv.17 Two Paths</option>
                         <option value="level_18_dead_end">Lv.18 Dead End Labyrinth</option>
                         <option value="level_19_bridge">Lv.19 Narrow Bridge</option>
-                        <option value="level_20_sacrifice">Lv.20 Cliff Walking</option>
-                        <option value="level_21_desert">Lv.21 Desert Crossing</option>
-                        <option value="level_22_arena">Lv.22 Monster Arena</option>
-                        <option value="level_23_mirage">Lv.23 The Mirage</option>
                         <option value="level_24_paper_maze">Lv.24 Paper Maze</option>
                         <option value="level_25_paper_hard">Lv.25 Paper Maze+</option>
                         <option value="level_26_frozen_lake">Lv.26 Frozen Lake ❄️</option>
@@ -283,52 +296,52 @@
                         <option value="level_31_generated_rooms">Lv.31 Rooms (50×50)</option>
                     </select>
                     <div class="dungeon-map-container" id="dungeon-map"></div>
-                    <button id="btn-reset">Reset (R)</button>
+                    <button id="btn-reset">초기화 (R)</button>
                     <div class="hint-area" id="hint-area"></div>
                 </div>
 
                 <div class="control-section" id="provisions-section">
-                    <h3>Provisions</h3>
+                    <h3>보급</h3>
                     <div class="provisions-controls">
-                        <span class="speed-label">Food:</span>
+                        <span class="speed-label">식량:</span>
                         <input type="number" id="food-amount" class="size-input" value="50" min="1" max="9999">
                         <span class="speed-label provisions-cost" id="food-cost">(50G)</span>
-                        <button class="btn-small btn-buy-food" id="btn-buy-food">Buy</button>
+                        <button class="btn-small btn-buy-food" id="btn-buy-food">구매</button>
                     </div>
                     <div class="provisions-info" id="provisions-info"></div>
                     <div class="item-shop" id="item-shop">
-                        <span class="speed-label">Items:</span>
-                        <button class="btn-small btn-buy-item" data-item="escape_rope">Escape 100G</button>
-                        <button class="btn-small btn-buy-item" data-item="defense_contract">Defense 150G</button>
-                        <button class="btn-small btn-buy-item" data-item="trap_nullify">Anti-Trap 200G</button>
+                        <span class="speed-label">아이템:</span>
+                        <button class="btn-small btn-buy-item" data-item="escape_rope">탈출 로프 100G</button>
+                        <button class="btn-small btn-buy-item" data-item="defense_contract">방어 계약 150G</button>
+                        <button class="btn-small btn-buy-item" data-item="trap_nullify">함정 무효 200G</button>
                     </div>
                     <div class="inventory-display" id="inventory-display"></div>
                 </div>
 
                 <div class="control-section" id="farming-section">
-                    <h3>Farming</h3>
+                    <h3>파밍</h3>
                     <div id="farming-list"></div>
                 </div>
 
-                <div class="control-section">
-                    <h3>AI Training</h3>
+                <div class="control-section" id="training-section">
+                    <h3>AI 학습</h3>
                     <div class="speed-buttons" id="speed-buttons">
-                        <span class="speed-label">Speed:</span>
+                        <span class="speed-label">속도:</span>
                         <button class="btn-speed active" data-speed="1">1x</button>
                         <button class="btn-speed" data-speed="2">2x</button>
                         <button class="btn-speed" data-speed="3">3x</button>
-                        <button class="btn-speed" data-speed="0">Instant</button>
+                        <button class="btn-speed" data-speed="0">즉시</button>
                     </div>
                     <div class="train-mode-select">
-                        <span class="speed-label">Mode:</span>
+                        <span class="speed-label">모드:</span>
                         <select id="train-mode">
-                            <option value="until_success">Until Success</option>
-                            <option value="continuous">Continuous</option>
+                            <option value="until_success">성공까지</option>
+                            <option value="continuous">계속</option>
                         </select>
                     </div>
                     <div class="train-buttons">
-                        <button id="btn-start-train" class="btn-train">Start Training</button>
-                        <button id="btn-stop-train" class="btn-stop" disabled>Stop</button>
+                        <button id="btn-start-train" class="btn-train">학습 시작</button>
+                        <button id="btn-stop-train" class="btn-stop" disabled>정지</button>
                     </div>
                     <div class="train-progress" id="train-progress" style="display: none;">
                         <div class="progress-bar">
@@ -339,44 +352,44 @@
                     <div class="train-stats" id="train-stats"></div>
                 </div>
 
-                <div class="control-section">
-                    <h3>Game Mode</h3>
+                <div class="control-section" id="gamemode-section">
+                    <h3>게임 모드</h3>
                     <label class="checkbox-label">
-                        <input type="checkbox" id="fog-of-war" checked> Fog of War
+                        <input type="checkbox" id="fog-of-war" checked> 전장의 안개
                     </label>
                     <label class="checkbox-label">
-                        <input type="checkbox" id="sound-toggle" checked> Sound
-                    </label>
-                </div>
-
-                <div class="control-section">
-                    <h3>Visualization</h3>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="show-qvalues"> Show Q-Values
-                    </label>
-                    <label class="checkbox-label">
-                        <input type="checkbox" id="show-policy"> Show Policy
+                        <input type="checkbox" id="sound-toggle" checked> 소리
                     </label>
                 </div>
 
-                <div class="control-section">
-                    <h3>Controls</h3>
+                <div class="control-section" id="visualization-section">
+                    <h3>시각화</h3>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-qvalues" checked> Q값 보기
+                    </label>
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="show-policy"> 정책 보기
+                    </label>
+                </div>
+
+                <div class="control-section" id="controls-section">
+                    <h3>조작</h3>
                     <div class="key-hints">
-                        <span class="key">↑↓←→</span> Move
+                        <span class="key">↑↓←→</span> 이동
                     </div>
                 </div>
 
                 <div class="control-section">
-                    <h3>Legend</h3>
+                    <h3>범례</h3>
                     <div class="legend">
-                        <div class="legend-item"><span class="tile-preview start"></span> Start</div>
-                        <div class="legend-item"><span class="tile-preview goal"></span> Goal (+100)</div>
-                        <div class="legend-item"><span class="tile-preview trap"></span> Trap (-10 HP)</div>
-                        <div class="legend-item"><span class="tile-preview heal"></span> Heal (+10 HP)</div>
-                        <div class="legend-item"><span class="tile-preview pit"></span> Pit (Instant Death)</div>
-                        <div class="legend-item"><span class="tile-preview gold"></span> Gold (+10)</div>
-                        <div class="legend-item"><span class="tile-preview monster"></span> Monster (-30 HP)</div>
-                        <div class="legend-item"><span class="tile-preview wall"></span> Wall</div>
+                        <div class="legend-item"><span class="tile-preview start"></span> 시작</div>
+                        <div class="legend-item"><span class="tile-preview goal"></span> 목표 (+100)</div>
+                        <div class="legend-item"><span class="tile-preview trap"></span> 함정 (-10 HP)</div>
+                        <div class="legend-item"><span class="tile-preview heal"></span> 회복 (+10 HP)</div>
+                        <div class="legend-item"><span class="tile-preview pit"></span> 구덩이 (즉사)</div>
+                        <div class="legend-item"><span class="tile-preview gold"></span> 골드 (+10)</div>
+                        <div class="legend-item"><span class="tile-preview monster"></span> 몬스터 (-30 HP)</div>
+                        <div class="legend-item"><span class="tile-preview wall"></span> 벽</div>
                     </div>
                 </div>
             </div>
@@ -550,6 +563,53 @@
 
                 <div class="control-section">
                     <div class="editor-message" id="editor-message"></div>
+                </div>
+            </div>
+
+            <!-- T2B-1: Daily challenge mode panel -->
+            <div class="controls daily-controls" id="daily-controls" style="display: none;">
+                <div class="control-section daily-intro">
+                    <h3>오늘의 도전</h3>
+                    <div class="daily-meta">
+                        <div class="daily-date-row">
+                            <span class="daily-label">날짜</span>
+                            <span class="daily-date" id="daily-date">—</span>
+                        </div>
+                        <div class="daily-seed-row">
+                            <span class="daily-label">시드</span>
+                            <span class="daily-seed" id="daily-seed">—</span>
+                        </div>
+                        <div class="daily-modifiers-row" id="daily-modifiers-row" style="display:none;">
+                            <span class="daily-label">모디파이어</span>
+                            <span class="daily-modifiers" id="daily-modifiers">—</span>
+                        </div>
+                        <!-- T2B-2: two_only character pool -->
+                        <div class="daily-pool-row" id="daily-pool-row" style="display:none;">
+                            <span class="daily-label">사용 가능</span>
+                            <div class="daily-character-pool" id="daily-character-pool"></div>
+                        </div>
+                    </div>
+                    <p class="daily-desc">매일 같은 시드. 어제의 자신과 겨룬다.</p>
+                </div>
+
+                <div class="control-section daily-actions">
+                    <button id="btn-daily-start" class="btn-daily-start">도전</button>
+                    <button id="btn-daily-retry" class="btn-daily-retry" style="display:none;">다시 도전</button>
+                </div>
+
+                <div class="control-section daily-yesterday" id="daily-yesterday" style="display:none;">
+                    <h3>어제 기록</h3>
+                    <div class="daily-yesterday-content" id="daily-yesterday-content">—</div>
+                </div>
+
+                <div class="control-section daily-today" id="daily-today" style="display:none;">
+                    <h3>오늘 기록</h3>
+                    <div class="daily-today-content" id="daily-today-content">—</div>
+                </div>
+
+                <div class="control-section daily-week" id="daily-week" style="display:none;">
+                    <h3>최근 7일</h3>
+                    <div class="daily-week-content" id="daily-week-content"></div>
                 </div>
             </div>
         </main>
