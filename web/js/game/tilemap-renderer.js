@@ -140,6 +140,9 @@ export class TilemapRenderer {
 
         // 9. HUD
         this._renderFloorIndicator();
+
+        // B-201: optional minimap hook (mobile, large dungeons)
+        if (this.onAfterRender) this.onAfterRender();
     }
 
     // ─── Static buffer (floor + walls) ──────────────────────────

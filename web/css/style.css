@@ -590,6 +590,42 @@ footer {
     /* B-204: collapse extra stats by default on mobile */
     .stats:not(.expanded) .stat[data-priority="extra"] { display: none; }
     .stats-toggle { display: inline-block; }
+
+    /* B-201: fit canvas to viewport. min-width:0 unlocks flex shrink past
+       canvas intrinsic width; box-sizing keeps padding inside max-width. */
+    .game-area {
+        max-width: 100%;
+        min-width: 0;
+        box-sizing: border-box;
+    }
+    #game-canvas {
+        max-width: 100%;
+        height: auto;
+    }
+
+    /* B-201: minimap revealed when JS marks the wrap active (large dungeons) */
+    .minimap-wrap[data-active="true"] { display: inline-flex; }
+}
+
+/* B-201: minimap default state (hidden on desktop and small dungeons) */
+.minimap-wrap {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: var(--bg-tertiary, #1a1a1a);
+    border-radius: 6px;
+}
+.minimap-label {
+    color: var(--text-secondary);
+    font-size: 0.85rem;
+}
+#minimap-canvas {
+    display: block;
+    background: #000;
+    border-radius: 4px;
+    image-rendering: pixelated;
 }
 
 /* Also show D-pad on touch devices */

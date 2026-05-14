@@ -76,6 +76,12 @@
 
                 <canvas id="game-canvas"></canvas>
 
+                <!-- B-201: minimap (mobile only, large dungeons ≥ 25 wide/tall) -->
+                <div class="minimap-wrap" id="minimap-wrap" data-active="false">
+                    <span class="minimap-label">미니맵</span>
+                    <canvas id="minimap-canvas" width="120" height="120"></canvas>
+                </div>
+
                 <!-- Step-0 inline hint (B-004): shown until first dungeon clear -->
                 <div class="step0-hint" id="step0-hint" style="display:none;">
                     방향키 / WASD 로 세르파를 움직여 녹색 G 에 도달.

@@ -60,6 +60,12 @@ class Game {
         this.canvas = document.getElementById('game-canvas');
         this.renderer = new TilemapRenderer(this.canvas);
 
+        // B-201: minimap (mobile, large dungeons ≥ 25 wide/tall)
+        this.minimapCanvas = document.getElementById('minimap-canvas');
+        this.minimapWrap = document.getElementById('minimap-wrap');
+        this.minimapCtx = this.minimapCanvas ? this.minimapCanvas.getContext('2d') : null;
+        this.renderer.onAfterRender = () => this._renderMinimap();
+
         this.grid = null;
         this.agent = null;
         this.steps = 0;
@@ -1907,6 +1913,56 @@ class Game {
 
         // Reload dungeon with new character's algorithm
         this.loadDungeon(this.currentDungeon);
+    }
+
+    // B-201: minimap render — only large dungeons (≥25 in either dim).
+    // CSS keeps the wrap hidden on desktop; data-active gates display on mobile.
+    _renderMinimap() {
+        if (!this.minimapWrap || !this.minimapCtx) return;
+        const g = this.grid;
+        const THRESHOLD = 25;
+        if (!g || (g.width < THRESHOLD && g.height < THRESHOLD)) {
+            if (this.minimapWrap.dataset.active !== 'false') this.minimapWrap.dataset.active = 'false';
+            return;
+        }
+        if (this.minimapWrap.dataset.active !== 'true') this.minimapWrap.dataset.active = 'true';
+
+        const maxDim = 120;
+        const cell = Math.max(1, Math.floor(maxDim / Math.max(g.width, g.height)));
+        const w = g.width * cell;
+        const h = g.height * cell;
+        if (this.minimapCanvas.width !== w || this.minimapCanvas.height !== h) {
+            this.minimapCanvas.width = w;
+            this.minimapCanvas.height = h;
+        }
+        const ctx = this.minimapCtx;
+        ctx.fillStyle = '#000';
+        ctx.fillRect(0, 0, w, h);
+
+        for (let y = 0; y < g.height; y++) {
+            for (let x = 0; x < g.width; x++) {
+                const t = g.getTile(x, y);
+                let color = null;
+                if (t === TileType.WALL) color = '#4a4a4a';
+                else if (t === TileType.GOAL) color = '#22c55e';
+                else if (t === TileType.GOLD) color = '#facc15';
+                else if (t === TileType.MONSTER || t === TileType.TRAP) color = '#ef4444';
+                else if (t === TileType.HEAL) color = '#10b981';
+                else if (t === TileType.START) color = '#3b82f6';
+                if (color) {
+                    ctx.fillStyle = color;
+                    ctx.fillRect(x * cell, y * cell, cell, cell);
+                }
+            }
+        }
+
+        if (this.agent && typeof this.agent.x === 'number') {
+            ctx.fillStyle = '#fff';
+            const size = Math.max(cell * 2, 3);
+            const cx = this.agent.x * cell + cell / 2 - size / 2;
+            const cy = this.agent.y * cell + cell / 2 - size / 2;
+            ctx.fillRect(Math.max(0, cx), Math.max(0, cy), size, size);
+        }
     }
 
     updateCharacterGrid() {
