@@ -605,6 +605,42 @@ footer {
 
     /* B-201: minimap revealed when JS marks the wrap active (large dungeons) */
     .minimap-wrap[data-active="true"] { display: inline-flex; }
+
+    /* B-202: mobile bottom tab bar (fixed) + body bottom padding so it doesn't
+       cover content (incl. minimap which sits right under the canvas). */
+    .bottom-tabs { display: flex; }
+    body { padding-bottom: 60px; }
+}
+
+/* B-202: bottom tab bar default state (hidden on desktop, revealed in mobile
+   media query). Fixed to viewport bottom. */
+.bottom-tabs {
+    display: none;
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 50;
+    padding: 6px;
+    gap: 4px;
+    background: var(--bg-secondary, #1a1a1a);
+    border-top: 1px solid var(--border-color, #333);
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.3);
+}
+.bottom-tab {
+    flex: 1;
+    padding: 10px 4px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid transparent;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.bottom-tab:hover, .bottom-tab.active {
+    color: var(--text-primary);
+    border-color: var(--border-color, #333);
+    background: var(--bg-tertiary, #222);
 }
 
 /* B-201: minimap default state (hidden on desktop and small dungeons) */

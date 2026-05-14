@@ -197,7 +197,7 @@
             </div>
 
             <div class="controls">
-                <div class="control-section">
+                <div class="control-section" id="char-section">
                     <h3>캐릭터</h3>
                     <div class="character-grid">
                         <button class="char-card active" data-char="qkun">
@@ -271,7 +271,7 @@
                     <div class="stats-list"></div>
                 </div>
 
-                <div class="control-section">
+                <div class="control-section" id="dungeon-section">
                     <h3>던전</h3>
                     <select id="dungeon-select" style="display:none;">
                         <option value="level_01_easy">Lv.1 Tutorial</option>
@@ -620,6 +620,16 @@
                 </div>
             </div>
         </main>
+
+        <!-- B-202: mobile bottom tab bar (≤700px only) — anchors to main sections -->
+        <nav class="bottom-tabs" id="bottom-tabs" aria-label="섹션 이동">
+            <button type="button" class="bottom-tab" data-target="#char-section">캐릭터</button>
+            <button type="button" class="bottom-tab" data-target="#dungeon-section">던전</button>
+            <button type="button" class="bottom-tab" data-target="#training-section">학습</button>
+            <button type="button" class="bottom-tab" data-target="#provisions-section">보급</button>
+            <!-- "#stats-panel" = 게임 UI 의 .stats 패널 (B-204). "#stats-section" (세르파 현황) 과 혼동 주의. -->
+            <button type="button" class="bottom-tab" data-target="#stats-panel">통계</button>
+        </nav>
 
         <footer>
             <p>Arrow keys to move | R to reset | Reach the green goal!</p>

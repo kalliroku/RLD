@@ -1999,6 +1999,17 @@ class Game {
             btn.setAttribute('title', `${def.algo} — ${def.desc}`);
         });
 
+        // B-202: mobile bottom tab bar (≤700px) — smooth scroll to anchored section
+        document.querySelectorAll('.bottom-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                const target = document.querySelector(tab.dataset.target);
+                if (!target) return;
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                document.querySelectorAll('.bottom-tab').forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+            });
+        });
+
         // B-204: mobile stats toggle (Run / Reward / Food / Clear Rate hidden by default ≤700px)
         // Preference persisted in localStorage so it survives page reload.
         const statsToggle = document.getElementById('stats-toggle');
