@@ -159,16 +159,13 @@ export class GameSimulator {
             if (config && config.slippery) {
                 grid.slippery = true;
             }
-            // B-109: We deliberately do NOT attach modifierSet to the grid for
-            // AI training. modifier.slippery would route through agent._resolveAction
-            // → exposes a pre-existing bug in the algorithm gold/monster
-            // restoration logic (uses intended nextPos instead of actual
-            // agent.x/agent.y after a deflection — see sarsa.js:206-213 et al).
-            // In production this is latent because campaign dungeons run without
-            // modifiers and daily PCG dungeons skip gold/monsters. For the
-            // measurement here, we approximate slippery at the manual-play
-            // success-rate level (see manualPlayDungeon below); heavy_fog and
-            // two_only don't touch movement so this restriction loses nothing.
+            // Attach modifierSet so agent._resolveAction can route slippery
+            // deflection during RL training (manualPlayDungeon still applies a
+            // success-rate multiplier on top — that models human input error,
+            // not the deflection itself).
+            if (this.modifierSet) {
+                grid.modifierSet = this.modifierSet;
+            }
             this.grids[dungeonId] = grid;
         }
         return this.grids[dungeonId];
@@ -400,8 +397,9 @@ export class GameSimulator {
         }
 
         // B-109: modifier.slippery is the lighter 30% deflection (vs grid 2/3).
-        // Manual play uses a high-level success multiplier here; the RL training
-        // path experiences slippery directly via grid.modifierSet.
+        // The RL training path now experiences slippery directly via
+        // grid.modifierSet (D-12 resolved). Manual-play keeps a small success-
+        // rate multiplier on top to model human input error under deflection.
         if (this.modifierSet && this.modifierSet.has('slippery') && !grid.slippery) {
             successRate *= SLIPPERY_MANUAL_SUCCESS_MULT;
         }

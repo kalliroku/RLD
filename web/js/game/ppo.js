@@ -178,25 +178,26 @@ export class PPO {
             const logProb = Math.log(probs[action] + 1e-10);
             const value = this.valueNet.predict(stateVec)[0];
 
-            const nextPos = agent.getNextPosition(action);
-            const nextKey = `${nextPos.x},${nextPos.y}`;
-            const originalTile = this.grid.getTile(nextPos.x, nextPos.y);
-            if (killedMonsters.has(nextKey) && originalTile === TileType.MONSTER) {
-                this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
+            const intendedPos = agent.getNextPosition(action);
+            const intendedKey = `${intendedPos.x},${intendedPos.y}`;
+            const intendedTile = this.grid.getTile(intendedPos.x, intendedPos.y);
+            if (killedMonsters.has(intendedKey) && intendedTile === TileType.MONSTER) {
+                this.grid.tiles[intendedPos.y][intendedPos.x] = TileType.EMPTY;
             }
-            if (collectedGold.has(nextKey) && originalTile === TileType.GOLD) {
-                this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
+            if (collectedGold.has(intendedKey) && intendedTile === TileType.GOLD) {
+                this.grid.tiles[intendedPos.y][intendedPos.x] = TileType.EMPTY;
             }
 
             const prevX = agent.x, prevY = agent.y;
             const result = agent.move(action, this.grid);
+            const actualKey = `${agent.x},${agent.y}`;
 
-            if (result.tile === TileType.MONSTER && !killedMonsters.has(nextKey)) {
-                killedMonsters.add(nextKey);
+            if (result.tile === TileType.MONSTER && !killedMonsters.has(actualKey)) {
+                killedMonsters.add(actualKey);
                 this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
             }
-            if (result.tile === TileType.GOLD && !collectedGold.has(nextKey)) {
-                collectedGold.add(nextKey);
+            if (result.tile === TileType.GOLD && !collectedGold.has(actualKey)) {
+                collectedGold.add(actualKey);
                 this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
             }
 
@@ -400,21 +401,22 @@ export class PPO {
 
             while (steps < testMaxSteps) {
                 const action = this.getBestAction(agent.x, agent.y, agent.hp);
-                const nextPos = agent.getNextPosition(action);
-                const nextKey = `${nextPos.x},${nextPos.y}`;
-                if (killedMonsters.has(nextKey)) {
-                    this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
+                const intendedPos = agent.getNextPosition(action);
+                const intendedKey = `${intendedPos.x},${intendedPos.y}`;
+                if (killedMonsters.has(intendedKey)) {
+                    this.grid.tiles[intendedPos.y][intendedPos.x] = TileType.EMPTY;
                 }
-                if (collectedGold.has(nextKey)) {
-                    this.grid.tiles[nextPos.y][nextPos.x] = TileType.EMPTY;
+                if (collectedGold.has(intendedKey)) {
+                    this.grid.tiles[intendedPos.y][intendedPos.x] = TileType.EMPTY;
                 }
                 const result = agent.move(action, this.grid);
-                if (result.tile === TileType.MONSTER && !killedMonsters.has(nextKey)) {
-                    killedMonsters.add(nextKey);
+                const actualKey = `${agent.x},${agent.y}`;
+                if (result.tile === TileType.MONSTER && !killedMonsters.has(actualKey)) {
+                    killedMonsters.add(actualKey);
                     this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
                 }
-                if (result.tile === TileType.GOLD && !collectedGold.has(nextKey)) {
-                    collectedGold.add(nextKey);
+                if (result.tile === TileType.GOLD && !collectedGold.has(actualKey)) {
+                    collectedGold.add(actualKey);
                     this.grid.tiles[agent.y][agent.x] = TileType.EMPTY;
                 }
                 steps++;

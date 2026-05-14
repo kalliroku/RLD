@@ -1,6 +1,6 @@
 # RLD — Project Status
 
-**Last updated**: 2026-05-13 (B-109 마감, M3 → M4 게이트 통과)
+**Last updated**: 2026-05-14 (D-12 closure — 알고리즘 17개 deflection 패치 + sim grid.modifierSet 활성화)
 
 ## Current track
 
@@ -17,10 +17,12 @@
 
 - **M1 ✅ 완료** — 그림 그리기 (3축 비판 + 디베이트 + VISION.md).
 - **M2 ✅ 완료** — P0 4/4 (B-001~B-004). 정체성 정리 + Step-0 진입 모드 박힘.
-- **M3 ✅ 완료** — P1 단기 8건 + T2B-3 + **T2B-1 ✅** (시드 일일 챌린지) + **T2B-2 MVP ✅** (모디파이어 3종 데일리 전용) + **B-109 ✅** (sim 측 ModifierSet 통합 + modifier-on 측정 통과). **M4 진입 준비 완료** — 12종 모디파이어 / 캠페인 모디파이어 확장 / 모바일 (P2) 가 다음 마일스톤.
+- **M3 ✅ 완료** — P1 단기 8건 + T2B-3 + **T2B-1 ✅** (시드 일일 챌린지) + **T2B-2 MVP ✅** (모디파이어 3종 데일리 전용) + **B-109 ✅** (sim 측 ModifierSet 통합 + modifier-on 측정 통과).
+- **M4 진입** — **D-12 closure ✅** (2026-05-14, 17 알고리즘 파일 deflection 패치 + sim grid.modifierSet 활성화). 다음 항목: 모디파이어 12종 디자인 (slippery 강도 30% 재검토) / 캠페인 모디파이어 확장 / 모바일 (P2).
 
 ## 최근 활동
 
+- 2026-05-14 — **D-12 closure** — 17 알고리즘 파일 (qlearning, sarsa, sarsa-lambda, expected-sarsa, monte-carlo, dyna-q, double-qlearning, qv-learning, actor-critic, reinforce, tree-backup, prioritized-sweeping, acla, ensemble, local-qlearning, dqn, ppo) × 33 인스턴스 deflection 패치. `nextPos/nextKey/originalTile → intendedPos/intendedKey/intendedTile + actualKey` (agent.move() 직후 actualKey 재생성, hide 는 intended / track + restore 는 actual). agent.js 미수정. sim/simulator.js getGrid 에 `grid.modifierSet` 부착 활성화 (D-12 사유 주석 폐기). **측정 결과 (20-run HybridPlayer)**: off=25.6/27 ✓ (+1.1 vs B-109 24.5 — 경계 OOB 회피로 baseline 향상), heavy_fog=25.6/27 ✓, two_only=16.3/27, slippery=14.0/27 (-10.4 vs B-109 24.4), 3종 합산=15.2/27. **이중 페널티 가설 기각** (algorithm-only 14.6 vs 이중 14.0, +0.6 차이만) — 영향은 algorithm 측 deflection 자체. M3→M4 게이트 유지 ✓ (modifier-off 25.6/27 영역 hit). 후속: 캠페인 modifier 도입 시 slippery 30% 강도 (D-10) 재검토 필요.
 - 2026-05-13 — **B-109 마감** — sim/simulator.js + sim/run-balance.js 에 modifier 통합. GameSimulator 옵션 `{modifierIds, modifierSeed}`, two_only 시 캐릭터 풀 픽 + pre-hire, manual-play 페널티 (heavy_fog ×1.25 humanSteps / slippery ×0.85 successRate), `estimateManualCost` 시그니처 확장으로 추정/실제 동기화. **측정 결과 (20-run HybridPlayer)**: off=24.5/27 ✓, slippery=24.4/27 ✓, heavy_fog=24.3/27 ✓ (모두 [23.5,27.5] hit), two_only=13.3/27 (D-9 데일리 전용으로 정당화), 3종=17.1/27. **slippery 는 manual-play approximation 만** — algorithm 15개 의 gold/monster restoration 이 intended vs actual position 분리 미흡한 pre-existing 버그로 deflection 시 OOB → D-12 박제. M3 → M4 게이트 통과.
 - 2026-05-12 — **T2B-2 MVP 마감** (모디파이어 3종, 데일리 전용). `web/js/game/modifiers.js` (ModifierSet + pickModifiers, mulberry32 seeded). agent.js `_resolveAction` + `getVisibility` 격상. daily-mode.js `getDailyChallenge` 가 pickModifiers 호출. main.js: activeModifierSet 라이프사이클 + two_only 캐릭터 픽커 + 모디파이어 띠 + heavy_fog 시 fog 강제. 결정론 검증 (slip rate 0.300 over 10k, two_only seed=3 → ["dyna","doubleq"] reproducible, dailyChallenge 동일 UTC 일 idempotent). visual 검증 (heavy_fog 가시 2칸, slippery 11 push 중 3 deflection). 캠페인 회귀 sim (modifier off, 5×20-run): 24.6 / 25.6 / 24.9 / 25.4 / 24.1 — 모두 25.5/27 ± 2 영역 hit ✓.
 - 2026-05-12 — **T2B-1 마감** (시드 기반 일일 챌린지 — 1.1 rng.js 분리 / 1.2 Daily 모드 + 데일리 던전 / 1.3 어제 비교 + 7일 캐러셀 / 1.4 B-110 흡수). 결정론 검증 통과 (시드 1656106231, 시작/목표 reproducible). Play 회귀 sim 25.0/27 ✓. agent-browser visual 검증 통과 (Daily 탭 → 도전 → 클리어/사망 → 어제 비교 메시지)
@@ -33,16 +35,17 @@
 
 ## 블락된 항목
 
-없음. **M4 진입 준비 완료** — B-109 측정으로 캠페인 모디파이어 확장의 안전 마진 확인 (slippery/heavy_fog 단독 -0.1~0.2). M4 의 12종 모디파이어 도입 시 알고리즘 15개의 gold/monster restoration 버그 (D-12) 를 일괄 수정해야 AI 훈련에 modifier.slippery 정상 반영 가능.
+없음. **M4 진입 — D-12 정리 완료**. 알고리즘 17개 deflection 패치 적용, sim 측 grid.modifierSet 활성화. 캠페인 modifier 도입 (모디파이어 12종 디자인 시점) 전에 modifier.slippery 30% 강도 (D-10) 재검토 필요 — algorithm 측 자연 영향 -10.4 가 캠페인 발란스 25.5/27 ± 2 영역 보호와 충돌.
 
-## 핵심 지표 (B-109 마감 후)
+## 핵심 지표 (D-12 closure 후, 2026-05-14)
 
-- HybridPlayer modifier off (20-run, 신규): **24.5/27 ✓** (5×20 historical: 24.6 / 25.6 / 24.9 / 25.4 / 24.1)
-- HybridPlayer modifier ON (20-run, 신규):
-  - slippery 단독: **24.4/27 ✓** (영역 hit)
-  - heavy_fog 단독: **24.3/27 ✓** (영역 hit)
-  - two_only 단독: **13.3/27** (D-9 데일리 전용으로 정당화, 캠페인 미적용)
-  - 3종 합산: **17.1/27** (데일리 전용 스택 — 영역 이탈 의도됨)
+- HybridPlayer modifier off (20-run): **25.6/27 ✓** (D-4 의 25.5 ± 2 정확 hit, D-12 패치로 +1.1 향상)
+  - 이전 (B-109): 24.5/27 ✓ (5×20 historical: 24.6 / 25.6 / 24.9 / 25.4 / 24.1)
+- HybridPlayer modifier ON (20-run, algorithm-side deflection 활성):
+  - slippery 단독: **14.0/27 ❌** (algorithm 측 deflection 자연 영향 -10.4, 캠페인 도입 전 강도 재검토 필요)
+  - heavy_fog 단독: **25.6/27 ✓** (movement 미영향)
+  - two_only 단독: **16.3/27** (D-9 데일리 전용으로 정당화, 캠페인 미적용)
+  - 3종 합산: **15.2/27** (데일리 전용 스택 — 영역 이탈 의도됨)
 - 던전 수: 31 → **27** (B-103 Ch.5 축소, Lv.20~23 은 grid.js 보존 자산)
 - 우측 컨트롤 10개 섹션 한국어, 튜토리얼 5개 메시지 한국어
 - 첫 진입 — Step-0 4개 패널 + canvas 힌트 + Q-Value 디폴트 ON + sparkline placeholder
