@@ -848,6 +848,14 @@ class Game {
             this.agent.modifierSet = null;
             this.agent.visibilityRange = 5;
         }
+        // M4 silent_q modifier (daily-only): hide Q-heatmap + sparkline.
+        // When muted clears, restore the user's checkbox preference rather than
+        // forcing it to false (W1 — preserve sticky toggle state across dailies).
+        const muted = !!(this.activeModifierSet && this.activeModifierSet.visualizationMuted());
+        const userQPref = !!this.showQValuesCheck?.checked;
+        if (this.renderer) this.renderer.showQValues = muted ? false : userQPref;
+        const sparkWrap = document.getElementById('sparkline-wrap');
+        if (sparkWrap) sparkWrap.style.display = muted ? 'none' : '';
     }
 
     _renderModifierBand() {
@@ -2501,8 +2509,9 @@ class Game {
 
         const { x, y } = this.grid.startPos;
 
-        // B-3: Apply character maxHp
-        const maxHp = this.runState.getMaxHp(this.currentCharacter);
+        // B-3: Apply character maxHp. M4 hp_cap_50 (daily-only): clamp to 50.
+        let maxHp = this.runState.getMaxHp(this.currentCharacter);
+        if (this.activeModifierSet) maxHp = this.activeModifierSet.clampMaxHp(maxHp);
 
         if (!this.agent) {
             this.agent = new Agent(x, y, maxHp, maxHp);
@@ -2535,6 +2544,19 @@ class Game {
 
     handleAction(action) {
         if (this.done || this.isGameOver) return;
+
+        // M4 daily modifiers (manual play only — training uses its own loop):
+        // - wind_gust: 10% chance per turn to skip the action.
+        // - mirror_input: swap LEFT/RIGHT inputs.
+        if (!this.isTraining && this.activeModifierSet) {
+            if (this.activeModifierSet.shouldSkipTurn()) {
+                this.showMessage('돌풍! 행동이 묶였습니다.', 'warning');
+                this.steps++;
+                this.render();
+                return;
+            }
+            action = this.activeModifierSet.mirrorInput(action);
+        }
 
         // T2B-1: daily_* must be excluded from "built-in" economy too
         const isBuiltIn = this.isBuiltInDungeon(this.currentDungeon);
@@ -2570,6 +2592,23 @@ class Game {
 
         const result = this.agent.move(action, this.grid);
         this.steps++;
+
+        // M4 environment modifiers (daily-only):
+        // - poison_floor: HP -1 when stepping onto an EMPTY tile.
+        // - acid_rain: HP -3 every Nth step.
+        if (!this.isTraining && this.activeModifierSet && result.success && !result.done) {
+            const tileNow = this.grid.getTile(this.agent.x, this.agent.y);
+            const poison = (tileNow === TileType.EMPTY) ? this.activeModifierSet.poisonStepDamage() : 0;
+            const acid = this.activeModifierSet.acidRainDamage(this.steps);
+            const totalDmg = poison + acid;
+            if (totalDmg > 0) {
+                this.agent.hp -= totalDmg;
+                if (this.agent.hp <= 0) {
+                    this.agent.hp = 0;
+                    result.done = true;
+                }
+            }
+        }
 
         // C-5: Defense contract — recover half damage from monster/trap
         if (!this.isTraining && this.activeDefenseContract && result.success) {

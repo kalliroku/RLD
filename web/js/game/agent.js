@@ -154,19 +154,29 @@ export class Agent {
             this.hp = 0;
             done = true;
         } else if (tile === TileType.TRAP) {
-            this.hp -= 10;
+            // M4 damage_boost modifier (daily-only): trap damage × 1.5.
+            const modSet = this.modifierSet || (grid && grid.modifierSet) || null;
+            const mult = modSet ? modSet.damageMultiplier() : 1.0;
+            this.hp -= Math.round(10 * mult);
             if (this.hp <= 0) {
                 this.hp = 0;
                 done = true;
             }
         } else if (tile === TileType.HEAL) {
-            this.hp = Math.min(this.hp + 10, this.maxHp);
+            // M4 no_heal modifier (daily-only): heal tiles produce 0 HP.
+            const modSet = this.modifierSet || (grid && grid.modifierSet) || null;
+            if (!modSet || !modSet.healDisabled()) {
+                this.hp = Math.min(this.hp + 10, this.maxHp);
+            }
         } else if (tile === TileType.GOLD) {
             // 골드는 보상만 (나중에 골드 시스템에서 처리)
         } else if (tile === TileType.MONSTER) {
             // 몬스터: 높은 데미지, 처치 후 사라짐
+            // M4 damage_boost modifier (daily-only): monster damage × 1.5.
             const damage = getTileDamage(tile);
-            this.hp -= damage;
+            const modSet = this.modifierSet || (grid && grid.modifierSet) || null;
+            const mult = modSet ? modSet.damageMultiplier() : 1.0;
+            this.hp -= Math.round(damage * mult);
             if (this.hp <= 0) {
                 this.hp = 0;
                 done = true;
