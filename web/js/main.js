@@ -2005,6 +2005,18 @@ class Game {
             btn.setAttribute('title', `${def.algo} — ${def.desc}`);
         });
 
+        // B-206: one-shot toast if existing save already has deathCount >= LIMIT
+        // (B-203 introduced the limit retroactively — surface it once on first load).
+        const DEATH_NOTIFIED_KEY = 'rld_death_limit_notified';
+        try {
+            if (this.runState.deathCount >= DEATH_LIMIT && localStorage.getItem(DEATH_NOTIFIED_KEY) !== '1') {
+                if (this.toast) {
+                    this.toast.show(`누적 사망 ${this.runState.deathCount}/${DEATH_LIMIT} — 다음 게임오버에서 캠페인 처음부터.`, 'warning');
+                }
+                localStorage.setItem(DEATH_NOTIFIED_KEY, '1');
+            }
+        } catch (e) { /* localStorage unavailable */ }
+
         // B-202: mobile bottom tab bar (≤700px) — smooth scroll to anchored section
         document.querySelectorAll('.bottom-tab').forEach(tab => {
             tab.addEventListener('click', () => {
