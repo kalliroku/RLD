@@ -144,38 +144,39 @@
 
                 <div class="game-ui">
                     <div class="food-warning" id="food-warning" style="display:none;">No food! Your serpa is starving!</div>
-                    <div class="stats">
-                        <div class="stat">
+                    <div class="stats" id="stats-panel">
+                        <div class="stat" data-priority="extra">
                             <span class="stat-label">Run</span>
                             <span class="stat-value run-value" id="run-text">#1</span>
                         </div>
-                        <div class="stat">
+                        <div class="stat" data-priority="core">
                             <span class="stat-label">Gold</span>
                             <span class="stat-value gold-value" id="gold-text">500</span>
                         </div>
-                        <div class="stat" id="food-stat" style="display:none;">
+                        <div class="stat" data-priority="extra" id="food-stat" style="display:none;">
                             <span class="stat-label">Food</span>
                             <span class="stat-value food-value" id="food-text">0</span>
                         </div>
-                        <div class="stat">
+                        <div class="stat" data-priority="core">
                             <span class="stat-label">HP</span>
                             <div class="hp-bar">
                                 <div class="hp-fill" id="hp-fill"></div>
                             </div>
                             <span class="stat-value" id="hp-text">100/100</span>
                         </div>
-                        <div class="stat">
+                        <div class="stat" data-priority="core">
                             <span class="stat-label">Steps</span>
                             <span class="stat-value" id="steps-text">0</span>
                         </div>
-                        <div class="stat">
+                        <div class="stat" data-priority="extra">
                             <span class="stat-label">Reward</span>
                             <span class="stat-value" id="reward-text">0.0</span>
                         </div>
-                        <div class="stat" id="clear-rate-stat" style="display:none;">
+                        <div class="stat" data-priority="extra" id="clear-rate-stat" style="display:none;">
                             <span class="stat-label">Clear Rate</span>
                             <span class="stat-value" id="clear-rate-text">-</span>
                         </div>
+                        <button type="button" class="stats-toggle" id="stats-toggle" aria-expanded="false">더보기</button>
                     </div>
 
                     <div class="message" id="message"></div>

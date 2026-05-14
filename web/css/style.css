@@ -81,6 +81,7 @@ main {
     display: flex;
     gap: 20px;
     flex-wrap: wrap;
+    align-items: center;
 }
 
 .stat {
@@ -88,6 +89,21 @@ main {
     align-items: center;
     gap: 8px;
 }
+
+/* B-204: mobile-only toggle for extra stats (Run / Reward / Food / Clear Rate).
+   Desktop: button hidden, all stats shown. Mobile: only core stats (HP / Gold /
+   Steps) shown by default; button reveals the rest. */
+.stats-toggle {
+    display: none;
+    padding: 4px 10px;
+    background: transparent;
+    color: var(--text-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    cursor: pointer;
+}
+.stats-toggle:hover { color: var(--text-primary); }
 
 .stat-label {
     color: var(--text-secondary);
@@ -570,6 +586,10 @@ footer {
     .dpad-container {
         display: flex;
     }
+
+    /* B-204: collapse extra stats by default on mobile */
+    .stats:not(.expanded) .stat[data-priority="extra"] { display: none; }
+    .stats-toggle { display: inline-block; }
 }
 
 /* Also show D-pad on touch devices */

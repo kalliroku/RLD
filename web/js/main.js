@@ -1943,6 +1943,27 @@ class Game {
             btn.setAttribute('title', `${def.algo} — ${def.desc}`);
         });
 
+        // B-204: mobile stats toggle (Run / Reward / Food / Clear Rate hidden by default ≤700px)
+        // Preference persisted in localStorage so it survives page reload.
+        const statsToggle = document.getElementById('stats-toggle');
+        const statsPanel = document.getElementById('stats-panel');
+        if (statsToggle && statsPanel) {
+            const STATS_EXPANDED_KEY = 'rld_ui_stats_expanded';
+            const applyExpanded = (expanded) => {
+                statsPanel.classList.toggle('expanded', expanded);
+                statsToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+                statsToggle.textContent = expanded ? '접기' : '더보기';
+            };
+            try {
+                if (localStorage.getItem(STATS_EXPANDED_KEY) === '1') applyExpanded(true);
+            } catch (e) { /* localStorage unavailable (Safari private mode etc.) */ }
+            statsToggle.addEventListener('click', () => {
+                const expanded = !statsPanel.classList.contains('expanded');
+                applyExpanded(expanded);
+                try { localStorage.setItem(STATS_EXPANDED_KEY, expanded ? '1' : '0'); } catch (e) {}
+            });
+        }
+
         // Keyboard controls
         document.addEventListener('keydown', (e) => this.handleKeyDown(e));
 
