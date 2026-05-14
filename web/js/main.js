@@ -856,6 +856,9 @@ class Game {
         if (this.renderer) this.renderer.showQValues = muted ? false : userQPref;
         const sparkWrap = document.getElementById('sparkline-wrap');
         if (sparkWrap) sparkWrap.style.display = muted ? 'none' : '';
+        // B-207: muted 시 placeholder 노출 — RL 양념이 사라진 게 아니라 가려졌음을 명시 (D-4)
+        const silentPlaceholder = document.getElementById('silent-q-placeholder');
+        if (silentPlaceholder) silentPlaceholder.style.display = muted ? '' : 'none';
     }
 
     _renderModifierBand() {

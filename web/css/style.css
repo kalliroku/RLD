@@ -2675,6 +2675,29 @@ body.editor-mode .dpad-container {
     text-align: right;
 }
 
+/* B-207: silent_q modifier placeholder — sparkline-wrap 톤 매칭 + 회색조 (시각화 차단 상태 명시) */
+.silent-q-placeholder {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+    padding: 6px 10px;
+    background: rgba(0, 0, 0, 0.25);
+    border: 1px dashed rgba(156, 163, 175, 0.35);
+    border-radius: 4px;
+    font-size: 0.85rem;
+    color: var(--text-muted, #9ca3af);
+}
+.silent-q-label {
+    color: #cbd5e1;
+    font-weight: 600;
+    flex: 0 0 auto;
+}
+.silent-q-desc {
+    color: var(--text-muted, #9ca3af);
+    font-style: italic;
+}
+
 /* B-004: Step-0 inline hint (canvas overlay) */
 .step0-hint {
     position: absolute;

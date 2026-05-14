@@ -1,6 +1,6 @@
 # RLD — Project Status
 
-**Last updated**: 2026-05-14 (D-12 closure — 알고리즘 17개 deflection 패치 + sim grid.modifierSet 활성화)
+**Last updated**: 2026-05-14 (M5 진입 — B-207 silent_q placeholder 마감)
 
 ## Current track
 
@@ -18,10 +18,12 @@
 - **M1 ✅ 완료** — 그림 그리기 (3축 비판 + 디베이트 + VISION.md).
 - **M2 ✅ 완료** — P0 4/4 (B-001~B-004). 정체성 정리 + Step-0 진입 모드 박힘.
 - **M3 ✅ 완료** — P1 단기 8건 + T2B-3 + **T2B-1 ✅** (시드 일일 챌린지) + **T2B-2 MVP ✅** (모디파이어 3종 데일리 전용) + **B-109 ✅** (sim 측 ModifierSet 통합 + modifier-on 측정 통과).
-- **M4 진입** — **D-12 closure ✅** (17 알고리즘 deflection 패치) + **모바일 트랙 ✅** (B-204/B-201/B-202) + **B-203 사망 페널티 ✅** + **모디파이어 12종 ✅** (D-2026-05-14-14, 환경 6 + 제약 6, 데일리 전용). **B-205 자연 closure** (modifier 데일리 전용 유지로 캠페인 발란스 무위협). 다음 항목: BGM 4트랙 + 캠페인 모디파이어 확장 (M5 진입 후) / 한영 i18n (M5).
+- **M4 ✅ 완료** — D-12 closure + 모바일 트랙 + B-203 사망 페널티 + 모디파이어 12종. **B-205 자연 closure** (modifier 데일리 전용 유지로 캠페인 발란스 무위협).
+- **M5 진입** — **B-207 silent_q placeholder ✅** (M5 첫 마감). 다음 항목: 한영 i18n 텍스트 키 분리 / 출시 페이지 prep / BGM 4트랙 (사용자 결정 후).
 
 ## 최근 활동
 
+- 2026-05-14 — **B-207 마감** — silent_q 모디파이어 활성 시 Q-heatmap / sparkline 자리에 명시 placeholder ("침묵의 학습 — 시각화 차단됨") 표시. D-4 정체성 보호 — RL 양념이 *사라진 게 아니라 모디파이어로 가려졌음* 을 사용자에게 명시. `web/index.html`: sparkline-wrap 다음에 `#silent-q-placeholder` div 추가 (디폴트 hidden, dashed 회색 테두리 + italic 보조 텍스트). `web/css/style.css`: `.silent-q-placeholder` 스타일 (sparkline-wrap 톤 매칭). `web/js/main.js _syncAgentModifiers`: muted 분기 끝에 placeholder display 토글. **sim 무영향** (sim 디렉토리에 silent_q / visualizationMuted 참조 없음). 검증: `ModifierSet(['silent_q']).visualizationMuted()` true, 빈/타 modifier false. M5 첫 마감 (M4 modifier 리뷰 I1 후속). 캠페인 게이트 재측정 불필요 (UI placeholder 전용).
 - 2026-05-14 — **M4 모디파이어 12종 마감** (D-2026-05-14-14) — VISION §5 M4 의 12종 목표 충족. 환경 6 (slippery / heavy_fog / dim_torch / poison_floor / acid_rain / wind_gust) + 제약 6 (two_only / hp_cap_50 / mirror_input / no_heal / damage_boost / silent_q). 데일리 전용 유지 (D-9). 초기 명세의 food_drain / gold_dry 는 데일리 이코노미 격리 (D-8) 로 효과 0 → mirror_input / damage_boost 로 교체. `web/js/game/modifiers.js`: MODIFIERS 사전 12종 + ModifierSet 메소드 9개 (visibilityRange 확장 / shouldSkipTurn / poisonStepDamage / acidRainDamage / clampMaxHp / mirrorInput / healDisabled / damageMultiplier / visualizationMuted) + 신규 PRNG salt (SALT_WIND). `web/js/game/agent.js move()`: HEAL/TRAP/MONSTER 처리에 modifierSet 가드 (no_heal / damage_boost). `web/js/main.js handleAction`: wind_gust skipTurn + mirror_input + poison/acid 후처리. agent 생성 시 hp_cap_50 적용. `_syncAgentModifiers` 가 silent_q 시 showQValues=false + sparkline-wrap hide. **검증**: 12종 풀 확인 + pickModifiers 결정론 (seed 42 두 번 호출 동일 결과) + 캠페인 baseline 25.1/27 ✓ (영역 [23.5, 27.5] hit, modifier-off 무영향). **B-205 자연 closure** — 데일리 전용 유지로 slippery 30% 강도가 캠페인 발란스에 영향 줄 경로 없음.
 - 2026-05-14 — **B-203 마감** — 세르파 누적 사망 한도 (D-4 verdict: Q-table 30% 노이즈 미채택, 학습 시각화 가치 보존). `web/js/game/run-state.js`: `DEATH_LIMIT = 4` 상수 export + `recordDeath()` 가 한도 도달 boolean 반환 + 신규 `resetForDeathLimit()` (fresh playthrough — runNumber/deathCount/clearedDungeons reset, ngPlusCount/bestTotalSteps 보존). `web/js/main.js triggerGameOver`: `this.deathLimitReached` 박제 + 게임오버 메시지·통계 보강. `startNewRun` 분기 — 한도 도달이면 resetForDeathLimit, 아니면 기존 startNewRun. `_updateGuildResources`: guild header 의 사망 카운터 (`#guild-deaths`) 갱신 + 임박 시 빨간색 강조. `web/index.html` guild header 에 `#guild-deaths` 신규. `web/css/style.css` `.guild-deaths`/`.guild-res-warn`. sim 무영향 검증 (sim 은 manual-play fail 만, HP 사망 trigger 안 함) — 3회 측정: 23.6 / 25.1 / 25.2 평균 ~24.6 (영역 [23.5, 27.5] hit). M4 P2 마지막 마감.
 - 2026-05-14 — **B-202 마감** — 모바일 하단 탭 바 (Character / Dungeon / Train / Shop / Stats). `web/index.html` `<nav class="bottom-tabs">` (main 끝) 5개 button + 캐릭터/던전 섹션 신규 id (`#char-section`, `#dungeon-section`). `web/css/style.css`: 디폴트 hidden, 모바일 미디어 쿼리에서 `display: flex` + `position: fixed; bottom: 0` + `body { padding-bottom: 60px }` 가드 (B-201 minimap 영역 보호). `web/js/main.js setupEventListeners`: 클릭 시 `scrollIntoView({ behavior: 'smooth' })` + active class 토글. 데스크탑 무영향. **M4 모바일 트랙 (B-204 → B-201 → B-202) 완료**.
@@ -63,5 +65,5 @@
 - **M1** ✅ — 그림 그리기 (이 PM 디렉토리 + VISION.md)
 - **M2** ✅ — P0 4건 → *"정체성 정리 완료"*
 - **M3** ✅ — T2B 본진 (시드 + 모디파이어 MVP 3 + 알고리즘=캐릭터) + B-108/109 → ***alpha***
-- **M4** (~5개월) — P2 모바일·사망 페널티 + 모디파이어 12종 + BGM 4트랙 → ***beta*** **← 진입 준비 완료**
-- **M5** (~6~7개월) — 폴리시 + 한영 i18n + 출시 페이지 → ***1.0***
+- **M4** ✅ — D-12 closure + 모바일 트랙 + 사망 페널티 + 모디파이어 12종 → ***beta***
+- **M5** (~6~7개월) — 폴리시 (B-207 ✅) + 한영 i18n + 출시 페이지 + BGM 4트랙 → ***1.0*** **← 진입**

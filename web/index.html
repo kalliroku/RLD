@@ -195,6 +195,12 @@
                         <canvas id="sparkline-canvas" width="240" height="28"></canvas>
                         <span class="sparkline-value" id="sparkline-value">—</span>
                     </div>
+                    <!-- B-207: silent_q modifier 활성 시 Q-heatmap/sparkline 자리 placeholder (D-4 정체성 보호) -->
+                    <!-- 인라인 display:none 은 초기 hidden 보장용. JS `_syncAgentModifiers` 가 muted 시 빈 문자열로 클리어 → CSS `.silent-q-placeholder { display: flex }` 복귀 -->
+                    <div class="silent-q-placeholder" id="silent-q-placeholder" style="display: none;">
+                        <span class="silent-q-label">침묵의 학습</span>
+                        <span class="silent-q-desc">시각화 차단됨 — 모디파이어 효과</span>
+                    </div>
                 </div>
             </div>
 
