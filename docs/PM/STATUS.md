@@ -41,7 +41,7 @@
 
 - HybridPlayer modifier off (20-run): **25.6/27 ✓** (D-4 의 25.5 ± 2 정확 hit, D-12 패치로 +1.1 향상)
   - 이전 (B-109): 24.5/27 ✓ (5×20 historical: 24.6 / 25.6 / 24.9 / 25.4 / 24.1)
-- HybridPlayer modifier ON (20-run, algorithm-side deflection 활성):
+- HybridPlayer modifier ON — **데일리 전용 측정** (D-9, 캠페인 게이트 미적용), algorithm-side deflection 활성:
   - slippery 단독: **14.0/27 ❌** (algorithm 측 deflection 자연 영향 -10.4, 캠페인 도입 전 강도 재검토 필요)
   - heavy_fog 단독: **25.6/27 ✓** (movement 미영향)
   - two_only 단독: **16.3/27** (D-9 데일리 전용으로 정당화, 캠페인 미적용)

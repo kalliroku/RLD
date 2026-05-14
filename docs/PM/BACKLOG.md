@@ -24,6 +24,9 @@
 | B-202 | 모바일 하단 탭 바 (Char / Dungeon / Train / Shop / Stats) | UX | 2일 |
 | B-203 | 사망 페널티 — Q-table 30% 노이즈 또는 세르파 누적 사망 한도 | 기획자 | 2~3일 |
 | B-204 | 모바일 핵심 스탯 3개만 노출 (HP / Gold / Steps), 나머지 접힘 | UX | 0.5일 |
+| B-205 | modifier.slippery 30% 강도 재검토 (캠페인 도입 전 차단 게이트) | D-12 closure 측정 | 0.5~1일 |
+
+> **B-205 상세**: D-2026-05-14-13 측정에서 algorithm 측 deflection 활성 시 slippery 단독 -10.4 (24.4 → 14.0). 캠페인 modifier 도입 (모디파이어 12종 디자인) 시점에 강도/적용범위/dungeonId 화이트리스트 재산정. 후보: 30% → 15% 하향 / Ch.4 이하 면제 / level_12_hp_gauntlet 같은 hard convergence 던전 제외. 의존: D-2026-05-14-13, D-2026-05-12-10.
 
 ## ❌ 컷된 항목 (D-4)
 

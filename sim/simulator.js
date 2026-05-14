@@ -163,6 +163,9 @@ export class GameSimulator {
             // deflection during RL training (manualPlayDungeon still applies a
             // success-rate multiplier on top — that models human input error,
             // not the deflection itself).
+            //
+            // NOTE: grid is cached per dungeonId. If you ever mutate
+            // this.modifierSet mid-run (hot-swap), evict this.grids first.
             if (this.modifierSet) {
                 grid.modifierSet = this.modifierSet;
             }
