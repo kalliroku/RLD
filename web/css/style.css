@@ -2675,6 +2675,29 @@ body.editor-mode .dpad-container {
     text-align: right;
 }
 
+/* M5 i18n: 언어 토글 — 우측 컨트롤 상단, 작은 outline 버튼 */
+.lang-toggle-wrap {
+    display: flex;
+    justify-content: flex-end;
+    padding: 8px 12px 0;
+}
+.lang-toggle {
+    background: transparent;
+    color: var(--text-secondary, #cbd5e1);
+    border: 1px solid #444;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    cursor: pointer;
+    transition: border-color 0.15s, color 0.15s;
+}
+.lang-toggle:hover {
+    border-color: #888;
+    color: #fff;
+}
+
 /* B-207: silent_q modifier placeholder — sparkline-wrap 톤 매칭 + 회색조 (시각화 차단 상태 명시) */
 .silent-q-placeholder {
     display: flex;

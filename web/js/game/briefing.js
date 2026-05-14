@@ -5,6 +5,7 @@
 
 import { DUNGEON_CONFIG, DUNGEON_HINTS, BASE_OP_COST } from './game-config.js';
 import { CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS } from './run-state.js';
+import { t } from '../i18n/index.js';
 
 export class BriefingOverlay {
     constructor() {
@@ -46,7 +47,7 @@ export class BriefingOverlay {
 
         // Chapter info
         const chapterInfo = CHAPTER_CONFIG.find(c => c.dungeons.includes(dungeonId));
-        const chapterLabel = chapterInfo ? `Ch.${chapterInfo.chapter} ${chapterInfo.name}` : '';
+        const chapterLabel = chapterInfo ? `Ch.${chapterInfo.chapter} ${t(`chapter.${chapterInfo.chapter}`)}` : '';
 
         this.titleEl.textContent = `Lv.${levelNum} ${name}`;
         this.chapterEl.textContent = chapterLabel;

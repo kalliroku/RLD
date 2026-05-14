@@ -67,7 +67,7 @@ export const KO = {
 
     // === Overlays ===
     'overlay.game_over.title': 'GAME OVER',
-    'overlay.game_over.note': 'Q-table is preserved. Your serpas remember everything.',
+    'overlay.game_over.note': 'Q-table is preserved. Your Sherpas remember everything.',
     'overlay.game_over.new_run': 'New Run',
     'overlay.ending.title': 'ALL DUNGEONS CLEARED!',
     'overlay.ending.note': 'Q-tables preserved. Can you beat your record?',
@@ -90,7 +90,7 @@ export const KO = {
     'stats_toggle.show_less': '접기',
 
     // === Game UI ===
-    'food_warning': 'No food! Your serpa is starving!',
+    'food_warning': 'No food! Your Sherpa is starving!',
     'sparkline.label': '학습 성공률',
     'placeholder.silent_q.title': '침묵의 학습',
     'placeholder.silent_q.desc': '시각화 차단됨 — 모디파이어 효과',
@@ -234,6 +234,93 @@ export const KO = {
 
     // === Tutorial-ish triggers ===
     'tutorial.train_now': '이제 AI 에게 길을 외우게 시켜보세요.',
+
+    // === Modifiers (12종, D-2026-05-14-14, 데일리 전용) ===
+    // 환경 6
+    'modifier.slippery.name': '미끄러운 바닥',
+    'modifier.slippery.desc': '이동이 30% 확률로 옆으로 빗나갑니다.',
+    'modifier.heavy_fog.name': '안개 짙음',
+    'modifier.heavy_fog.desc': '시야 범위 5 → 3 칸으로 축소.',
+    'modifier.dim_torch.name': '횃불 꺼짐',
+    'modifier.dim_torch.desc': '시야 범위 5 → 2 칸으로 더욱 축소.',
+    'modifier.poison_floor.name': '독 바닥',
+    'modifier.poison_floor.desc': '빈 칸을 밟을 때마다 HP -1.',
+    'modifier.acid_rain.name': '산성비',
+    'modifier.acid_rain.desc': '10 스텝마다 HP -3 (시간 압박).',
+    'modifier.wind_gust.name': '돌풍',
+    'modifier.wind_gust.desc': '10% 확률로 행동이 묶입니다.',
+    // 제약 6
+    'modifier.two_only.name': '두 명만',
+    'modifier.two_only.desc': '세르파 2명만 사용 가능.',
+    'modifier.hp_cap_50.name': 'HP 50 제한',
+    'modifier.hp_cap_50.desc': '최대 HP 가 50 으로 묶입니다.',
+    'modifier.mirror_input.name': '좌우 반전',
+    'modifier.mirror_input.desc': '수동 플레이 좌/우 입력이 뒤바뀝니다.',
+    'modifier.no_heal.name': '회복 차단',
+    'modifier.no_heal.desc': '회복 타일 효과가 사라집니다.',
+    'modifier.damage_boost.name': '치명상',
+    'modifier.damage_boost.desc': '몬스터·함정 피해 × 1.5.',
+    'modifier.silent_q.name': '침묵의 학습',
+    'modifier.silent_q.desc': 'Q-value 히트맵과 학습 sparkline 이 숨겨집니다.',
+
+    // === Tutorial steps (5개, 컨텍스트 트리거) ===
+    'tutorial.welcome': '환영합니다! 방향키로 세르파를 움직여 녹색 G (목표) 에 도달하세요.',
+    'tutorial.first_dungeon': '첫 던전 클리어! 다음 던전으로 가거나, AI 학습 패널에서 세르파에게 길을 외우게 시켜보세요.',
+    'tutorial.ai_training': 'AI 학습은 세르파가 최적 경로를 스스로 찾게 합니다. 속도를 바꿔보세요 — 즉시가 가장 빠릅니다. 에피소드마다 골드가 소비됩니다.',
+    'tutorial.economy': '이제 던전 입장에 골드가 듭니다. 지도를 팔아 즉시 현금으로 바꾸거나, 보관해서 전용 파밍 런을 돌리세요.',
+    'tutorial.farming': '파밍 해금! 학습 완료된 세르파를 클리어한 던전에 배치하면 자동으로 골드를 벌어옵니다.',
+    'tutorial.dismiss': '확인',
+
+    // === Chapter names (7개, run-state.js CHAPTER_CONFIG) ===
+    'chapter.1': '첫 발걸음',
+    'chapter.2': '위험한 길',
+    'chapter.3': '넓은 세계',
+    'chapter.4': '직감과 비평',
+    'chapter.5': '합의의 힘',
+    'chapter.6': '불확실한 바닥',
+    'chapter.7': '심연',
+
+    // === Items (3종, run-state.js ITEMS) ===
+    'item.escape_rope.name': '긴급 탈출 로프',
+    'item.escape_rope.desc': '즉시 입구로 귀환 (사망 방지)',
+    'item.defense_contract.name': '방어 용병 계약',
+    'item.defense_contract.desc': '1에피소드 피해 반감',
+    'item.trap_nullify.name': '함정 해제사 계약',
+    'item.trap_nullify.desc': '1에피소드 함정 무효',
+
+    // === Character personalities (15종, hire.confirm 노출) ===
+    'character.personality.qkun': '낙관적 멍청이',
+    'character.personality.scout': '근시안 정찰병',
+    'character.personality.sarsa': '겁쟁이',
+    'character.personality.monte': '끝까지 가봐야 직성',
+    'character.personality.tracer': '흔적 추적자',
+    'character.personality.dyna': '공상가',
+    'character.personality.gradi': '감으로 찍는 싸구려',
+    'character.personality.critic': '잔소리꾼',
+    'character.personality.qvkun': '이중인격',
+    'character.personality.acla': '변덕쟁이',
+    'character.personality.ensemble': '합의체',
+    'character.personality.exsa': '계산기',
+    'character.personality.doubleq': '의심쟁이',
+    'character.personality.treeback': '선견자',
+    'character.personality.sweeper': '효율주의자',
+
+    // === Character descriptions (15종, character-desc UI) ===
+    'character.desc.qkun': '좌표를 외워서 학습합니다. 던전별 전문가.',
+    'character.desc.scout': '주변을 관찰해서 학습합니다. 처음 보는 던전도 경험을 활용!',
+    'character.desc.sarsa': '실수에서 배우는 신중파. 안전한 길을 선호합니다.',
+    'character.desc.monte': '끝까지 가봐야 안다! 완주 후 복기하는 사색가.',
+    'character.desc.tracer': '발자취를 남기며 학습. 먼 과거의 선택도 평가합니다.',
+    'character.desc.dyna': '상상력의 달인. 경험을 머릿속에서 반복 재생합니다.',
+    'character.desc.gradi': '직감형 탐험가. 확률로 판단, 다양한 경로를 시도합니다.',
+    'character.desc.critic': '배우와 비평가를 겸비. 안정적이고 효율적입니다.',
+    'character.desc.qvkun': 'Q와 V를 동시에 학습. 과대추정을 줄여 안정적입니다.',
+    'character.desc.acla': '학습 오토마톤. 확률을 직접 조작해 빠르게 정책을 바꿉니다.',
+    'character.desc.ensemble': '5개 알고리즘의 합의. 볼츠만 곱으로 최적 행동을 선택합니다.',
+    'character.desc.exsa': '기대값으로 학습. 분산 없는 업데이트로 Q군과 사르사를 모두 지배합니다.',
+    'character.desc.doubleq': '두 개의 눈으로 편향 없이 판단. 과대추정의 해결사.',
+    'character.desc.treeback': 'n걸음 앞을 내다보는 전략가. 기대값의 나무를 키웁니다.',
+    'character.desc.sweeper': '중요한 것부터 정리하는 효율주의자. 다이나의 진화형.',
 
     // === Language toggle ===
     'lang.toggle': 'EN',

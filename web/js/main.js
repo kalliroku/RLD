@@ -327,7 +327,7 @@ class Game {
 
         // Group by chapter
         for (const ch of CHAPTER_CONFIG) {
-            html += `<div class="quest-section-title">Ch.${ch.chapter} ${ch.name}</div>`;
+            html += `<div class="quest-section-title">Ch.${ch.chapter} ${t(`chapter.${ch.chapter}`)}</div>`;
             for (const did of ch.dungeons) {
                 const config = DUNGEON_CONFIG[did];
                 const cleared = rs.clearedDungeons.has(did);
@@ -474,10 +474,12 @@ class Game {
 
         html += '<div class="shop-section"><h4>Items</h4>';
         for (const [itemKey, item] of Object.entries(ITEMS)) {
+            const itemName = t(`item.${itemKey}.name`);
+            const itemDesc = t(`item.${itemKey}.desc`);
             html += `<div class="shop-item-card">
                 <div>
-                    <div class="shop-item-info">${item.name}</div>
-                    <div class="shop-item-desc">${item.description}</div>
+                    <div class="shop-item-info">${itemName}</div>
+                    <div class="shop-item-desc">${itemDesc}</div>
                 </div>
                 <div style="display:flex;align-items:center;gap:8px">
                     <span class="shop-item-cost">${item.cost}G</span>
@@ -533,7 +535,7 @@ class Game {
         const rs = this.runState;
         let html = '';
         for (const ch of CHAPTER_CONFIG) {
-            html += `<div class="quest-section-title">Ch.${ch.chapter} ${ch.name}</div>`;
+            html += `<div class="quest-section-title">Ch.${ch.chapter} ${t(`chapter.${ch.chapter}`)}</div>`;
             html += '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px">';
             for (const did of ch.dungeons) {
                 const cleared = rs.clearedDungeons.has(did);
@@ -617,7 +619,7 @@ class Game {
                         btn.classList.toggle('active', btn.dataset.char === this.currentCharacter);
                     });
                     if (this.characterDesc && CHARACTERS[this.currentCharacter]) {
-                        this.characterDesc.textContent = CHARACTERS[this.currentCharacter].desc;
+                        this.characterDesc.textContent = t(`character.desc.${this.currentCharacter}`);
                     }
                 }
                 const restore = this.lastPlayDungeon || 'level_01_easy';
@@ -682,7 +684,7 @@ class Game {
                 btn.classList.toggle('active', btn.dataset.char === this.currentCharacter);
             });
             if (this.characterDesc && CHARACTERS[this.currentCharacter]) {
-                this.characterDesc.textContent = CHARACTERS[this.currentCharacter].desc;
+                this.characterDesc.textContent = t(`character.desc.${this.currentCharacter}`);
             }
         }
     }
@@ -701,7 +703,10 @@ class Game {
             if (modifierIds.length > 0) {
                 modsEl.innerHTML = modifierIds.map(id => {
                     const m = MODIFIERS[id];
-                    return m ? `<span class="modifier-chip" title="${m.desc}">${m.name}</span>` : id;
+                    if (!m) return id;
+                    const name = t(`modifier.${id}.name`);
+                    const desc = t(`modifier.${id}.desc`);
+                    return `<span class="modifier-chip" title="${desc}">${name}</span>`;
                 }).join('');
             } else {
                 modsEl.textContent = '—';
@@ -727,7 +732,7 @@ class Game {
                         if (!pool.includes(id)) return;
                         this.currentCharacter = id;
                         if (this.characterDesc && CHARACTERS[id]) {
-                            this.characterDesc.textContent = CHARACTERS[id].desc;
+                            this.characterDesc.textContent = t(`character.desc.${id}`);
                         }
                         document.querySelectorAll('.char-card').forEach(c => {
                             c.classList.toggle('active', c.dataset.char === id);
@@ -876,9 +881,11 @@ class Game {
         }
         band.style.display = '';
         const label = `<span class="modifier-label">${t('modifier_band.this_run')}</span>`;
-        const chips = items.map(m =>
-            `<span class="modifier-chip" title="${m.desc}"><span class="modifier-name">${m.name}</span><span class="modifier-desc">${m.desc}</span></span>`
-        ).join('');
+        const chips = items.map(m => {
+            const name = t(`modifier.${m.id}.name`);
+            const desc = t(`modifier.${m.id}.desc`);
+            return `<span class="modifier-chip" title="${desc}"><span class="modifier-name">${name}</span><span class="modifier-desc">${desc}</span></span>`;
+        }).join('');
         band.innerHTML = `${label}${chips}`;
     }
 
@@ -1905,17 +1912,19 @@ class Game {
         if (this.runState.isCharacterLocked(charName)) {
             const cost = this.runState.getHireCost(charName);
             const charDef = CHARACTERS[charName];
+            const charName_i18n = t(`char.${charName}`);
+            const personality_i18n = t(`character.personality.${charName}`);
             if (this.runState.gold < cost) {
-                this.showMessage(t('hire.need_gold', { name: charDef.name, cost, gold: this.runState.gold }), 'danger');
+                this.showMessage(t('hire.need_gold', { name: charName_i18n, cost, gold: this.runState.gold }), 'danger');
                 return;
             }
             // T2B-3: 학명 → 성격 태그 (알고리즘=캐릭터, D-4)
-            const ok = confirm(t('hire.confirm', { name: charDef.name, personality: charDef.personality, cost }));
+            const ok = confirm(t('hire.confirm', { name: charName_i18n, personality: personality_i18n, cost }));
             if (!ok) return;
             this.runState.hireCharacter(charName);
             this.updateCharacterGrid();
             this.updateUI();
-            this.showMessage(t('hire.success', { name: charDef.name, cost }), 'success');
+            this.showMessage(t('hire.success', { name: charName_i18n, cost }), 'success');
         }
 
         // Stop training if running
@@ -1929,7 +1938,7 @@ class Game {
         document.querySelectorAll('.char-card').forEach(btn => {
             btn.classList.toggle('active', btn.dataset.char === charName);
         });
-        this.characterDesc.textContent = CHARACTERS[charName].desc;
+        this.characterDesc.textContent = t(`character.desc.${charName}`);
 
         // Reload dungeon with new character's algorithm
         this.loadDungeon(this.currentDungeon);
@@ -2031,6 +2040,32 @@ class Game {
                 localStorage.setItem(DEATH_NOTIFIED_KEY, '1');
             }
         } catch (e) { /* localStorage unavailable */ }
+
+        // M5 i18n: 언어 토글 — ko ↔ en. label 은 *다음 언어* 표시.
+        const langToggle = document.getElementById('lang-toggle');
+        if (langToggle) {
+            const updateLangLabel = () => {
+                langToggle.textContent = getLang() === 'ko' ? 'EN' : '한국어';
+            };
+            updateLangLabel();
+            langToggle.addEventListener('click', () => {
+                setLang(getLang() === 'ko' ? 'en' : 'ko');
+                updateLangLabel();
+                // 동적 텍스트 갱신 (data-i18n 외 element — _updateGuildResources 등)
+                this.updateUI();
+                // stats-toggle 텍스트도 갱신 (data-i18n 미적용 element)
+                const expanded = document.getElementById('stats-panel')?.classList.contains('expanded');
+                const stEl = document.getElementById('stats-toggle');
+                if (stEl) stEl.textContent = expanded ? t('stats_toggle.show_less') : t('stats_toggle.show_more');
+                // character-desc 갱신
+                if (this.characterDesc && this.currentCharacter) {
+                    this.characterDesc.textContent = t(`character.desc.${this.currentCharacter}`);
+                }
+                // modifier band / daily intro 갱신
+                this._renderModifierBand?.();
+                this.renderDailyIntro?.();
+            });
+        }
 
         // B-202: mobile bottom tab bar (≤700px) — smooth scroll to anchored section
         document.querySelectorAll('.bottom-tab').forEach(tab => {
@@ -2176,7 +2211,7 @@ class Game {
                         this.runState.useItem('trap_nullify');
                         this.activeTrapNullify = true;
                     }
-                    this.showMessage(`Bought ${item.name}! -${item.cost}G`, 'success');
+                    this.showMessage(`Bought ${t(`item.${itemId}.name`)}! -${item.cost}G`, 'success');
                     this.updateUI();
                     this.updateItemUI();
                 } else {
@@ -3004,7 +3039,7 @@ class Game {
             document.querySelectorAll('.char-card').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.char === 'qkun');
             });
-            this.characterDesc.textContent = CHARACTERS.qkun.desc;
+            this.characterDesc.textContent = t('character.desc.qkun');
         }
 
         this.loadDungeon('level_01_easy');
@@ -3845,7 +3880,7 @@ class Game {
             document.querySelectorAll('.char-card').forEach(btn => {
                 btn.classList.toggle('active', btn.dataset.char === 'qkun');
             });
-            this.characterDesc.textContent = CHARACTERS.qkun.desc;
+            this.characterDesc.textContent = t('character.desc.qkun');
         }
 
         this.loadDungeon('level_01_easy');
