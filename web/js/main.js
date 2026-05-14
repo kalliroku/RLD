@@ -24,6 +24,7 @@ import { generateDungeon } from './game/dungeon-generator.js';
 import { DailyHistory, getDailyChallenge, yesterdayKey } from './game/daily-mode.js';
 import { utcDateKey } from './game/rng.js';
 import { ModifierSet, MODIFIERS } from './game/modifiers.js';
+import { t, initI18n, setLang, getLang } from './i18n/index.js';
 
 const PRESET_MULTI_DUNGEONS = {
     preset_beginner_tower: {
@@ -304,17 +305,17 @@ class Game {
 
     _updateGuildResources() {
         const rs = this.runState;
-        document.getElementById('guild-run').textContent = `Run #${rs.runNumber}`;
-        document.getElementById('guild-gold').textContent = `${rs.gold}G`;
-        document.getElementById('guild-food').textContent = `${rs.food} Food`;
+        document.getElementById('guild-run').textContent = t('guild.run_format', { n: rs.runNumber });
+        document.getElementById('guild-gold').textContent = t('guild.gold_format', { n: rs.gold });
+        document.getElementById('guild-food').textContent = t('guild.food_format', { n: rs.food });
         // HP: show current agent HP if available, else maxHp from current character
         const maxHp = rs.getMaxHp(this.currentCharacter);
         const hp = this.agent ? this.agent.hp : maxHp;
-        document.getElementById('guild-hp').textContent = `HP ${hp}/${maxHp}`;
+        document.getElementById('guild-hp').textContent = t('guild.hp_format', { cur: hp, max: maxHp });
         // B-203: cumulative death counter — tension when near limit.
         const deathsEl = document.getElementById('guild-deaths');
         if (deathsEl) {
-            deathsEl.textContent = `사망 ${rs.deathCount}/${DEATH_LIMIT}`;
+            deathsEl.textContent = t('guild.deaths_format', { cur: rs.deathCount, max: DEATH_LIMIT });
             deathsEl.classList.toggle('guild-res-warn', rs.deathCount >= DEATH_LIMIT - 1);
         }
     }
@@ -797,7 +798,9 @@ class Game {
         const retryBtn = document.getElementById('btn-daily-retry');
         if (startBtn) {
             startBtn.style.display = '';
-            startBtn.textContent = tRec ? (tRec.cleared ? '다시 도전 (기록 갱신)' : '다시 도전') : '도전';
+            startBtn.textContent = tRec
+                ? (tRec.cleared ? t('daily.btn.retry_record') : t('daily.btn.retry'))
+                : t('daily.btn.start');
         }
         if (retryBtn) retryBtn.style.display = 'none';
     }
@@ -805,14 +808,14 @@ class Game {
     renderDailyRecord(dateKey, rec) {
         if (!rec) return '—';
         const rows = [];
-        rows.push(`<div class="row"><span class="label">날짜</span><span>${dateKey}</span></div>`);
-        rows.push(`<div class="row"><span class="label">결과</span><span>${rec.cleared ? '✓ 클리어' : '✗ 미클리어'}</span></div>`);
+        rows.push(`<div class="row"><span class="label">${t('daily.row.date')}</span><span>${dateKey}</span></div>`);
+        rows.push(`<div class="row"><span class="label">${t('daily.row.result')}</span><span>${rec.cleared ? t('daily.row.cleared') : t('daily.row.failed')}</span></div>`);
         if (rec.cleared && rec.bestSteps != null) {
-            rows.push(`<div class="row"><span class="label">최소 스텝</span><span>${rec.bestSteps}</span></div>`);
+            rows.push(`<div class="row"><span class="label">${t('daily.row.best_steps')}</span><span>${rec.bestSteps}</span></div>`);
         }
-        rows.push(`<div class="row"><span class="label">시도</span><span>${rec.attempts}회</span></div>`);
+        rows.push(`<div class="row"><span class="label">${t('daily.row.attempts')}</span><span>${t('daily.row.attempts_unit', { n: rec.attempts })}</span></div>`);
         if (rec.deaths > 0) {
-            rows.push(`<div class="row"><span class="label">사망</span><span>${rec.deaths}회</span></div>`);
+            rows.push(`<div class="row"><span class="label">${t('daily.row.deaths')}</span><span>${t('daily.row.deaths_unit', { n: rec.deaths })}</span></div>`);
         }
         return rows.join('');
     }
@@ -872,7 +875,7 @@ class Game {
             return;
         }
         band.style.display = '';
-        const label = '<span class="modifier-label">이번 런:</span>';
+        const label = `<span class="modifier-label">${t('modifier_band.this_run')}</span>`;
         const chips = items.map(m =>
             `<span class="modifier-chip" title="${m.desc}"><span class="modifier-name">${m.name}</span><span class="modifier-desc">${m.desc}</span></span>`
         ).join('');
@@ -888,7 +891,7 @@ class Game {
         this.loadDailyDungeon();
         // Clear any lingering daily result toast in main message area
         if (this.messageEl) this.messageEl.textContent = '';
-        this.showMessage(`오늘의 도전 시작 — 시드 #${this.dailyContext.seed}`, 'info');
+        this.showMessage(t('daily.start_msg', { seed: this.dailyContext.seed }), 'info');
     }
 
     handleDailyVictory() {
@@ -907,17 +910,17 @@ class Game {
         sound.victory();
         this.renderer.flash('rgba(34, 197, 94, 0.4)');
 
-        let msg = `오늘의 도전 클리어! ${this.steps} 스텝`;
+        let msg = t('daily.victory_msg', { steps: this.steps });
         if (result.isFirstClear) {
-            msg += ' (오늘 첫 성공!)';
+            msg += ' ' + t('daily.victory.first_clear');
         } else if (result.isImprovement) {
-            msg += ` (최고 기록 갱신, 이전 ${result.prevBest})`;
+            msg += ' ' + t('daily.victory.improvement', { prev: result.prevBest });
         }
         if (yRec && yRec.cleared && yRec.bestSteps != null) {
             const diff = this.steps - yRec.bestSteps;
-            if (diff === 0) msg += ' / 어제와 동일';
-            else if (diff < 0) msg += ` / 어제 ${diff} 스텝`;
-            else msg += ` / 어제 +${diff} 스텝`;
+            if (diff === 0) msg += ' / ' + t('daily.compare.same');
+            else if (diff < 0) msg += ' / ' + t('daily.compare.better', { diff });
+            else msg += ' / ' + t('daily.compare.worse', { diff });
         }
         this.showMessage(msg, 'success');
         if (this.toast) this.toast.show(msg, 'success');
@@ -941,8 +944,8 @@ class Game {
         this.dailyPhase = 'done';
         sound.death();
         this.renderer.flash('rgba(239, 68, 68, 0.3)');
-        this.showMessage(`오늘의 도전 실패 — ${cause}`, 'danger');
-        if (this.toast) this.toast.show(`오늘의 도전 실패: ${cause}`, 'warning');
+        this.showMessage(t('daily.fail_msg', { cause }), 'danger');
+        if (this.toast) this.toast.show(t('daily.fail_toast', { cause }), 'warning');
         this.renderDailyIntro();
     }
 
@@ -1903,16 +1906,16 @@ class Game {
             const cost = this.runState.getHireCost(charName);
             const charDef = CHARACTERS[charName];
             if (this.runState.gold < cost) {
-                this.showMessage(`${charDef.name} 고용 골드 부족! ${cost}G 필요 (보유 ${this.runState.gold}G)`, 'danger');
+                this.showMessage(t('hire.need_gold', { name: charDef.name, cost, gold: this.runState.gold }), 'danger');
                 return;
             }
             // T2B-3: 학명 → 성격 태그 (알고리즘=캐릭터, D-4)
-            const ok = confirm(`${charDef.name} (${charDef.personality}) 를 ${cost}G 에 고용할까요?`);
+            const ok = confirm(t('hire.confirm', { name: charDef.name, personality: charDef.personality, cost }));
             if (!ok) return;
             this.runState.hireCharacter(charName);
             this.updateCharacterGrid();
             this.updateUI();
-            this.showMessage(`${charDef.name} 고용 완료! -${cost}G`, 'success');
+            this.showMessage(t('hire.success', { name: charDef.name, cost }), 'success');
         }
 
         // Stop training if running
@@ -1958,14 +1961,15 @@ class Game {
 
         for (let y = 0; y < g.height; y++) {
             for (let x = 0; x < g.width; x++) {
-                const t = g.getTile(x, y);
+                // i18n t() shadowing 방지 — `tile` 사용 (i18n 1차 마이그레이션 후속, I1 리뷰)
+                const tile = g.getTile(x, y);
                 let color = null;
-                if (t === TileType.WALL) color = '#4a4a4a';
-                else if (t === TileType.GOAL) color = '#22c55e';
-                else if (t === TileType.GOLD) color = '#facc15';
-                else if (t === TileType.MONSTER || t === TileType.TRAP) color = '#ef4444';
-                else if (t === TileType.HEAL) color = '#10b981';
-                else if (t === TileType.START) color = '#3b82f6';
+                if (tile === TileType.WALL) color = '#4a4a4a';
+                else if (tile === TileType.GOAL) color = '#22c55e';
+                else if (tile === TileType.GOLD) color = '#facc15';
+                else if (tile === TileType.MONSTER || tile === TileType.TRAP) color = '#ef4444';
+                else if (tile === TileType.HEAL) color = '#10b981';
+                else if (tile === TileType.START) color = '#3b82f6';
                 if (color) {
                     ctx.fillStyle = color;
                     ctx.fillRect(x * cell, y * cell, cell, cell);
@@ -2022,7 +2026,7 @@ class Game {
         try {
             if (this.runState.deathCount >= DEATH_LIMIT && localStorage.getItem(DEATH_NOTIFIED_KEY) !== '1') {
                 if (this.toast) {
-                    this.toast.show(`누적 사망 ${this.runState.deathCount}/${DEATH_LIMIT} — 다음 게임오버에서 캠페인 처음부터.`, 'warning');
+                    this.toast.show(t('death_limit.toast', { cur: this.runState.deathCount, max: DEATH_LIMIT }), 'warning');
                 }
                 localStorage.setItem(DEATH_NOTIFIED_KEY, '1');
             }
@@ -2034,7 +2038,8 @@ class Game {
                 const target = document.querySelector(tab.dataset.target);
                 if (!target) return;
                 target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                document.querySelectorAll('.bottom-tab').forEach(t => t.classList.remove('active'));
+                // 변수명 'tab' 사용 — i18n t() shadowing 방지 (forEach iterator 가 t 였으면 t() 가려졌음)
+                document.querySelectorAll('.bottom-tab').forEach(other => other.classList.remove('active'));
                 tab.classList.add('active');
             });
         });
@@ -2048,7 +2053,7 @@ class Game {
             const applyExpanded = (expanded) => {
                 statsPanel.classList.toggle('expanded', expanded);
                 statsToggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
-                statsToggle.textContent = expanded ? '접기' : '더보기';
+                statsToggle.textContent = expanded ? t('stats_toggle.show_less') : t('stats_toggle.show_more');
             };
             try {
                 if (localStorage.getItem(STATS_EXPANDED_KEY) === '1') applyExpanded(true);
@@ -2553,7 +2558,7 @@ class Game {
         // - mirror_input: swap LEFT/RIGHT inputs.
         if (!this.isTraining && this.activeModifierSet) {
             if (this.activeModifierSet.shouldSkipTurn()) {
-                this.showMessage('돌풍! 행동이 묶였습니다.', 'warning');
+                this.showMessage(t('modifier_effect.wind_gust'), 'warning');
                 this.steps++;
                 this.render();
                 return;
@@ -2849,7 +2854,7 @@ class Game {
 
             // B-004: First ever clear — guide player toward newly revealed AI Training
             if (this.runState.clearedDungeons.size === 1 && this.toast) {
-                this.toast.show('이제 AI 에게 길을 외우게 시켜보세요.', 'info');
+                this.toast.show(t('tutorial.train_now'), 'info');
             }
             // Tutorial: economy when reaching chapter 2
             const curChapter = this.runState.getCurrentChapter();
@@ -2959,7 +2964,7 @@ class Game {
 
         // Show overlay
         const deathLine = reachedDeathLimit
-            ? ` — 누적 사망 한도 도달 (${this.runState.deathCount}/${DEATH_LIMIT}). 다음 런으로.`
+            ? t('game_over.death_limit_suffix', { cur: this.runState.deathCount, max: DEATH_LIMIT })
             : '';
         this.gameOverCause.textContent = cause + deathLine;
         this.gameOverStats.innerHTML = [
@@ -4048,5 +4053,7 @@ class Game {
 
 // Start the game when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
+    // i18n: initI18n applies HTML data-i18n attrs from localStorage rld_lang (M5 폴리시)
+    initI18n();
     window.game = new Game();
 });

@@ -3,20 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RL Dungeon - 강화학습 던전</title>
+    <title data-i18n="document.title">RL Dungeon - 강화학습 던전</title>
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
     <!-- Title Screen -->
     <div id="screen-title" class="screen active">
         <div class="title-container">
-            <div class="title-logo">RL DUNGEON</div>
-            <p class="title-subtitle">멍청한 세르파와 던전 답파</p>
+            <div class="title-logo" data-i18n="title.logo">RL DUNGEON</div>
+            <p class="title-subtitle" data-i18n="title.tagline">멍청한 세르파와 던전 답파</p>
             <div class="title-buttons">
-                <button id="btn-new-game" class="title-btn title-btn-primary">New Game</button>
-                <button id="btn-continue" class="title-btn" disabled>Continue</button>
+                <button id="btn-new-game" class="title-btn title-btn-primary" data-i18n="title.new_game">New Game</button>
+                <button id="btn-continue" class="title-btn" disabled data-i18n="title.continue">Continue</button>
             </div>
-            <button id="btn-dev-mode" class="title-btn-dev">Dev Mode</button>
+            <button id="btn-dev-mode" class="title-btn-dev" data-i18n="title.dev_mode">Dev Mode</button>
         </div>
     </div>
 
@@ -25,7 +25,8 @@
         <div class="guild-container">
             <div class="guild-header">
                 <div class="guild-header-top">
-                    <span class="guild-title">RL Dungeon</span>
+                    <span class="guild-title" data-i18n="guild.title">RL Dungeon</span>
+                    <!-- guild-run / guild-gold / guild-food / guild-hp / guild-deaths: JS 가 t('guild.*_format', {...}) 로 동적 갱신 (data-i18n 미적용 — applyTranslations 가 덮어쓰지 않도록) -->
                     <span class="guild-run" id="guild-run">Run #1</span>
                 </div>
                 <div class="guild-resources">
@@ -37,10 +38,10 @@
                 </div>
             </div>
             <nav class="guild-tabs">
-                <button class="guild-tab active" data-gtab="quest">Quest</button>
-                <button class="guild-tab" data-gtab="party">Party</button>
-                <button class="guild-tab" data-gtab="shop">Shop</button>
-                <button class="guild-tab" data-gtab="map">Map</button>
+                <button class="guild-tab active" data-gtab="quest" data-i18n="guild.tab.quest">Quest</button>
+                <button class="guild-tab" data-gtab="party" data-i18n="guild.tab.party">Party</button>
+                <button class="guild-tab" data-gtab="shop" data-i18n="guild.tab.shop">Shop</button>
+                <button class="guild-tab" data-gtab="map" data-i18n="guild.tab.map">Map</button>
             </nav>
             <div class="guild-content">
                 <div id="guild-tab-quest" class="guild-tab-panel active"></div>
@@ -55,18 +56,18 @@
     <div id="screen-dev" class="screen">
         <div class="container">
         <div class="dev-back-bar">
-            <button id="btn-back-to-game" class="btn-back">Back to Game</button>
+            <button id="btn-back-to-game" class="btn-back" data-i18n="dev.back_to_game">Back to Game</button>
         </div>
 
         <header>
-            <h1>RL Dungeon</h1>
-            <p class="subtitle">강화학습 던전 탐험 — Dev Mode</p>
+            <h1 data-i18n="dev.title">RL Dungeon</h1>
+            <p class="subtitle" data-i18n="dev.subtitle">강화학습 던전 탐험 — Dev Mode</p>
         </header>
 
         <nav class="mode-tabs">
-            <button class="mode-tab active" data-mode="play">Play</button>
-            <button class="mode-tab" data-mode="daily">오늘의 도전</button>
-            <button class="mode-tab" data-mode="editor">Editor</button>
+            <button class="mode-tab active" data-mode="play" data-i18n="mode.play">Play</button>
+            <button class="mode-tab" data-mode="daily" data-i18n="mode.daily">오늘의 도전</button>
+            <button class="mode-tab" data-mode="editor" data-i18n="mode.editor">Editor</button>
         </nav>
 
         <main>
@@ -80,49 +81,51 @@
 
                 <!-- B-201: minimap (mobile only, large dungeons ≥ 25 wide/tall) -->
                 <div class="minimap-wrap" id="minimap-wrap" data-active="false">
-                    <span class="minimap-label">미니맵</span>
+                    <span class="minimap-label" data-i18n="game.minimap">미니맵</span>
                     <canvas id="minimap-canvas" width="120" height="120"></canvas>
                 </div>
 
                 <!-- Step-0 inline hint (B-004): shown until first dungeon clear -->
-                <div class="step0-hint" id="step0-hint" style="display:none;">
+                <div class="step0-hint" id="step0-hint" style="display:none;" data-i18n="game.step0_hint">
                     방향키 / WASD 로 세르파를 움직여 녹색 G 에 도달.
                 </div>
 
                 <!-- Game Over Overlay -->
                 <div class="game-over-overlay" id="game-over-overlay" style="display:none;">
                     <div class="game-over-box">
-                        <div class="game-over-title">GAME OVER</div>
+                        <div class="game-over-title" data-i18n="overlay.game_over.title">GAME OVER</div>
                         <div class="game-over-content">
+                            <!-- game-over-cause / game-over-stats: JS 가 t() 로 동적 채움 -->
                             <div class="game-over-cause" id="game-over-cause"></div>
                             <div class="game-over-stats" id="game-over-stats"></div>
-                            <div class="game-over-note">Q-table is preserved. Your serpas remember everything.</div>
+                            <div class="game-over-note" data-i18n="overlay.game_over.note">Q-table is preserved. Your serpas remember everything.</div>
                         </div>
-                        <button class="btn-new-run" id="btn-new-run">New Run</button>
+                        <button class="btn-new-run" id="btn-new-run" data-i18n="overlay.game_over.new_run">New Run</button>
                     </div>
                 </div>
 
                 <!-- Ending Overlay (C-3) -->
                 <div class="ending-overlay" id="ending-overlay" style="display:none;">
                     <div class="ending-box">
-                        <div class="ending-title">ALL DUNGEONS CLEARED!</div>
+                        <div class="ending-title" data-i18n="overlay.ending.title">ALL DUNGEONS CLEARED!</div>
                         <div class="ending-stats" id="ending-stats"></div>
-                        <div class="ending-note">Q-tables preserved. Can you beat your record?</div>
-                        <button class="btn-new-game-plus" id="btn-new-game-plus">New Game+</button>
+                        <div class="ending-note" data-i18n="overlay.ending.note">Q-tables preserved. Can you beat your record?</div>
+                        <button class="btn-new-game-plus" id="btn-new-game-plus" data-i18n="overlay.ending.new_game_plus">New Game+</button>
                     </div>
                 </div>
 
                 <!-- Briefing Overlay (Step 5) -->
                 <div class="briefing-overlay" id="briefing-overlay" style="display:none;">
                     <div class="briefing-box">
+                        <!-- briefing-* (title/chapter/details/hints/provisions): JS 가 t() 로 동적 채움 -->
                         <div class="briefing-title" id="briefing-title"></div>
                         <div class="briefing-chapter" id="briefing-chapter"></div>
                         <div class="briefing-details" id="briefing-details"></div>
                         <div class="briefing-hints" id="briefing-hints"></div>
                         <div class="briefing-provisions" id="briefing-provisions"></div>
                         <div class="briefing-buttons">
-                            <button class="btn-briefing-back" id="btn-briefing-back">Back</button>
-                            <button class="btn-briefing-deploy" id="btn-briefing-deploy">Deploy</button>
+                            <button class="btn-briefing-back" id="btn-briefing-back" data-i18n="overlay.briefing.back">Back</button>
+                            <button class="btn-briefing-deploy" id="btn-briefing-deploy" data-i18n="overlay.briefing.deploy">Deploy</button>
                         </div>
                     </div>
                 </div>
@@ -130,12 +133,13 @@
                 <!-- Map Choice Overlay (B-5) -->
                 <div class="map-choice-overlay" id="map-choice-overlay" style="display:none;">
                     <div class="map-choice-box">
-                        <div class="map-choice-title">FIRST CLEAR!</div>
+                        <div class="map-choice-title" data-i18n="overlay.map_choice.title">FIRST CLEAR!</div>
+                        <!-- map-choice-dungeon / map-choice-details: JS 가 t() 로 동적 채움 -->
                         <div class="map-choice-dungeon" id="map-choice-dungeon"></div>
                         <div class="map-choice-details" id="map-choice-details"></div>
                         <div class="map-choice-buttons">
-                            <button class="btn-sell-map" id="btn-sell-map">Sell Map</button>
-                            <button class="btn-keep-map" id="btn-keep-map">Keep Map</button>
+                            <button class="btn-sell-map" id="btn-sell-map" data-i18n="overlay.map_choice.sell">Sell Map</button>
+                            <button class="btn-keep-map" id="btn-keep-map" data-i18n="overlay.map_choice.keep">Keep Map</button>
                         </div>
                     </div>
                 </div>
@@ -151,39 +155,40 @@
                 </div>
 
                 <div class="game-ui">
-                    <div class="food-warning" id="food-warning" style="display:none;">No food! Your serpa is starving!</div>
+                    <div class="food-warning" id="food-warning" style="display:none;" data-i18n="food_warning">No food! Your serpa is starving!</div>
                     <div class="stats" id="stats-panel">
                         <div class="stat" data-priority="extra">
-                            <span class="stat-label">Run</span>
+                            <span class="stat-label" data-i18n="stat.run">Run</span>
                             <span class="stat-value run-value" id="run-text">#1</span>
                         </div>
                         <div class="stat" data-priority="core">
-                            <span class="stat-label">Gold</span>
+                            <span class="stat-label" data-i18n="stat.gold">Gold</span>
                             <span class="stat-value gold-value" id="gold-text">500</span>
                         </div>
                         <div class="stat" data-priority="extra" id="food-stat" style="display:none;">
-                            <span class="stat-label">Food</span>
+                            <span class="stat-label" data-i18n="stat.food">Food</span>
                             <span class="stat-value food-value" id="food-text">0</span>
                         </div>
                         <div class="stat" data-priority="core">
-                            <span class="stat-label">HP</span>
+                            <span class="stat-label" data-i18n="stat.hp">HP</span>
                             <div class="hp-bar">
                                 <div class="hp-fill" id="hp-fill"></div>
                             </div>
                             <span class="stat-value" id="hp-text">100/100</span>
                         </div>
                         <div class="stat" data-priority="core">
-                            <span class="stat-label">Steps</span>
+                            <span class="stat-label" data-i18n="stat.steps">Steps</span>
                             <span class="stat-value" id="steps-text">0</span>
                         </div>
                         <div class="stat" data-priority="extra">
-                            <span class="stat-label">Reward</span>
+                            <span class="stat-label" data-i18n="stat.reward">Reward</span>
                             <span class="stat-value" id="reward-text">0.0</span>
                         </div>
                         <div class="stat" data-priority="extra" id="clear-rate-stat" style="display:none;">
-                            <span class="stat-label">Clear Rate</span>
+                            <span class="stat-label" data-i18n="stat.clear_rate">Clear Rate</span>
                             <span class="stat-value" id="clear-rate-text">-</span>
                         </div>
+                        <!-- stats-toggle: JS 가 t('stats_toggle.show_more/less') 로 동적 갱신 -->
                         <button type="button" class="stats-toggle" id="stats-toggle" aria-expanded="false">더보기</button>
                     </div>
 
@@ -191,96 +196,97 @@
 
                     <!-- B-106: 상시 success-rate sparkline (RL 양념의 시각 시그니처, D-4 근거 4) -->
                     <div class="sparkline-wrap" id="sparkline-wrap">
-                        <span class="sparkline-label">학습 성공률</span>
+                        <span class="sparkline-label" data-i18n="sparkline.label">학습 성공률</span>
                         <canvas id="sparkline-canvas" width="240" height="28"></canvas>
                         <span class="sparkline-value" id="sparkline-value">—</span>
                     </div>
                     <!-- B-207: silent_q modifier 활성 시 Q-heatmap/sparkline 자리 placeholder (D-4 정체성 보호) -->
                     <!-- 인라인 display:none 은 초기 hidden 보장용. JS `_syncAgentModifiers` 가 muted 시 빈 문자열로 클리어 → CSS `.silent-q-placeholder { display: flex }` 복귀 -->
                     <div class="silent-q-placeholder" id="silent-q-placeholder" style="display: none;">
-                        <span class="silent-q-label">침묵의 학습</span>
-                        <span class="silent-q-desc">시각화 차단됨 — 모디파이어 효과</span>
+                        <span class="silent-q-label" data-i18n="placeholder.silent_q.title">침묵의 학습</span>
+                        <span class="silent-q-desc" data-i18n="placeholder.silent_q.desc">시각화 차단됨 — 모디파이어 효과</span>
                     </div>
                 </div>
             </div>
 
             <div class="controls">
                 <div class="control-section" id="char-section">
-                    <h3>캐릭터</h3>
+                    <h3 data-i18n="section.character">캐릭터</h3>
                     <div class="character-grid">
                         <button class="char-card active" data-char="qkun">
-                            <span class="char-name">Q군</span>
+                            <span class="char-name" data-i18n="char.qkun">Q군</span>
                             <span class="char-algo">Q-Learning</span>
                         </button>
                         <button class="char-card" data-char="scout">
-                            <span class="char-name">스카우트</span>
+                            <span class="char-name" data-i18n="char.scout">스카우트</span>
                             <span class="char-algo">Local Q</span>
                         </button>
                         <button class="char-card" data-char="sarsa">
-                            <span class="char-name">사르사</span>
+                            <span class="char-name" data-i18n="char.sarsa">사르사</span>
                             <span class="char-algo">SARSA</span>
                         </button>
                         <button class="char-card" data-char="monte">
-                            <span class="char-name">몬테</span>
+                            <span class="char-name" data-i18n="char.monte">몬테</span>
                             <span class="char-algo">Monte Carlo</span>
                         </button>
                         <button class="char-card" data-char="tracer">
-                            <span class="char-name">트레이서</span>
+                            <span class="char-name" data-i18n="char.tracer">트레이서</span>
                             <span class="char-algo">SARSA(λ)</span>
                         </button>
                         <button class="char-card" data-char="dyna">
-                            <span class="char-name">다이나</span>
+                            <span class="char-name" data-i18n="char.dyna">다이나</span>
                             <span class="char-algo">Dyna-Q</span>
                         </button>
                         <button class="char-card" data-char="gradi">
-                            <span class="char-name">그래디</span>
+                            <span class="char-name" data-i18n="char.gradi">그래디</span>
                             <span class="char-algo">REINFORCE</span>
                         </button>
                         <button class="char-card" data-char="critic">
-                            <span class="char-name">크리틱</span>
+                            <span class="char-name" data-i18n="char.critic">크리틱</span>
                             <span class="char-algo">Actor-Critic</span>
                         </button>
                         <button class="char-card" data-char="qvkun">
-                            <span class="char-name">QV군</span>
+                            <span class="char-name" data-i18n="char.qvkun">QV군</span>
                             <span class="char-algo">QV-Learning</span>
                         </button>
                         <button class="char-card" data-char="acla">
-                            <span class="char-name">아클라</span>
+                            <span class="char-name" data-i18n="char.acla">아클라</span>
                             <span class="char-algo">ACLA</span>
                         </button>
                         <button class="char-card" data-char="ensemble">
-                            <span class="char-name">앙상블</span>
+                            <span class="char-name" data-i18n="char.ensemble">앙상블</span>
                             <span class="char-algo">Ensemble</span>
                         </button>
                         <button class="char-card" data-char="exsa">
-                            <span class="char-name">에크사</span>
+                            <span class="char-name" data-i18n="char.exsa">에크사</span>
                             <span class="char-algo">Exp SARSA</span>
                         </button>
                         <button class="char-card" data-char="doubleq">
-                            <span class="char-name">더블Q</span>
+                            <span class="char-name" data-i18n="char.doubleq">더블Q</span>
                             <span class="char-algo">Double Q</span>
                         </button>
                         <button class="char-card" data-char="treeback">
-                            <span class="char-name">트리백</span>
+                            <span class="char-name" data-i18n="char.treeback">트리백</span>
                             <span class="char-algo">Tree Backup</span>
                         </button>
                         <button class="char-card" data-char="sweeper">
-                            <span class="char-name">스위퍼</span>
+                            <span class="char-name" data-i18n="char.sweeper">스위퍼</span>
                             <span class="char-algo">Pri. Sweep</span>
                         </button>
                     </div>
+                    <!-- character-desc: JS 가 t('character.desc.<charId>') 로 동적 갱신 -->
                     <p class="character-desc" id="character-desc">
                         좌표를 외워서 학습합니다. 던전별 전문가.
                     </p>
                 </div>
 
                 <div class="control-section" id="stats-section">
-                    <h3>세르파 현황</h3>
+                    <h3 data-i18n="section.stats">세르파 현황</h3>
                     <div class="stats-list"></div>
                 </div>
 
                 <div class="control-section" id="dungeon-section">
-                    <h3>던전</h3>
+                    <h3 data-i18n="section.dungeon">던전</h3>
                     <select id="dungeon-select" style="display:none;">
                         <option value="level_01_easy">Lv.1 Tutorial</option>
                         <option value="level_02_trap">Lv.2 First Trap</option>
@@ -311,52 +317,54 @@
                         <option value="level_31_generated_rooms">Lv.31 Rooms (50×50)</option>
                     </select>
                     <div class="dungeon-map-container" id="dungeon-map"></div>
-                    <button id="btn-reset">초기화 (R)</button>
+                    <button id="btn-reset" data-i18n="dungeon.reset">초기화 (R)</button>
+                    <!-- hint-area: JS 가 t('dungeon.hint.<id>') 로 동적 채움 -->
                     <div class="hint-area" id="hint-area"></div>
                 </div>
 
                 <div class="control-section" id="provisions-section">
-                    <h3>보급</h3>
+                    <h3 data-i18n="section.provisions">보급</h3>
                     <div class="provisions-controls">
-                        <span class="speed-label">식량:</span>
+                        <span class="speed-label" data-i18n="provisions.food_label">식량:</span>
                         <input type="number" id="food-amount" class="size-input" value="50" min="1" max="9999">
+                        <!-- food-cost: JS 가 t('provisions.cost_format', {cost}) 로 동적 갱신 -->
                         <span class="speed-label provisions-cost" id="food-cost">(50G)</span>
-                        <button class="btn-small btn-buy-food" id="btn-buy-food">구매</button>
+                        <button class="btn-small btn-buy-food" id="btn-buy-food" data-i18n="provisions.buy_food">구매</button>
                     </div>
                     <div class="provisions-info" id="provisions-info"></div>
                     <div class="item-shop" id="item-shop">
-                        <span class="speed-label">아이템:</span>
-                        <button class="btn-small btn-buy-item" data-item="escape_rope">탈출 로프 100G</button>
-                        <button class="btn-small btn-buy-item" data-item="defense_contract">방어 계약 150G</button>
-                        <button class="btn-small btn-buy-item" data-item="trap_nullify">함정 무효 200G</button>
+                        <span class="speed-label" data-i18n="provisions.items_label">아이템:</span>
+                        <button class="btn-small btn-buy-item" data-item="escape_rope" data-i18n="provisions.item.escape_rope">탈출 로프 100G</button>
+                        <button class="btn-small btn-buy-item" data-item="defense_contract" data-i18n="provisions.item.defense_contract">방어 계약 150G</button>
+                        <button class="btn-small btn-buy-item" data-item="trap_nullify" data-i18n="provisions.item.trap_nullify">함정 무효 200G</button>
                     </div>
                     <div class="inventory-display" id="inventory-display"></div>
                 </div>
 
                 <div class="control-section" id="farming-section">
-                    <h3>파밍</h3>
+                    <h3 data-i18n="section.farming">파밍</h3>
                     <div id="farming-list"></div>
                 </div>
 
                 <div class="control-section" id="training-section">
-                    <h3>AI 학습</h3>
+                    <h3 data-i18n="section.training">AI 학습</h3>
                     <div class="speed-buttons" id="speed-buttons">
-                        <span class="speed-label">속도:</span>
+                        <span class="speed-label" data-i18n="training.speed_label">속도:</span>
                         <button class="btn-speed active" data-speed="1">1x</button>
                         <button class="btn-speed" data-speed="2">2x</button>
                         <button class="btn-speed" data-speed="3">3x</button>
-                        <button class="btn-speed" data-speed="0">즉시</button>
+                        <button class="btn-speed" data-speed="0" data-i18n="training.speed.instant">즉시</button>
                     </div>
                     <div class="train-mode-select">
-                        <span class="speed-label">모드:</span>
+                        <span class="speed-label" data-i18n="training.mode_label">모드:</span>
                         <select id="train-mode">
-                            <option value="until_success">성공까지</option>
-                            <option value="continuous">계속</option>
+                            <option value="until_success" data-i18n="training.mode.until_success">성공까지</option>
+                            <option value="continuous" data-i18n="training.mode.continuous">계속</option>
                         </select>
                     </div>
                     <div class="train-buttons">
-                        <button id="btn-start-train" class="btn-train">학습 시작</button>
-                        <button id="btn-stop-train" class="btn-stop" disabled>정지</button>
+                        <button id="btn-start-train" class="btn-train" data-i18n="training.btn.start">학습 시작</button>
+                        <button id="btn-stop-train" class="btn-stop" disabled data-i18n="training.btn.stop">정지</button>
                     </div>
                     <div class="train-progress" id="train-progress" style="display: none;">
                         <div class="progress-bar">
@@ -368,43 +376,43 @@
                 </div>
 
                 <div class="control-section" id="gamemode-section">
-                    <h3>게임 모드</h3>
+                    <h3 data-i18n="section.game_mode">게임 모드</h3>
                     <label class="checkbox-label">
-                        <input type="checkbox" id="fog-of-war" checked> 전장의 안개
+                        <input type="checkbox" id="fog-of-war" checked> <span data-i18n="game_mode.fog_of_war">전장의 안개</span>
                     </label>
                     <label class="checkbox-label">
-                        <input type="checkbox" id="sound-toggle" checked> 소리
+                        <input type="checkbox" id="sound-toggle" checked> <span data-i18n="game_mode.sound">소리</span>
                     </label>
                 </div>
 
                 <div class="control-section" id="visualization-section">
-                    <h3>시각화</h3>
+                    <h3 data-i18n="section.visualization">시각화</h3>
                     <label class="checkbox-label">
-                        <input type="checkbox" id="show-qvalues" checked> Q값 보기
+                        <input type="checkbox" id="show-qvalues" checked> <span data-i18n="visualization.q_values">Q값 보기</span>
                     </label>
                     <label class="checkbox-label">
-                        <input type="checkbox" id="show-policy"> 정책 보기
+                        <input type="checkbox" id="show-policy"> <span data-i18n="visualization.policy">정책 보기</span>
                     </label>
                 </div>
 
                 <div class="control-section" id="controls-section">
-                    <h3>조작</h3>
+                    <h3 data-i18n="section.controls">조작</h3>
                     <div class="key-hints">
-                        <span class="key">↑↓←→</span> 이동
+                        <span class="key">↑↓←→</span> <span data-i18n="controls.move_keys">이동</span>
                     </div>
                 </div>
 
                 <div class="control-section">
-                    <h3>범례</h3>
+                    <h3 data-i18n="section.legend">범례</h3>
                     <div class="legend">
-                        <div class="legend-item"><span class="tile-preview start"></span> 시작</div>
-                        <div class="legend-item"><span class="tile-preview goal"></span> 목표 (+100)</div>
-                        <div class="legend-item"><span class="tile-preview trap"></span> 함정 (-10 HP)</div>
-                        <div class="legend-item"><span class="tile-preview heal"></span> 회복 (+10 HP)</div>
-                        <div class="legend-item"><span class="tile-preview pit"></span> 구덩이 (즉사)</div>
-                        <div class="legend-item"><span class="tile-preview gold"></span> 골드 (+10)</div>
-                        <div class="legend-item"><span class="tile-preview monster"></span> 몬스터 (-30 HP)</div>
-                        <div class="legend-item"><span class="tile-preview wall"></span> 벽</div>
+                        <div class="legend-item"><span class="tile-preview start"></span> <span data-i18n="legend.start">시작</span></div>
+                        <div class="legend-item"><span class="tile-preview goal"></span> <span data-i18n="legend.goal">목표 (+100)</span></div>
+                        <div class="legend-item"><span class="tile-preview trap"></span> <span data-i18n="legend.trap">함정 (-10 HP)</span></div>
+                        <div class="legend-item"><span class="tile-preview heal"></span> <span data-i18n="legend.heal">회복 (+10 HP)</span></div>
+                        <div class="legend-item"><span class="tile-preview pit"></span> <span data-i18n="legend.pit">구덩이 (즉사)</span></div>
+                        <div class="legend-item"><span class="tile-preview gold"></span> <span data-i18n="legend.gold">골드 (+10)</span></div>
+                        <div class="legend-item"><span class="tile-preview monster"></span> <span data-i18n="legend.monster">몬스터 (-30 HP)</span></div>
+                        <div class="legend-item"><span class="tile-preview wall"></span> <span data-i18n="legend.wall">벽</span></div>
                     </div>
                 </div>
             </div>
@@ -584,63 +592,63 @@
             <!-- T2B-1: Daily challenge mode panel -->
             <div class="controls daily-controls" id="daily-controls" style="display: none;">
                 <div class="control-section daily-intro">
-                    <h3>오늘의 도전</h3>
+                    <h3 data-i18n="daily.title">오늘의 도전</h3>
                     <div class="daily-meta">
                         <div class="daily-date-row">
-                            <span class="daily-label">날짜</span>
+                            <span class="daily-label" data-i18n="daily.label.date">날짜</span>
                             <span class="daily-date" id="daily-date">—</span>
                         </div>
                         <div class="daily-seed-row">
-                            <span class="daily-label">시드</span>
+                            <span class="daily-label" data-i18n="daily.label.seed">시드</span>
                             <span class="daily-seed" id="daily-seed">—</span>
                         </div>
                         <div class="daily-modifiers-row" id="daily-modifiers-row" style="display:none;">
-                            <span class="daily-label">모디파이어</span>
+                            <span class="daily-label" data-i18n="daily.label.modifiers">모디파이어</span>
                             <span class="daily-modifiers" id="daily-modifiers">—</span>
                         </div>
                         <!-- T2B-2: two_only character pool -->
                         <div class="daily-pool-row" id="daily-pool-row" style="display:none;">
-                            <span class="daily-label">사용 가능</span>
+                            <span class="daily-label" data-i18n="daily.label.pool">사용 가능</span>
                             <div class="daily-character-pool" id="daily-character-pool"></div>
                         </div>
                     </div>
-                    <p class="daily-desc">매일 같은 시드. 어제의 자신과 겨룬다.</p>
+                    <p class="daily-desc" data-i18n="daily.desc">매일 같은 시드. 어제의 자신과 겨룬다.</p>
                 </div>
 
                 <div class="control-section daily-actions">
-                    <button id="btn-daily-start" class="btn-daily-start">도전</button>
-                    <button id="btn-daily-retry" class="btn-daily-retry" style="display:none;">다시 도전</button>
+                    <button id="btn-daily-start" class="btn-daily-start" data-i18n="daily.btn.start">도전</button>
+                    <button id="btn-daily-retry" class="btn-daily-retry" style="display:none;" data-i18n="daily.btn.retry">다시 도전</button>
                 </div>
 
                 <div class="control-section daily-yesterday" id="daily-yesterday" style="display:none;">
-                    <h3>어제 기록</h3>
+                    <h3 data-i18n="daily.yesterday">어제 기록</h3>
                     <div class="daily-yesterday-content" id="daily-yesterday-content">—</div>
                 </div>
 
                 <div class="control-section daily-today" id="daily-today" style="display:none;">
-                    <h3>오늘 기록</h3>
+                    <h3 data-i18n="daily.today">오늘 기록</h3>
                     <div class="daily-today-content" id="daily-today-content">—</div>
                 </div>
 
                 <div class="control-section daily-week" id="daily-week" style="display:none;">
-                    <h3>최근 7일</h3>
+                    <h3 data-i18n="daily.week">최근 7일</h3>
                     <div class="daily-week-content" id="daily-week-content"></div>
                 </div>
             </div>
         </main>
 
         <!-- B-202: mobile bottom tab bar (≤700px only) — anchors to main sections -->
-        <nav class="bottom-tabs" id="bottom-tabs" aria-label="섹션 이동">
-            <button type="button" class="bottom-tab" data-target="#char-section">캐릭터</button>
-            <button type="button" class="bottom-tab" data-target="#dungeon-section">던전</button>
-            <button type="button" class="bottom-tab" data-target="#training-section">학습</button>
-            <button type="button" class="bottom-tab" data-target="#provisions-section">보급</button>
+        <nav class="bottom-tabs" id="bottom-tabs" data-i18n-aria-label="bottom_tab.aria_label" aria-label="섹션 이동">
+            <button type="button" class="bottom-tab" data-target="#char-section" data-i18n="bottom_tab.character">캐릭터</button>
+            <button type="button" class="bottom-tab" data-target="#dungeon-section" data-i18n="bottom_tab.dungeon">던전</button>
+            <button type="button" class="bottom-tab" data-target="#training-section" data-i18n="bottom_tab.training">학습</button>
+            <button type="button" class="bottom-tab" data-target="#provisions-section" data-i18n="bottom_tab.provisions">보급</button>
             <!-- "#stats-panel" = 게임 UI 의 .stats 패널 (B-204). "#stats-section" (세르파 현황) 과 혼동 주의. -->
-            <button type="button" class="bottom-tab" data-target="#stats-panel">통계</button>
+            <button type="button" class="bottom-tab" data-target="#stats-panel" data-i18n="bottom_tab.stats">통계</button>
         </nav>
 
         <footer>
-            <p>Arrow keys to move | R to reset | Reach the green goal!</p>
+            <p data-i18n="footer.controls_hint">Arrow keys to move | R to reset | Reach the green goal!</p>
         </footer>
         </div>
     </div><!-- /screen-dev -->
