@@ -26,6 +26,10 @@ const HIRE_COSTS = {
 
 const STARTING_GOLD = 800;
 
+// B-203: cumulative death limit per playthrough (D-4 verdict — Q-table noise
+// rejected, this is the chosen tension mechanism). NG+ resets to 0.
+export const DEATH_LIMIT = 4;
+
 // B-3: Character base stats and upgrade costs
 const CHARACTER_STATS = {
     qkun:     { baseStr: 100, strPerLv: 30, secondary: null,      cost: 100 },
@@ -539,6 +543,7 @@ export class RunState {
     recordDeath() {
         this.deathCount++;
         this.saveMeta();
+        return this.deathCount >= DEATH_LIMIT;  // B-203: caller branches on this
     }
 
     recordSerpaClear(charName) {
@@ -626,6 +631,32 @@ export class RunState {
         this.unlockedDungeons = new Set(['level_01_easy']);
 
         // Reset per-run economy state
+        this.answerPaths = {};
+        this.characterLevels = {};
+        this.farmingAssignments = {};
+        this.mapStatus = {};
+        this.purchasedHints = {};
+        this.treasureStatus = {};
+        this.inventory = {};
+
+        this.saveMeta();
+        this.saveRunState();
+    }
+
+    // B-203: cumulative death limit reached — fresh playthrough.
+    // Distinct from startNewGamePlus (no best-record update, no ngPlusCount++).
+    resetForDeathLimit() {
+        this.runNumber = 1;
+        this.totalSteps = 0;
+        this.deathCount = 0;
+        this.serpaClearCounts = {};
+        this.totalFarmingSteps = 0;
+
+        this.gold = STARTING_GOLD;
+        this.food = 0;
+        this.hiredCharacters = new Set();
+        this.clearedDungeons = new Set();
+        this.unlockedDungeons = new Set(['level_01_easy']);
         this.answerPaths = {};
         this.characterLevels = {};
         this.farmingAssignments = {};

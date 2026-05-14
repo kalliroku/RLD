@@ -11,7 +11,7 @@ import { TileType, TileProperties } from './game/tiles.js';
 import { sound } from './game/sound.js';
 import { DungeonEditor } from './game/editor.js';
 import { MultiStageGrid } from './game/multi-stage-grid.js';
-import { RunState, CHARACTER_STATS, CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS, HIRE_COSTS } from './game/run-state.js';
+import { RunState, CHARACTER_STATS, CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS, HIRE_COSTS, DEATH_LIMIT } from './game/run-state.js';
 import { CHARACTERS, DUNGEON_CONFIG, DUNGEON_ORDER, BASE_OP_COST, DUNGEON_HINTS,
          MAX_EPISODES, CONVERGENCE_WINDOW, CONVERGENCE_THRESHOLD,
          createAlgorithm as createAlgorithmFromConfig } from './game/game-config.js';
@@ -311,6 +311,12 @@ class Game {
         const maxHp = rs.getMaxHp(this.currentCharacter);
         const hp = this.agent ? this.agent.hp : maxHp;
         document.getElementById('guild-hp').textContent = `HP ${hp}/${maxHp}`;
+        // B-203: cumulative death counter — tension when near limit.
+        const deathsEl = document.getElementById('guild-deaths');
+        if (deathsEl) {
+            deathsEl.textContent = `사망 ${rs.deathCount}/${DEATH_LIMIT}`;
+            deathsEl.classList.toggle('guild-res-warn', rs.deathCount >= DEATH_LIMIT - 1);
+        }
     }
 
     _updateGuildQuests() {
@@ -2882,7 +2888,9 @@ class Game {
             return;
         }
 
-        this.runState.recordDeath();
+        // B-203: cumulative death limit (D-4 verdict — tension mechanism).
+        // recordDeath returns true once deathCount ≥ DEATH_LIMIT.
+        const reachedDeathLimit = this.runState.recordDeath();
         // C-4: Treasure fail on game over
         if (this.carryingTreasure) {
             this.runState.failTreasure(this.currentDungeon);
@@ -2890,16 +2898,21 @@ class Game {
         }
         this.isGameOver = true;
         this.done = true;
+        this.deathLimitReached = reachedDeathLimit;
 
         // Save meta (totalSteps) before showing overlay
         this.runState.saveMeta();
 
         // Show overlay
-        this.gameOverCause.textContent = cause;
+        const deathLine = reachedDeathLimit
+            ? ` — 누적 사망 한도 도달 (${this.runState.deathCount}/${DEATH_LIMIT}). 다음 런으로.`
+            : '';
+        this.gameOverCause.textContent = cause + deathLine;
         this.gameOverStats.innerHTML = [
             `Run #${this.runState.runNumber}`,
             `Gold: ${this.runState.gold}G`,
             `Cleared: ${this.runState.clearedDungeons.size} dungeons`,
+            `Deaths: ${this.runState.deathCount}/${DEATH_LIMIT}`,
             `Steps this run: ${this.steps}`
         ].join('<br>');
 
@@ -2908,10 +2921,19 @@ class Game {
     }
 
     startNewRun() {
+        // Entry from game-over overlay AND from the guild menu "새 런" button.
+        // deathLimitReached is only true when triggered by game-over after limit hit;
+        // manual guild "새 런" always takes the normal startNewRun branch below.
         this.isGameOver = false;
         this.gameOverOverlay.style.display = 'none';
 
-        this.runState.startNewRun();
+        // B-203: death-limit branch — fresh playthrough instead of incremented run.
+        if (this.deathLimitReached) {
+            this.runState.resetForDeathLimit();
+            this.deathLimitReached = false;
+        } else {
+            this.runState.startNewRun();
+        }
         this.updateCharacterGrid();
         this.updateDungeonSelect();
         this.loadCustomDungeonOptions();
