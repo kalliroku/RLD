@@ -2211,6 +2211,16 @@ body.editor-mode .dpad-container {
     letter-spacing: 6px;
     color: var(--accent);
     text-shadow: 0 0 30px rgba(233, 69, 96, 0.6), 0 0 60px rgba(233, 69, 96, 0.3);
+    text-align: center;
+    max-width: 100%;
+}
+
+/* 모바일: 로고 overflow 방지 (420px viewport 에서 "RL DUNGEON" 10글자 잘림) */
+@media (max-width: 700px) {
+    .title-logo {
+        font-size: 2.2rem;
+        letter-spacing: 3px;
+    }
 }
 
 .title-subtitle {
