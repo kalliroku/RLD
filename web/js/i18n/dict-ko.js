@@ -35,9 +35,9 @@ export const KO = {
     // === Title screen ===
     'title.logo': 'RL DUNGEON',
     'title.tagline': '멍청한 세르파와 던전 답파',
-    'title.new_game': 'New Game',
-    'title.continue': 'Continue',
-    'title.dev_mode': 'Dev Mode',
+    'title.new_game': '새 게임',
+    'title.continue': '이어하기',
+    'title.dev_mode': '개발자 모드',
 
     // === Guild hall ===
     'guild.title': 'RL Dungeon',
@@ -46,51 +46,51 @@ export const KO = {
     'guild.food_format': '{n} Food',
     'guild.hp_format': 'HP {cur}/{max}',
     'guild.deaths_format': '사망 {cur}/{max}',
-    'guild.tab.quest': 'Quest',
-    'guild.tab.party': 'Party',
-    'guild.tab.shop': 'Shop',
-    'guild.tab.map': 'Map',
+    'guild.tab.quest': '퀘스트',
+    'guild.tab.party': '파티',
+    'guild.tab.shop': '상점',
+    'guild.tab.map': '지도',
 
     // === Dev Mode header ===
-    'dev.back_to_game': 'Back to Game',
+    'dev.back_to_game': '게임으로 돌아가기',
     'dev.title': 'RL Dungeon',
     'dev.subtitle': '강화학습 던전 탐험 — Dev Mode',
 
     // === Mode tabs ===
-    'mode.play': 'Play',
+    'mode.play': '플레이',
     'mode.daily': '오늘의 도전',
-    'mode.editor': 'Editor',
+    'mode.editor': '에디터',
 
     // === Game area ===
     'game.minimap': '미니맵',
     'game.step0_hint': '방향키 / WASD 로 세르파를 움직여 녹색 G 에 도달.',
 
     // === Overlays ===
-    'overlay.game_over.title': 'GAME OVER',
-    'overlay.game_over.note': 'Q-table is preserved. Your Sherpas remember everything.',
-    'overlay.game_over.new_run': 'New Run',
-    'overlay.ending.title': 'ALL DUNGEONS CLEARED!',
-    'overlay.ending.note': 'Q-tables preserved. Can you beat your record?',
-    'overlay.ending.new_game_plus': 'New Game+',
-    'overlay.briefing.back': 'Back',
-    'overlay.briefing.deploy': 'Deploy',
-    'overlay.map_choice.title': 'FIRST CLEAR!',
-    'overlay.map_choice.sell': 'Sell Map',
-    'overlay.map_choice.keep': 'Keep Map',
+    'overlay.game_over.title': 'GAME OVER',  // 게임 관례 영문 보존
+    'overlay.game_over.note': 'Q-테이블은 보존됩니다. 세르파는 모든 것을 기억합니다.',
+    'overlay.game_over.new_run': '새 런',
+    'overlay.ending.title': '모든 던전 답파!',
+    'overlay.ending.note': 'Q-테이블은 보존됩니다. 자신의 기록을 갱신해보세요.',
+    'overlay.ending.new_game_plus': 'New Game+',  // NG+ 게임 관례 영문 보존
+    'overlay.briefing.back': '뒤로',
+    'overlay.briefing.deploy': '출진',
+    'overlay.map_choice.title': '첫 클리어!',
+    'overlay.map_choice.sell': '지도 판매',
+    'overlay.map_choice.keep': '지도 보관',
 
     // === Stats panel ===
-    'stat.run': 'Run',
-    'stat.gold': 'Gold',
-    'stat.food': 'Food',
-    'stat.hp': 'HP',
-    'stat.steps': 'Steps',
-    'stat.reward': 'Reward',
-    'stat.clear_rate': 'Clear Rate',
+    'stat.run': '런',
+    'stat.gold': '골드',
+    'stat.food': '식량',
+    'stat.hp': 'HP',  // 게임 관례 약어 보존
+    'stat.steps': '스텝',
+    'stat.reward': '보상',
+    'stat.clear_rate': '클리어율',
     'stats_toggle.show_more': '더보기',
     'stats_toggle.show_less': '접기',
 
     // === Game UI ===
-    'food_warning': 'No food! Your Sherpa is starving!',
+    'food_warning': '식량 부족! 세르파가 굶주리고 있습니다!',
     'sparkline.label': '학습 성공률',
     'placeholder.silent_q.title': '침묵의 학습',
     'placeholder.silent_q.desc': '시각화 차단됨 — 모디파이어 효과',
@@ -192,7 +192,7 @@ export const KO = {
     'bottom_tab.aria_label': '섹션 이동',
 
     // === Footer ===
-    'footer.controls_hint': 'Arrow keys to move | R to reset | Reach the green goal!',
+    'footer.controls_hint': '방향키로 이동 | R 키로 초기화 | 녹색 목표에 도달하세요!',
 
     // === Modifier band (T2B-2) ===
     'modifier_band.this_run': '이번 런:',
