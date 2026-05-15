@@ -10,7 +10,8 @@ import { t } from '../i18n/index.js';
 const STORAGE_KEY = 'rld_tutorial';
 
 // B-107/T2B-3: 한국어 튜토리얼. 텍스트는 i18n 사전 'tutorial.<id>' 로 분리 (M5).
-const STEPS = [
+// W4: i18n sync-check 에서 import 하기 위해 export (build-time assertion).
+export const STEPS = [
     { id: 'welcome', trigger: 'init' },
     { id: 'first_dungeon', trigger: 'first_clear' },
     { id: 'ai_training', trigger: 'first_train' },

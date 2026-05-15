@@ -22,6 +22,7 @@
 import { MODIFIERS } from '../game/modifiers.js';
 import { CHARACTERS } from '../game/game-config.js';
 import { CHAPTER_CONFIG, ITEMS } from '../game/run-state.js';
+import { STEPS as TUTORIAL_STEPS } from '../game/tutorial.js';
 import { KO } from './dict-ko.js';
 import { EN } from './dict-en.js';
 
@@ -66,7 +67,15 @@ for (const { chapter } of CHAPTER_CONFIG) {
     }
 }
 
-// 5. 양사전 키 수 동기 (전체 parity — 신규 키 추가 시 한쪽만 누락 방지)
+// 5. tutorial — tutorial.{id} for each STEPS entry (W4: W1 사각지대 마감)
+//    tutorial.dismiss 같은 고정 키는 parity check (#6) 가 잡음.
+for (const { id } of TUTORIAL_STEPS) {
+    for (const lang of ['ko', 'en']) {
+        check(lang, `tutorial.${id}`, `TUTORIAL_STEPS[${id}]`);
+    }
+}
+
+// 6. 양사전 키 수 동기 (전체 parity — 신규 키 추가 시 한쪽만 누락 방지)
 const koKeys = new Set(Object.keys(KO));
 const enKeys = new Set(Object.keys(EN));
 for (const k of koKeys) {
@@ -82,6 +91,7 @@ const summary = {
     characters: Object.keys(CHARACTERS).length,
     items: Object.keys(ITEMS).length,
     chapters: CHAPTER_CONFIG.length,
+    tutorial: TUTORIAL_STEPS.length,
     ko_keys: koKeys.size,
     en_keys: enKeys.size,
     errors: errors.length,
@@ -89,7 +99,7 @@ const summary = {
 
 if (errors.length === 0) {
     console.log('✓ i18n sync OK');
-    console.log(`  modifiers: ${summary.modifiers} / characters: ${summary.characters} / items: ${summary.items} / chapters: ${summary.chapters}`);
+    console.log(`  modifiers: ${summary.modifiers} / characters: ${summary.characters} / items: ${summary.items} / chapters: ${summary.chapters} / tutorial: ${summary.tutorial}`);
     console.log(`  ko keys: ${summary.ko_keys} / en keys: ${summary.en_keys} (parity ${summary.ko_keys === summary.en_keys ? '✓' : '✗'})`);
     process.exit(0);
 } else {
