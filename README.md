@@ -12,26 +12,16 @@
 
 ## 현재 진행 상황
 
-| Phase | 내용 | 상태 |
-|-------|------|------|
-| Phase 0 | 프로젝트 셋업 | ✅ 완료 |
-| Phase 1 | 그리드 월드 (타일, 던전, 렌더링) | ✅ 완료 |
-| Phase 2 | 에이전트 (이동, HP, 보상) | ✅ 완료 |
-| Phase 3 | 게임 로직 (Gymnasium 환경) | ✅ 완료 |
-| Phase 4 | Q-Learning | ✅ 완료 |
-| Phase 5 | 웹 UI | ✅ 완료 |
-| Phase 6 | 게임 확장 (이코노미, 전장의 안개) | ✅ 완료 |
-| Phase 7 | 던전 언락, 몬스터, LfD | ✅ 완료 |
-| Phase 8 | Q-Table 저장, 모바일 터치, AI 학습 시각화 | ✅ 완료 |
-| Phase 9 | 쇼케이스 스테이지 확장 + 골드 소비 | ✅ 완료 |
-| Phase 10 | 던전 에디터 (브라우저 내 제작 도구) | ✅ 완료 |
-| Phase 11 | 멀티스테이지 던전 | ✅ 완료 |
-| Phase 12 | Wiering & van Hasselt 앙상블 (QV, ACLA, Ensemble) | ✅ 완료 |
-| Phase 13 | DQN 실험 (Vanilla JS MLP) — 코드 완성, UI 미등록 | 🔬 실험 |
-| Phase 14 | 논문 기반 검토 + Expected SARSA, Double Q-Learning, 확률적 던전, 25×25 미로 | ✅ 완료 |
-| Phase 15 | n-step Tree Backup, Prioritized Sweeping, BSP+CA 절차적 생성, 50×50 던전 | ✅ 완료 |
-| Act 1 완료 | 로그라이크 뼈대 + 27 던전 (B-103 Ch.5 축소 후) + UI/UX 폴리시 | ✅ 완료 |
-| M3 본진 | 시드 기반 일일 챌린지 + 모디파이어 시스템 (MVP 3종) | ⏳ 예정 |
+| Milestone | 내용 | 상태 |
+|-----------|------|------|
+| Phase 0~15 | 알고리즘 15종 + 27 던전 + 던전 에디터 + 절차적 생성 (50×50) + LfD + Q-Table 저장 | ✅ 완료 |
+| M1 | 정체성 그림 그리기 (3축 비판 + RL 포지셔닝 디베이트) | ✅ 완료 |
+| M2 | P0 4건 (정체성 카피 통일 + 가차 컷 + Step-0 진입 모드) | ✅ 완료 |
+| M3 | T2B 본진 — 시드 기반 일일 챌린지 + 모디파이어 MVP 3종 + 알고리즘=캐릭터 | ✅ 완료 (alpha) |
+| M4 | 모바일 fit + 사망 페널티 (DEATH_LIMIT=4) + 모디파이어 12종 (환경 6 + 제약 6) | ✅ 완료 (beta) |
+| M5 | 한영 i18n (1차 ✅ + 2차 ✅, 222키) → 출시 페이지 + BGM + 플레이테스트 → 1.0 | ⏳ 진행 중 |
+
+자세한 그림: [docs/PM/VISION.md](docs/PM/VISION.md). 사이클별 인계: [docs/PM/handoffs/](docs/PM/handoffs/).
 
 ## 설치
 
@@ -77,7 +67,8 @@ python run_gym_env.py
 ```bash
 cd web
 python -m http.server 8080
-# 브라우저에서 http://localhost:8080/ 접속
+# http://localhost:8080/          → 랜딩 페이지 (소개)
+# http://localhost:8080/play.html → 게임 본체
 ```
 - 방향키/WASD: 이동 (모바일: 스와이프 또는 D-pad)
 - AI Training: 시각적 학습 (1x/2x/3x 속도) 또는 Instant 모드
@@ -86,6 +77,10 @@ python -m http.server 8080
 - Q-Table 자동 저장/복원 (새로고침해도 학습 데이터 유지)
 - Show Q-Values/Policy: 학습 시각화
 - Fog of War: 전장의 안개 토글
+
+### 웹 호스팅 (출시 1.0)
+- github pages — `kalliroku.github.io/RLD/` (예정)
+- itch.io — `kalliroku.itch.io/rld` (예정, 무료 + pay-what-you-want)
 
 ## 샘플 던전
 
@@ -119,11 +114,15 @@ RLD/
 │   ├── algorithms/     # RL 알고리즘 (Q-Learning)
 │   └── ui/             # Pygame 렌더러
 ├── web/
-│   ├── index.html      # 웹 UI
-│   ├── css/style.css   # 스타일
+│   ├── index.html      # 랜딩 페이지 (마케팅, 출시 1.0 진입점)
+│   ├── play.html       # 게임 본체 (캠페인 + 데일리 + 에디터 + 데브)
+│   ├── css/
+│   │   ├── style.css    # 게임 UI 스타일
+│   │   └── landing.css  # 랜딩 페이지 스타일
 │   └── js/
 │       ├── main.js     # 게임 엔트리포인트
-│       └── game/       # 그리드, 에이전트, 15개 RL 알고리즘 + DQN(실험), 렌더러, 에디터, 사운드, 절차적 생성기
+│       ├── i18n/       # 한영 사전 (ko/en 222키) + loader
+│       └── game/       # 그리드, 에이전트, 15개 RL 알고리즘 + DQN(실험), 모디파이어, 렌더러, 에디터, 사운드, 절차적 생성기
 ├── assets/
 │   └── dungeons/       # 던전 파일들 (3개, 나머지 28개는 grid.js 하드코딩)
 ├── tests/
@@ -181,10 +180,10 @@ RLD/
 
 ## 향후 계획
 
-1. **시드 기반 일일 챌린지 + 모디파이어 시스템**: 매 런 다른 모디파이어 (MVP 3종 → 출시 12종)
-2. **Neural 알고리즘**: DQN 재활성화 (50×50+), PPO, A2C
-3. **동적 환경**: 시간에 따라 변하는 장애물, 기억 의존 과제
-4. **Act 2 (출시 후)**: 던전 마스터 모드 — 커스텀 던전 공유
+1. **M5 → 1.0 (현재)**: 출시 페이지 prep + BGM 4트랙 + 자체 플레이테스트 5회 + i18n 미터치 영역 (briefing 영문 라벨 / editor / dungeon options / hints)
+2. **Act 2 (출시 후)**: 던전 마스터 모드 — 커스텀 던전 공유 + Weekly·이벤트 시드
+3. **Neural 알고리즘 (출시 후)**: DQN 재활성화 (50×50+), PPO, A2C
+4. **리더보드 (수요 측정 후)**: 백엔드 도입 검토 (V1.0 은 무백엔드)
 
 ## 참고 자료 / 논문 출처
 

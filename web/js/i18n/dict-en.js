@@ -311,4 +311,36 @@ export const EN = {
     // === Language toggle ===
     'lang.toggle': '한국어',
     'lang.toggle.aria_label': 'Switch language',
+
+    // === Landing page (marketing — web/index.html, game at web/play.html) ===
+    'landing.meta.title': 'RL Dungeon — An algorithm-as-character seeded roguelike',
+    'landing.meta.description': 'An algorithm-as-character seeded roguelike. Clear dungeons with a limited Sherpa pool under shifting modifiers each run.',
+
+    'landing.hero.tagline': 'An algorithm-as-character seeded roguelike',
+    'landing.hero.subtagline': 'Clear dungeons with a limited Sherpa pool under shifting modifiers each run.',
+    'landing.hero.cta_play': 'Play in Browser',
+    'landing.hero.cta_github': 'GitHub',
+
+    'landing.concept.heading': 'Core Concepts',
+    'landing.concept.seeded.title': 'Seeded Runs',
+    'landing.concept.seeded.body': 'New modifiers each run (slippery floor / heavy fog / two only). The daily seed is shared by every player — the bedrock of a 10-minute challenge.',
+    'landing.concept.algo.title': 'Algorithms as Characters',
+    'landing.concept.algo.body': '15 RL algorithms appear as Sherpas with distinct personalities. Hover for the academic name; surface tags read “optimistic fool / coward / dreamer”.',
+    'landing.concept.visual.title': 'Visual RL Flavor',
+    'landing.concept.visual.body': 'Q-value heatmap + policy arrows + sparkline on by default — a visual signature where learning is plainly visible.',
+
+    'landing.screenshots.heading': 'Screenshots',
+    'landing.screenshots.coming': 'Coming soon.',
+
+    'landing.quickstart.heading': 'Quick Start',
+    'landing.quickstart.move': 'Move with arrow keys or WASD.',
+    'landing.quickstart.death': 'HP 0 = death. 4 cumulative deaths restart the campaign.',
+    'landing.quickstart.modifier': 'Check the modifier band at run start → pick your character.',
+    'landing.quickstart.qvalue': 'Q-value heatmap color = learned value at that tile (brighter is higher).',
+    'landing.quickstart.daily': 'The Daily tab uses one shared seed for all players. Compare against your own previous run.',
+
+    'landing.footnote.byproduct': 'RL education is a byproduct.',
+    'landing.footer.built_with': 'HTML5 canvas. No backend (state lives in localStorage).',
+    'landing.footer.license': 'MIT License',
+    'landing.footer.source_label': 'Source',
 };

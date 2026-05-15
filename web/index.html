@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="landing.meta.title">RL Dungeon — 알고리즘이 곧 캐릭터인 시드 기반 로그라이크</title>
+    <meta name="description" data-i18n-content="landing.meta.description" content="알고리즘이 곧 캐릭터인 시드 기반 로그라이크. 매 런 다른 모디파이어 아래 한정된 세르파 풀로 던전을 답파한다.">
+    <meta property="og:title" data-i18n-attr-content="landing.meta.title" content="RL Dungeon — 알고리즘이 곧 캐릭터인 시드 기반 로그라이크">
+    <meta property="og:description" data-i18n-attr-content="landing.meta.description" content="매 런 다른 모디파이어 아래 한정된 세르파 풀로 던전을 답파한다.">
+    <meta property="og:type" content="website">
+    <link rel="stylesheet" href="css/landing.css">
+</head>
+<body class="landing-body">
+    <header class="landing-topbar">
+        <button id="lang-toggle" class="lang-toggle" data-i18n="lang.toggle" data-i18n-aria-label="lang.toggle.aria_label" aria-label="언어 전환">EN</button>
+    </header>
+
+    <section class="landing-hero">
+        <h1 class="hero-logo" data-i18n="title.logo">RL DUNGEON</h1>
+        <p class="hero-tagline" data-i18n="landing.hero.tagline">알고리즘이 곧 캐릭터인 시드 기반 로그라이크</p>
+        <p class="hero-subtagline" data-i18n="landing.hero.subtagline">매 런 다른 모디파이어 아래 한정된 세르파 풀로 던전을 답파한다.</p>
+        <div class="hero-cta">
+            <a href="play.html" class="btn btn-primary" data-i18n="landing.hero.cta_play">브라우저에서 플레이</a>
+            <a href="https://github.com/kalliroku/RLD" class="btn btn-secondary" rel="noopener" data-i18n="landing.hero.cta_github">GitHub</a>
+        </div>
+    </section>
+
+    <section class="landing-section">
+        <h2 data-i18n="landing.concept.heading">핵심 컨셉</h2>
+        <div class="concept-grid">
+            <article class="concept-card">
+                <h3 data-i18n="landing.concept.seeded.title">시드 기반 런</h3>
+                <p data-i18n="landing.concept.seeded.body">매 런 다른 모디파이어. 데일리 시드는 모든 플레이어가 공유 — 10분 챌린지의 토대.</p>
+            </article>
+            <article class="concept-card">
+                <h3 data-i18n="landing.concept.algo.title">알고리즘 = 캐릭터</h3>
+                <p data-i18n="landing.concept.algo.body">15종 RL 알고리즘이 각기 다른 성격의 세르파로 등장. 학명은 hover 툴팁, 표면은 “낙관적 멍청이 / 겁쟁이 / 공상가” 같은 성격 태그.</p>
+            </article>
+            <article class="concept-card">
+                <h3 data-i18n="landing.concept.visual.title">시각적 RL 양념</h3>
+                <p data-i18n="landing.concept.visual.body">Q-value 히트맵 + 정책 화살표 + sparkline 디폴트 ON — 학습이 눈에 보이는 시각 시그니처.</p>
+            </article>
+        </div>
+    </section>
+
+    <section class="landing-section">
+        <h2 data-i18n="landing.screenshots.heading">스크린샷</h2>
+        <div class="screenshot-grid">
+            <div class="screenshot-placeholder" aria-hidden="true"></div>
+            <div class="screenshot-placeholder" aria-hidden="true"></div>
+            <div class="screenshot-placeholder" aria-hidden="true"></div>
+            <div class="screenshot-placeholder" aria-hidden="true"></div>
+        </div>
+        <p class="muted" data-i18n="landing.screenshots.coming">곧 추가됩니다.</p>
+    </section>
+
+    <section class="landing-section">
+        <h2 data-i18n="landing.quickstart.heading">빠른 시작</h2>
+        <ul class="quickstart-list">
+            <li data-i18n="landing.quickstart.move">방향키 또는 WASD 로 이동.</li>
+            <li data-i18n="landing.quickstart.death">HP 0 = 사망. 누적 4 사망이면 캠페인 처음부터.</li>
+            <li data-i18n="landing.quickstart.modifier">런 시작 시 상단 모디파이어 띠 확인 → 캐릭터 선택.</li>
+            <li data-i18n="landing.quickstart.qvalue">Q-value 히트맵 색 = 학습한 위치 가치 (밝을수록 높음).</li>
+            <li data-i18n="landing.quickstart.daily">Daily 탭 = 모든 플레이어 동일 시드. 어제 기록과 자기 비교.</li>
+        </ul>
+    </section>
+
+    <footer class="landing-footer">
+        <p class="footnote" data-i18n="landing.footnote.byproduct">RL 교육은 부산물.</p>
+        <p data-i18n="landing.footer.built_with">HTML5 캔버스. 백엔드 없음 (모든 상태는 localStorage).</p>
+        <p>
+            <span data-i18n="landing.footer.license">MIT License</span>
+            ·
+            <span data-i18n="landing.footer.source_label">소스</span>:
+            <a href="https://github.com/kalliroku/RLD" rel="noopener">github.com/kalliroku/RLD</a>
+        </p>
+    </footer>
+
+    <script type="module">
+        import { initI18n, setLang, getLang, t, onLangChange, applyTranslations } from './js/i18n/index.js';
+
+        // i18n 초기화 + lang 토글
+        initI18n();
+
+        const toggle = document.getElementById('lang-toggle');
+        toggle?.addEventListener('click', () => {
+            setLang(getLang() === 'ko' ? 'en' : 'ko');
+        });
+
+        // 토글/초기 시 동적 속성도 함께 갱신 (data-i18n-content / data-i18n-attr-content)
+        function refreshMetaAttrs() {
+            document.querySelectorAll('[data-i18n-content]').forEach(el => {
+                el.setAttribute('content', t(el.dataset.i18nContent));
+            });
+            document.querySelectorAll('[data-i18n-attr-content]').forEach(el => {
+                el.setAttribute('content', t(el.dataset.i18nAttrContent));
+            });
+        }
+        refreshMetaAttrs();
+        onLangChange(() => refreshMetaAttrs());
+    </script>
+</body>
+</html>

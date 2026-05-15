@@ -325,4 +325,36 @@ export const KO = {
     // === Language toggle ===
     'lang.toggle': 'EN',
     'lang.toggle.aria_label': '언어 전환',
+
+    // === Landing page (marketing — web/index.html, 게임은 web/play.html) ===
+    'landing.meta.title': 'RL Dungeon — 알고리즘이 곧 캐릭터인 시드 기반 로그라이크',
+    'landing.meta.description': '알고리즘이 곧 캐릭터인 시드 기반 로그라이크. 매 런 다른 모디파이어 아래 한정된 세르파 풀로 던전을 답파한다.',
+
+    'landing.hero.tagline': '알고리즘이 곧 캐릭터인 시드 기반 로그라이크',
+    'landing.hero.subtagline': '매 런 다른 모디파이어 아래 한정된 세르파 풀로 던전을 답파한다.',
+    'landing.hero.cta_play': '브라우저에서 플레이',
+    'landing.hero.cta_github': 'GitHub',
+
+    'landing.concept.heading': '핵심 컨셉',
+    'landing.concept.seeded.title': '시드 기반 런',
+    'landing.concept.seeded.body': '매 런 다른 모디파이어 (미끄러운 바닥 / 안개 짙음 / 두 명만 등). 데일리 시드는 모든 플레이어가 공유 — 10분 챌린지의 토대.',
+    'landing.concept.algo.title': '알고리즘 = 캐릭터',
+    'landing.concept.algo.body': '15종 RL 알고리즘이 각기 다른 성격의 세르파로 등장. 학명은 hover 툴팁, 표면은 “낙관적 멍청이 / 겁쟁이 / 공상가” 같은 성격 태그.',
+    'landing.concept.visual.title': '시각적 RL 양념',
+    'landing.concept.visual.body': 'Q-value 히트맵 + 정책 화살표 + sparkline 디폴트 ON — 학습이 눈에 보이는 시각 시그니처.',
+
+    'landing.screenshots.heading': '스크린샷',
+    'landing.screenshots.coming': '곧 추가됩니다.',
+
+    'landing.quickstart.heading': '빠른 시작',
+    'landing.quickstart.move': '방향키 또는 WASD 로 이동.',
+    'landing.quickstart.death': 'HP 0 = 사망. 누적 4 사망이면 캠페인 처음부터.',
+    'landing.quickstart.modifier': '런 시작 시 상단 모디파이어 띠 확인 → 캐릭터 선택.',
+    'landing.quickstart.qvalue': 'Q-value 히트맵 색 = 학습한 위치 가치 (밝을수록 높음).',
+    'landing.quickstart.daily': 'Daily 탭 = 모든 플레이어 동일 시드. 어제 기록과 자기 비교.',
+
+    'landing.footnote.byproduct': 'RL 교육은 부산물.',
+    'landing.footer.built_with': 'HTML5 캔버스. 백엔드 없음 (모든 상태는 localStorage).',
+    'landing.footer.license': 'MIT License',
+    'landing.footer.source_label': '소스',
 };

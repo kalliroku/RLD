@@ -1,0 +1,320 @@
+/* RL Dungeon — Landing page styles (web/index.html).
+ * 게임 본체 (web/play.html / css/style.css) 와 분리. :root 변수는 동일 톤 복제.
+ */
+
+:root {
+    --bg-primary: #1a1a2e;
+    --bg-secondary: #16213e;
+    --bg-tertiary: #0f3460;
+    --accent: #e94560;
+    --text-primary: #eee;
+    --text-secondary: #aaa;
+    --text-muted: #888;
+    --success: #4ade80;
+    --warning: #fbbf24;
+    --border: rgba(255, 255, 255, 0.08);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+html, body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg-primary);
+    color: var(--text-primary);
+    min-height: 100vh;
+    line-height: 1.6;
+    text-rendering: optimizeLegibility;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+}
+
+.landing-body {
+    display: flex;
+    flex-direction: column;
+}
+
+a {
+    color: inherit;
+}
+
+/* === Top bar (lang toggle 만) === */
+.landing-topbar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 16px 24px;
+    border-bottom: 1px solid var(--border);
+}
+
+.lang-toggle {
+    background: transparent;
+    color: var(--text-primary);
+    border: 1px solid var(--border);
+    padding: 6px 14px;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: border-color 0.15s, background 0.15s;
+}
+
+.lang-toggle:hover {
+    border-color: var(--accent);
+    background: rgba(233, 69, 96, 0.08);
+}
+
+/* === Hero === */
+.landing-hero {
+    text-align: center;
+    padding: 80px 24px 64px;
+    width: 100%;
+    max-width: 880px;
+    margin: 0 auto;
+}
+
+.hero-logo {
+    font-size: clamp(2.6rem, 7vw, 4.5rem);
+    font-weight: 800;
+    letter-spacing: 0.04em;
+    color: var(--accent);
+    text-shadow: 0 0 32px rgba(233, 69, 96, 0.35);
+    margin-bottom: 18px;
+}
+
+.hero-tagline {
+    font-size: clamp(1.05rem, 2.2vw, 1.35rem);
+    color: var(--text-primary);
+    margin-bottom: 10px;
+    font-weight: 500;
+}
+
+.hero-subtagline {
+    font-size: clamp(0.95rem, 1.6vw, 1.05rem);
+    color: var(--text-secondary);
+    margin-bottom: 36px;
+    max-width: 640px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.hero-cta {
+    display: flex;
+    justify-content: center;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.btn {
+    display: inline-block;
+    padding: 12px 28px;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    text-decoration: none;
+    border: 1px solid transparent;
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.15s, background 0.15s;
+}
+
+.btn-primary {
+    background: var(--accent);
+    color: white;
+    box-shadow: 0 4px 16px rgba(233, 69, 96, 0.25);
+}
+
+.btn-primary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(233, 69, 96, 0.4);
+}
+
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    border-color: var(--border);
+}
+
+.btn-secondary:hover {
+    border-color: var(--text-secondary);
+    background: var(--bg-tertiary);
+}
+
+/* === Section common === */
+.landing-section {
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 48px 24px;
+}
+
+.landing-section h2 {
+    font-size: clamp(1.4rem, 3vw, 1.8rem);
+    color: var(--text-primary);
+    margin-bottom: 24px;
+    text-align: center;
+    letter-spacing: 0.01em;
+}
+
+/* === Concept grid === */
+.concept-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 18px;
+}
+
+.concept-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    transition: border-color 0.15s, transform 0.15s;
+}
+
+.concept-card:hover {
+    border-color: rgba(233, 69, 96, 0.4);
+    transform: translateY(-2px);
+}
+
+.concept-card h3 {
+    font-size: 1.1rem;
+    color: var(--accent);
+    margin-bottom: 10px;
+    letter-spacing: 0.01em;
+}
+
+.concept-card p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    line-height: 1.65;
+}
+
+/* === Screenshots === */
+.screenshot-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+    margin-bottom: 12px;
+}
+
+.screenshot-placeholder {
+    width: 100%;
+    min-height: 220px;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
+    border: 1px dashed var(--border);
+    border-radius: 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    font-size: 0.85rem;
+}
+
+.muted {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+    text-align: center;
+}
+
+/* === Quickstart === */
+.quickstart-list {
+    list-style: none;
+    max-width: 640px;
+    margin: 0 auto;
+    padding: 0;
+}
+
+.quickstart-list li {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    font-size: 0.98rem;
+    color: var(--text-primary);
+}
+
+.quickstart-list li::before {
+    content: '▸';
+    color: var(--accent);
+    margin-right: 10px;
+    font-weight: 600;
+}
+
+/* === Footer === */
+.landing-footer {
+    margin-top: auto;
+    padding: 40px 24px 32px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 0.88rem;
+}
+
+.landing-footer p {
+    margin-bottom: 6px;
+}
+
+.landing-footer .footnote {
+    color: var(--text-muted);
+    font-style: italic;
+    margin-bottom: 18px;
+}
+
+.landing-footer a {
+    color: var(--text-primary);
+    text-decoration: underline;
+    text-decoration-color: var(--border);
+    text-underline-offset: 2px;
+    transition: text-decoration-color 0.15s;
+}
+
+.landing-footer a:hover {
+    text-decoration-color: var(--accent);
+}
+
+/* === Mobile === */
+@media (max-width: 600px) {
+    .landing-topbar {
+        padding: 12px 16px;
+    }
+
+    .lang-toggle {
+        padding: 5px 12px;
+        font-size: 0.85rem;
+    }
+
+    .landing-hero {
+        padding: 56px 20px 40px;
+    }
+
+    .landing-section {
+        padding: 36px 20px;
+    }
+
+    .hero-cta .btn {
+        width: 100%;
+        max-width: 280px;
+    }
+
+    .concept-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .concept-card {
+        padding: 20px;
+    }
+
+    .screenshot-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .screenshot-placeholder {
+        min-height: 180px;
+    }
+
+    .quickstart-list li {
+        padding: 12px 14px;
+        font-size: 0.92rem;
+    }
+}
