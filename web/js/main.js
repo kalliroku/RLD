@@ -926,7 +926,7 @@ class Game {
         if (yRec && yRec.cleared && yRec.bestSteps != null) {
             const diff = this.steps - yRec.bestSteps;
             if (diff === 0) msg += ' / ' + t('daily.compare.same');
-            else if (diff < 0) msg += ' / ' + t('daily.compare.better', { diff });
+            else if (diff < 0) msg += ' / ' + t('daily.compare.better', { diff: Math.abs(diff) });
             else msg += ' / ' + t('daily.compare.worse', { diff });
         }
         this.showMessage(msg, 'success');

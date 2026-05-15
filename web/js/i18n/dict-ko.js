@@ -204,8 +204,8 @@ export const KO = {
     'daily.victory.first_clear': '(오늘 첫 성공!)',
     'daily.victory.improvement': '(최고 기록 갱신, 이전 {prev})',
     'daily.compare.same': '어제와 동일',
-    'daily.compare.better': '어제 {diff} 스텝',
-    'daily.compare.worse': '어제 +{diff} 스텝',
+    'daily.compare.better': '어제보다 {diff} 스텝 빠름',  // diff 양수 (호출처 Math.abs)
+    'daily.compare.worse': '어제보다 {diff} 스텝 느림',
     'daily.fail_msg': '오늘의 도전 실패 — {cause}',
     'daily.fail_toast': '오늘의 도전 실패: {cause}',
 

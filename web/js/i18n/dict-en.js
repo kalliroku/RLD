@@ -189,8 +189,8 @@ export const EN = {
     'daily.victory.first_clear': '(First clear today!)',
     'daily.victory.improvement': '(New best, was {prev})',
     'daily.compare.same': 'tied with yesterday',
-    'daily.compare.better': '{diff} steps vs yesterday',  // diff is negative
-    'daily.compare.worse': '+{diff} steps vs yesterday',
+    'daily.compare.better': '{diff} steps under yesterday',  // diff is positive (caller passes Math.abs)
+    'daily.compare.worse': '{diff} steps over yesterday',
 
     'daily.fail_msg': 'Daily failed — {cause}',
     'daily.fail_toast': 'Daily failed: {cause}',
