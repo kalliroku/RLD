@@ -112,6 +112,10 @@ export class GameSimulator {
      */
     constructor(strategy, options = {}) {
         this.runState = new RunState();
+        // W6 sim baseline 보호: web manual play 는 STARTING_FOOD=100 (오프닝 카피 정합) 받지만
+        // sim 의 HybridPlayer 는 *food=0 baseline 위 buyFood 자동 구매* 흐름으로 25.5/27 ± 2 달성한
+        // 발란스가 박혀있음 (D-2026-05-14-14). 여기서 0 으로 명시 리셋해 sim baseline 보존.
+        this.runState.food = 0;
         this.strategy = strategy;
         this.log = [];
         this.turnNumber = 0;

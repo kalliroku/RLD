@@ -25,6 +25,11 @@ const HIRE_COSTS = {
 };
 
 const STARTING_GOLD = 800;
+// W6: 신규 마스터에게 보급되는 시작 식량 (오프닝 카피 정합). 0 → 100.
+// sim 결합 주의: `sim/simulator.js` constructor 가 `new RunState()` 직접 호출 →
+// 본 상수가 sim baseline 도 침범. sim 측에서 `this.runState.food = 0` 으로 명시 리셋해
+// HybridPlayer 의 buyFood 자동 구매 흐름 (캠페인 25.5/27 ± 2, D-2026-05-14-14) 보존.
+const STARTING_FOOD = 100;
 
 // B-203: cumulative death limit per playthrough (D-4 verdict — Q-table noise
 // rejected, this is the chosen tension mechanism). NG+ resets to 0.
@@ -108,7 +113,7 @@ export class RunState {
 
         // Per-run state
         this.gold = STARTING_GOLD;
-        this.food = 0;
+        this.food = STARTING_FOOD;
         this.hiredCharacters = new Set();
         this.clearedDungeons = new Set();
         this.unlockedDungeons = new Set(['level_01_easy']);
@@ -604,7 +609,7 @@ export class RunState {
 
         // Reset per-run state
         this.gold = STARTING_GOLD;
-        this.food = 0;
+        this.food = STARTING_FOOD;
         this.hiredCharacters = new Set();
         this.clearedDungeons = new Set();
         this.unlockedDungeons = new Set(['level_01_easy']);
@@ -625,7 +630,7 @@ export class RunState {
     startNewRun() {
         this.runNumber++;
         this.gold = STARTING_GOLD;
-        this.food = 0;
+        this.food = STARTING_FOOD;
         this.hiredCharacters = new Set();
         this.clearedDungeons = new Set();
         this.unlockedDungeons = new Set(['level_01_easy']);
@@ -653,7 +658,7 @@ export class RunState {
         this.totalFarmingSteps = 0;
 
         this.gold = STARTING_GOLD;
-        this.food = 0;
+        this.food = STARTING_FOOD;
         this.hiredCharacters = new Set();
         this.clearedDungeons = new Set();
         this.unlockedDungeons = new Set(['level_01_easy']);
@@ -766,7 +771,7 @@ export class RunState {
             const data = JSON.parse(old);
             // Start fresh run with starting gold, but keep dungeon progress
             this.gold = STARTING_GOLD;
-            this.food = 0;
+            this.food = STARTING_FOOD;
             this.hiredCharacters = new Set();
             this.clearedDungeons = new Set(data.clearedDungeons ?? []);
             this.unlockedDungeons = new Set(data.unlockedDungeons ?? ['level_01_easy']);

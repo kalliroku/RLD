@@ -214,6 +214,14 @@ export const EN = {
     // === Game-over / death-limit ===
     'death_limit.toast': 'Deaths {cur}/{max} — next death resets the campaign.',
     'game_over.death_limit_suffix': ' — Death limit reached ({cur}/{max}). Next run.',
+    'game_over.starvation': 'Food depleted. Stranded in the dungeon.',
+
+    // === Food warning (F2 threshold alert) ===
+    'food.warn.threshold': '⚠️ Food low! Head back to the exit.',
+
+    // === Escape rope (emergency item) ===
+    'rope.escape': 'Emergency escape! Rope consumed.',
+    'rope.escape_with_treasure': 'Emergency escape! Rope consumed. Treasure +{val}G!',
 
     // === Modifier in-game effects ===
     'modifier_effect.wind_gust': 'Wind gust! Action skipped.',

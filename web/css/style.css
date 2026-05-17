@@ -90,9 +90,10 @@ main {
     gap: 8px;
 }
 
-/* B-204: mobile-only toggle for extra stats (Run / Reward / Food / Clear Rate).
-   Desktop: button hidden, all stats shown. Mobile: only core stats (HP / Gold /
-   Steps) shown by default; button reveals the rest. */
+/* B-204: mobile-only toggle for extra stats (Run / Reward / Clear Rate).
+   Desktop: button hidden, all stats shown. Mobile: only core stats
+   (HP / Gold / Steps / Food) shown by default; button reveals the rest.
+   W6 (2026-05-17): Food 가 extra → core 격상 (사용자 보고 "식량이 안 보임"). */
 .stats-toggle {
     display: none;
     padding: 4px 10px;
@@ -1278,6 +1279,41 @@ body.editor-mode .dpad-container {
 .food-value {
     color: #a3e635 !important;
     text-shadow: 0 0 8px rgba(163, 230, 53, 0.4);
+    transition: color 0.3s ease;
+}
+
+/* F2: 식량 임계 색 (사용자 보고: 줄어든 거가 눈에 안 띈다) */
+.food-value.food-low {
+    color: #facc15 !important;
+    text-shadow: 0 0 10px rgba(250, 204, 21, 0.5);
+}
+.food-value.food-critical {
+    color: #ef4444 !important;
+    text-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+    animation: food-pulse 1.2s ease-in-out infinite;
+}
+@keyframes food-pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.6; }
+}
+
+/* F1: 식량 변화 floating "-2" (매 스텝 가시화) */
+#food-stat { position: relative; }
+.food-delta {
+    position: absolute;
+    right: 8px;
+    top: 0;
+    pointer-events: none;
+    font-weight: 700;
+    font-size: 0.95rem;
+    animation: food-delta-float 1s ease-out forwards;
+}
+.food-delta-down { color: #ef4444; }
+.food-delta-up { color: #a3e635; }
+@keyframes food-delta-float {
+    0%   { opacity: 0; transform: translateY(0); }
+    20%  { opacity: 1; }
+    100% { opacity: 0; transform: translateY(-24px); }
 }
 
 .run-value {

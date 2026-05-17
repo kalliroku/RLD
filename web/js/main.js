@@ -2329,6 +2329,8 @@ class Game {
         }
 
         this.currentDungeon = name;
+        // F2: 새 던전 진입 시 식량 임계 경고 flag 리셋 (다음 임계 도달 시 다시 1회 토스트)
+        this._foodWarnShown = false;
 
         // T2B-2 (D-9): every campaign / custom / preset path enters with no
         // runtime modifier. Done once at the top so the custom_ / dungeon_ /
@@ -2607,6 +2609,13 @@ class Game {
         // Food consumption (manual play only, built-in dungeons only)
         if (!this.isTraining && isBuiltIn && this.runState.food > 0) {
             this.runState.consumeFood();
+            // F1: 변화 floating "-2" — 매 스텝 식량 차감 가시성
+            this._flashFoodDelta(-2);
+            // F2: 임계 경고 — food < 20 첫 도달 시 1회 토스트
+            if (this.runState.food < 20 && !this._foodWarnShown) {
+                this._foodWarnShown = true;
+                this.showMessage(t('food.warn.threshold'), 'warning');
+            }
         } else if (!this.isTraining && isBuiltIn && this.runState.food <= 0 && this.steps > 0) {
             // C-5: Escape rope — prevent game over
             if (this.runState.hasItem('escape_rope')) {
@@ -2615,15 +2624,15 @@ class Game {
                 if (this.carryingTreasure) {
                     const val = this.runState.collectTreasure(this.currentDungeon);
                     this.carryingTreasure = false;
-                    this.showMessage(`Emergency escape! Rope consumed. Treasure +${val}G!`, 'warning');
+                    this.showMessage(t('rope.escape_with_treasure', { val }), 'warning');
                 } else {
-                    this.showMessage('Emergency escape! Rope consumed.', 'warning');
+                    this.showMessage(t('rope.escape'), 'warning');
                 }
                 this.updateUI(); this.updateItemUI(); this.render();
                 return;
             }
             // Food ran out — game over
-            this.triggerGameOver('Food depleted! Stranded in the dungeon.');
+            this.triggerGameOver(t('game_over.starvation'));
             return;
         }
 
@@ -3962,6 +3971,17 @@ class Game {
         });
     }
 
+    // F1: 식량 변화 floating 표시 — 매 스텝 -2 가시화 (사용자 보고: 줄어드는 게 안 보임)
+    _flashFoodDelta(delta) {
+        if (!this.foodStat || this.foodStat.style.display === 'none') return;
+        const tag = document.createElement('span');
+        tag.className = 'food-delta' + (delta < 0 ? ' food-delta-down' : ' food-delta-up');
+        tag.textContent = (delta > 0 ? '+' : '') + delta;
+        this.foodStat.appendChild(tag);
+        // CSS animation 후 자동 제거 (1초)
+        setTimeout(() => tag.remove(), 1000);
+    }
+
     updateUI() {
         this.goldText.textContent = this.pendingGold > 0
             ? `${this.runState.gold} (+${this.pendingGold})`
@@ -3975,6 +3995,9 @@ class Game {
         const showFood = isBuiltIn && !this.isTraining;
         this.foodStat.style.display = showFood ? '' : 'none';
         this.foodText.textContent = this.runState.food;
+        // F2: 임계 경고 색 (food < 20 빨강 = 위험, < 50 노랑 = 주의)
+        this.foodText.classList.toggle('food-critical', this.runState.food < 20);
+        this.foodText.classList.toggle('food-low', this.runState.food >= 20 && this.runState.food < 50);
 
         // Provisions section visibility
         if (this.provisionsSection) {

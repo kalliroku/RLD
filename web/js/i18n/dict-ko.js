@@ -228,6 +228,14 @@ export const KO = {
     // === Game-over / death-limit ===
     'death_limit.toast': '누적 사망 {cur}/{max} — 다음 게임오버에서 캠페인 처음부터.',
     'game_over.death_limit_suffix': ' — 누적 사망 한도 도달 ({cur}/{max}). 다음 런으로.',
+    'game_over.starvation': '식량이 다 떨어졌습니다. 던전에 갇혔습니다.',
+
+    // === Food warning (F2 임계 경고) ===
+    'food.warn.threshold': '⚠️ 식량 부족! 출구로 돌아가세요.',
+
+    // === Escape rope (긴급 탈출 아이템) ===
+    'rope.escape': '긴급 탈출! 로프가 소모되었습니다.',
+    'rope.escape_with_treasure': '긴급 탈출! 로프 소모. 보물 +{val}G!',
 
     // === Modifier in-game effects ===
     'modifier_effect.wind_gust': '돌풍! 행동이 묶였습니다.',
