@@ -24,7 +24,12 @@
 
 | ID | 작업 | 출처 | 공수 |
 |---|---|---|---|
-| W7 | 오프닝 카드 / 첫 클리어 overlay / progressive disclosure 정비 / 스토리 docs (세계관 구도는 사용자 결정 D-* 박제 후 착수) | W6 commit message 후속 | ? (스토리 카피는 사용자 협업) |
+| W7.1 | 오프닝 카드 1장 (게임 시작 narrative — 아빠 + 모험가 길드 부추김 + 부활 아이템 + 길드장 재진입) | D-2026-05-19-1 §W7 분할 | 0.5~1일 |
+| W7.2 | 첫 클리어 overlay + map choice 카피 narrative 흡수 | D-2026-05-19-1 §W7 분할 | 0.5일 |
+| W7.3 | RL 메타 카피 흡수 — subtitle / game-over note / 튜토리얼 / stat 라벨 (~5건) + landing.screenshot.{training,party}.alt 톤 정렬 (Warning 1+2 합쳐) | D-2026-05-19-1 §W7 분할 + landing 리뷰 Warning | 0.5~1일 |
+| W7.4 | 모험가 도움 시스템 신규 (shop 탭 카드 + manual play 조건 + 즉시 베드 엔딩) — 가장 큰 사이클, 게임 디자인 영역 | D-2026-05-19-1 §W7 분할 | 2~3일 (사용자 협업) |
+| W7.5 | 진엔딩 카피 (ending overlay) + 굿엔딩 / 베드 엔딩 분기 | D-2026-05-19-1 §W7 분할 | 0.5일 |
+| W7.6 | STORY.md 박제 (docs/PM/STORY.md 신규 — narrative 통합 문서) | D-2026-05-19-1 §W7 분할 | 0.5일 |
 | (신규) | i18n 미터치 영역 — briefing 영문 라벨 (~15) / editor (~30) / dungeon-select option (27) / DUNGEON_HINTS (~50) | i18n 인계 §3.4 / W5 잔여 | 3~5일 |
 | (신규) | BGM 4트랙 (Ch.1~3 / 데일리 / 전투-탐험) — 음원 결정 후 통합 | VISION §3 M5 | 5~10일 |
 | (신규) | 자체 플레이테스트 5회 (외부 5명) — 1.0 게이트 마지막 | VISION §8 | 분산 |

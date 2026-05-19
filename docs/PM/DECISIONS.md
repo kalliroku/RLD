@@ -30,6 +30,26 @@ ID 형식: `D-YYYY-MM-DD-N`
 
 - **D-2026-05-15-17** ✅ **출시 페이지 구조 — `web/index.html` 재지정 (A 옵션 채택)** — github pages 진입점 (`kalliroku.github.io/RLD/`) 의 표준 마케팅 페이지 패턴. `web/index.html` 신규 (랜딩) + `web/play.html` rename (게임 본체, history 보존). URL: `/` = 랜딩 / `/play.html` = 게임. 사용자 결정 (대안: B 별도 landing.html 추가 / C 게임 내 title 화면 확장). 선택 사유: 일반 출시 패턴, 외부 링크 (itch.io / 공유) 가 마케팅으로 소프트 랜딩, README 등 내부 참조 sweep 비용은 small (1차 sweep 완료). 호스팅 1차 채널 = `kalliroku.github.io/RLD/` (자체 도메인 미진입). 부차 결정: 랜딩 스타일은 별도 `web/css/landing.css` (style.css 와 격리 — 게임 UI 와 의존 없음, 변경 위험 격리), `landing.*` i18n 키 25개로 기존 i18n loader 재활용 (영문 카피 톤은 D-2026-05-15-15 의 Crisp/Functional 유지), 한국어 wrap 은 `word-break: keep-all` + `overflow-wrap: break-word` 전역 (모바일 폭에서 한글 어절 보존). **알려진 미세 결함**: 모바일 폭 420 에서 컨셉 카드 본문 한국어 마지막 글자 정렬이 살짝 어긋남 (잘림 X 단순 시각) — W2 토글 갱신 스모크 사이클과 함께 폴리시 예정.
 
+### 2026-05-19
+
+- **D-2026-05-19-1** ✅ **RLD 세계관 결정 — 세르파 길드 vs 모험가 길드 narrative** — 사용자 결정 (W6 commit 끝 박힌 재해석 → W7 사이클에서 정합 점검 + 디테일 채움). 동기: *목적성을 narrative 로 설명* + *RL 메타 자기참조 회피* (RL 은 게임의 일부로 녹임, 굳이 드러내지 않음).
+  1. **세르파** = 길드장의 *부활 아이템* 하에 던전에 가는 비-영웅 인간들. 모험가 못난이 출신. 세르파 본인은 부활 능력 X.
+  2. **두 길드** = 모험가 길드 (기득권 / 흑막 / 던전 이권 독점 시도) vs 세르파 길드 (반발로 창립 / 아빠가 창립자).
+  3. **아빠** = 던전의 *모더*. 실종 아니라 살아있음, 모험가 길드에 복수하려고 모디파이어로 시련 박음. **모디파이어 12종 (D-2026-05-14-14) = 아빠가 박은 시련** 으로 narrative 흡수.
+  4. **귀환 아이템** = 아빠가 과거 보유, 아들 탈출 시 소비. 게임 시작 시점엔 없음.
+  5. **부활 아이템** = 아빠가 남긴 *유산*. 길드장이 현재 보유 + 발동. **누적 사망 4/4 (B-203 시스템) = 부활 아이템 충전 한도** 로 narrative 흡수. (귀환 아이템과 별개 — 두 아이템이 서로 다른 역할.)
+  6. **유저(길드장)** = 모험가 길드의 *도구* 로서 던전 잠입. 처음엔 모름. 진행 중 진실 (이용당함) 깨달음. 진실 폭로 시점은 미정.
+  7. **모험가 길드의 부추김 동기** = 부활 아이템 자체를 빼앗아 세르파 길드 무력화. 유저를 던전에 들여보내 *위치 + 아이템 확인*.
+  8. **모험가 도움 (신규 시스템)** = shop 탭 일회용 보너스. **manual play (길드장 직접 진입) 시 모험가 동반하면 즉시 베드 엔딩** — 모험가가 길드장 위치 노출 → 살해 → 부활 아이템 약탈 → "X는 살해됐습니다 → 왜? → 아이템 약탈" 카피. AI 학습 시 동반은 안전 (길드장 부재). manual play vs AI 학습 의 narrative 위치: manual = 길드장 직접 진입 / AI training = 세르파 학습 (길드장 안전).
+  9. **답파 동기** = 돈 (생존) + 아빠 단서 + 모험가 길드 흑막 폭로.
+  10. **RL 메타 흡수 룰** = narrative 안에 흡수. 표면 카피에서 "강화학습" 학명 노출 회피. 학명 (Q-Learning / SARSA / ...) 은 캐릭터 hover 툴팁 (B-105 정합) 만 opt-in. Q-heatmap / sparkline = 길드장이 세르파 *기억* 들여다보는 옵션 위치 (D-2026-05-12-4 "RL 교육은 부산물" 보존).
+
+  **미정 잔여 (W7.4 사이클 시작 시 결정)**: 모험가 도움 효과 강도 / manual vs AI 학습 의 명시적 UI 구분 여부 / 진엔딩 조건 / 모험가 길드 흑막 폭로 시점 / NG+ narrative 위치 / 3회 카운터 가시성 (조건 베이스 채택으로 카운터 자체 폐기됨).
+
+  **W7 분할**: W7.0 D-* 박제 (본 결정 ✅) / W7.1 오프닝 카드 / W7.2 첫 클리어 overlay + map choice 카피 / W7.3 RL 메타 카피 흡수 (~5건) / W7.4 모험가 도움 시스템 신규 — 가장 큰 사이클, 게임 디자인 영역 / W7.5 진엔딩 카피 / W7.6 STORY.md 박제.
+
+  **D-2026-05-12-4 정체성과의 정합**: ✅ "한정 세르파 풀" (영입 가능 = 모험가 못난이 한정) / ✅ "RL 교육은 부산물" (학습 시각화는 길드장 옵션 위치 보존) / ✅ "매 런 모디파이어" (아빠 시련) / ✅ "시드 기반 로그라이크" (narrative 영향 X) / ✅ 데일리 격리 (D-2026-05-12-8) — 데일리 = 외전 (아빠 매일 시련). **메타 자기참조 금지 ([[feedback_no_meta_lessons]]) 룰 준수** — narrative 가 *게임 내 세계관* 자체, "여러분도 학습했어요" 류 아님.
+
 ### 2026-05-14
 
 - **D-2026-05-14-14** ✅ **모디파이어 12종 — 데일리 전용 유지 + 환경 6 / 제약 6 분류** — VISION §5 M4 의 12종 목표 충족. 사용자 결정 (테마=환경+제약, 모드=데일리 전용, 강도=일반적인 형태로). 환경 6: slippery / heavy_fog / dim_torch / poison_floor / acid_rain / wind_gust. 제약 6: two_only / hp_cap_50 / mirror_input / no_heal / damage_boost / silent_q. 초기 명세 (food_drain / gold_dry) 는 데일리 이코노미 격리 (D-8) 로 효과 0 → mirror_input / damage_boost 로 교체. **B-205 자연 closure** — 데일리 전용 유지로 slippery 30% 강도가 캠페인 발란스에 영향 줄 경로 없음. 모든 모디파이어 효과는 mulberry32 seeded 결정론 유지 (slippery / wind_gust). agent.js move() 가 modifierSet.healDisabled / damageMultiplier 가드. main.js handleAction 이 wind_gust skipTurn + mirror_input + poison/acid 후처리 + hp_cap_50 maxHp clamp + silent_q 시각화 hide. 12종 풀 검증 (`pickModifiers(42, 3)` 두 번 호출 동일 결과, 캠페인 baseline 25.1/27 ✓). **상호작용 룰**: 환경 데미지 (poison_floor / acid_rain) 는 C-5 defense contract / trap nullify 회복 대상 외 — agent.move 의 monster/trap 만 회복하고 환경 modifier 데미지는 별도 처리되므로 contract 우회. 의도된 설계 (modifier = 캐릭터 카드와 독립).
