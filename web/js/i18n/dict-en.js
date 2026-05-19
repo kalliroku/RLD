@@ -50,6 +50,16 @@ export const EN = {
     'mode.daily': 'Daily',
     'mode.editor': 'Editor',
 
+    // === Opening card (W7.1 — first new game, shown once) ===
+    'opening.heading': 'The Serpa Guild',
+    'opening.p1': "The Serpa Guild lived in the shadow of the Adventurers' Guild.",
+    'opening.p2': "Your father was the era's hero and the founder of the Serpa Guild. No one knows what he saw deep in the dungeon. He used the return item to send you out, and never came back himself.",
+    'opening.p3': "Years passed. The guild barely survived. The Adventurers' Guild blocked new challengers.",
+    'opening.p4': "Today they call you back to the dungeon — believing your father left something behind.",
+    'opening.p5': "You hold one thing: his legacy. An item that revives fallen Sherpas.",
+    'opening.p6': "Time to begin again.",
+    'opening.start': 'Begin',
+
     // === Game area ===
     'game.minimap': 'Minimap',
     'game.step0_hint': 'Use arrow keys / WASD to move your Sherpa to the green G.',

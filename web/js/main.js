@@ -233,8 +233,7 @@ class Game {
         // B-106: initial sparkline placeholder
         this.renderSparkline();
 
-        // Step 6: Welcome tutorial
-        this.tutorial.tryShow('init');
+        // Step 6: Welcome tutorial — 발사는 guild 진입 후 (W7.1 opening card 와 시점 충돌 방지)
     }
 
     // ========== Screen System ==========
@@ -249,13 +248,29 @@ class Game {
             this.updateStatsUI();
             this.updateFarmingUI();
             this.updateCharacterGrid();
-            this.screenManager.show('screen-guild');
-            this.updateGuildHall();
+
+            // W7.1: 첫 새 게임 1회만 오프닝 카드 (rld_opening_seen flag)
+            let openingSeen = false;
+            try { openingSeen = localStorage.getItem('rld_opening_seen') === 'true'; } catch {}
+            const enterGuild = () => {
+                this.screenManager.show('screen-guild');
+                this.updateGuildHall();
+                this.tutorial.tryShow('init');
+            };
+            if (!openingSeen) {
+                this._showOpeningCard(() => {
+                    try { localStorage.setItem('rld_opening_seen', 'true'); } catch {}
+                    enterGuild();
+                });
+            } else {
+                enterGuild();
+            }
         });
 
         document.getElementById('btn-continue').addEventListener('click', () => {
             this.screenManager.show('screen-guild');
             this.updateGuildHall();
+            this.tutorial.tryShow('init');
         });
 
         document.getElementById('btn-dev-mode').addEventListener('click', () => {
@@ -384,6 +399,19 @@ class Game {
         // TODO: Full briefing screen in future phase
         this.selectDungeon(dungeonId);
         this.screenManager.show('screen-dev');
+    }
+
+    _showOpeningCard(onClose) {
+        const overlay = document.getElementById('opening-overlay');
+        const startBtn = document.getElementById('opening-start');
+        if (!overlay || !startBtn) { onClose?.(); return; }
+        overlay.style.display = 'flex';
+        const handler = () => {
+            overlay.style.display = 'none';
+            startBtn.removeEventListener('click', handler);
+            onClose?.();
+        };
+        startBtn.addEventListener('click', handler);
     }
 
     _updateGuildParty() {

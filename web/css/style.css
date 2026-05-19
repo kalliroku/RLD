@@ -3059,3 +3059,80 @@ body.editor-mode .dpad-container {
     font-size: 11px;
     opacity: 0.75;
 }
+
+/* === W7.1 Opening Card === */
+.opening-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(8, 8, 14, 0.98);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 20px;
+    overflow-y: auto;
+}
+
+.opening-box {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    max-width: 640px;
+    width: 100%;
+    padding: 36px 40px;
+    color: var(--text-primary);
+    line-height: 1.7;
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.opening-heading {
+    margin: 0 0 24px;
+    color: var(--accent);
+    text-align: center;
+    font-size: 1.6rem;
+    letter-spacing: 1px;
+}
+
+.opening-box p {
+    margin: 0 0 16px;
+    word-break: keep-all;
+    overflow-wrap: break-word;
+    color: var(--text-secondary);
+}
+
+.opening-box p:last-of-type {
+    color: var(--text-primary);
+    font-weight: 500;
+}
+
+.opening-start {
+    display: block;
+    margin: 28px auto 0;
+    padding: 12px 36px;
+    background: var(--accent);
+    color: white;
+    border: 0;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    letter-spacing: 1px;
+}
+
+.opening-start:hover {
+    filter: brightness(1.15);
+}
+
+@media (max-width: 700px) {
+    .opening-box {
+        padding: 24px 22px;
+        line-height: 1.6;
+    }
+    .opening-heading {
+        font-size: 1.35rem;
+        margin-bottom: 18px;
+    }
+    .opening-box p {
+        font-size: 0.94rem;
+    }
+}

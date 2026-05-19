@@ -126,10 +126,12 @@ const DISMISS_TOASTS = `
   document.querySelectorAll('.tutorial-tip, .toast, #toast-container .toast').forEach(el => el.remove());
 `;
 
-// Pre-seed localStorage so first-time tutorial / welcome tip does not fire.
-// rld_tutorial stores array of completed step ids; rld_save_data lets continue/new game flow be deterministic.
+// Pre-seed localStorage so first-time tutorial / welcome tip / opening card do not fire.
+// rld_tutorial: array of completed step ids (tutorial.STEPS).
+// rld_opening_seen: W7.1 opening card flag — true to skip narrative card in captures.
 const PRESEED_LOCALSTORAGE = `
   localStorage.setItem('rld_tutorial', JSON.stringify(['welcome','move','goal','train','reward']));
+  localStorage.setItem('rld_opening_seen', 'true');
 `;
 
 const ENTER_FROM_TITLE = `
