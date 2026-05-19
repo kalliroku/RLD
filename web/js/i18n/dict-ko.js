@@ -352,7 +352,10 @@ export const KO = {
     'landing.concept.visual.body': 'Q-value 히트맵 + 정책 화살표 + sparkline 디폴트 ON — 학습이 눈에 보이는 시각 시그니처.',
 
     'landing.screenshots.heading': '스크린샷',
-    'landing.screenshots.coming': '곧 추가됩니다.',
+    'landing.screenshot.training.alt': 'Q-heatmap 시각화 — 강화학습 결과가 매 셀의 색과 가치값으로 노출.',
+    'landing.screenshot.daily.alt': '오늘의 도전 — 시드로 결정된 모디파이어와 던전 한 컷.',
+    'landing.screenshot.party.alt': '세르파 길드 — 알고리즘 별 세르파를 영입하는 파티 화면.',
+    'landing.screenshot.quest.alt': '챕터 진행 — 던전을 클리어할수록 다음 챕터가 열리는 구조.',
 
     'landing.quickstart.heading': '빠른 시작',
     'landing.quickstart.move': '방향키 또는 WASD 로 이동.',

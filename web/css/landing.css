@@ -197,17 +197,15 @@ a {
     margin-bottom: 12px;
 }
 
-.screenshot-placeholder {
+.screenshot-figure {
     width: 100%;
-    min-height: 220px;
-    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%);
-    border: 1px dashed var(--border);
+    aspect-ratio: 16 / 10;
+    object-fit: cover;
+    object-position: center top;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border);
     border-radius: 8px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--text-muted);
-    font-size: 0.85rem;
+    display: block;
 }
 
 .muted {
@@ -309,8 +307,8 @@ a {
         grid-template-columns: 1fr;
     }
 
-    .screenshot-placeholder {
-        min-height: 180px;
+    .screenshot-figure {
+        aspect-ratio: 16 / 9;
     }
 
     .quickstart-list li {

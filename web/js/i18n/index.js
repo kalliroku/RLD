@@ -60,6 +60,10 @@ export function applyTranslations(root) {
         const key = el.dataset.i18nAriaLabel;
         if (key) el.setAttribute('aria-label', t(key));
     }
+    for (const el of root.querySelectorAll('[data-i18n-alt]')) {
+        const key = el.dataset.i18nAlt;
+        if (key) el.setAttribute('alt', t(key));
+    }
 }
 
 export function setLang(lang) {

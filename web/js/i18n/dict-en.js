@@ -338,7 +338,10 @@ export const EN = {
     'landing.concept.visual.body': 'Q-value heatmap + policy arrows + sparkline on by default — a visual signature where learning is plainly visible.',
 
     'landing.screenshots.heading': 'Screenshots',
-    'landing.screenshots.coming': 'Coming soon.',
+    'landing.screenshot.training.alt': 'Q-heatmap visualization — learned values surface as cell colors and numbers.',
+    'landing.screenshot.daily.alt': 'Daily challenge — seeded modifiers and dungeon in one frame.',
+    'landing.screenshot.party.alt': 'Serpa guild — hire screen where each algorithm is a hireable character.',
+    'landing.screenshot.quest.alt': 'Chapter progression — clearing dungeons unlocks the next chapter.',
 
     'landing.quickstart.heading': 'Quick Start',
     'landing.quickstart.move': 'Move with arrow keys or WASD.',
