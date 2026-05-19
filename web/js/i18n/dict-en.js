@@ -11,12 +11,15 @@
  *   - D-4 정체성 문구는 의역 (literal translation 부자연스러움)
  *   - Character names: transliteration 유지 (Q-kun → "Q", 사르사 → "Sarsa") — D-4 캐릭터 정체성 보존
  *   - "세르파" → "Sherpa" (시그니처 약어 보존)
- *   - 게임오버 메모 "Q-table is preserved" 같은 학명 그대로
+ *   - In-game 카피는 narrative 톤 (D-2026-05-19-1 §10 / STORY.md §RL 메타 흡수 룰):
+ *     학명 (Q-table / episode / reinforcement) 회피, "exploration" / "memory" 등
+ *     narrative 어휘로. 학명은 hover 툴팁 (B-105) 만 opt-in. landing.meta.* /
+ *     document.title 같은 외부 SEO 영역은 별 룰 (RL 키워드 유지 가능).
  */
 
 export const EN = {
     // === Document ===
-    'document.title': 'RL Dungeon — Reinforcement Learning Roguelike',
+    'document.title': 'RL Dungeon — Serpa Guild',
 
     // === Title screen ===
     'title.logo': 'RL DUNGEON',
@@ -40,7 +43,7 @@ export const EN = {
     // === Dev Mode header ===
     'dev.back_to_game': 'Back to Game',
     'dev.title': 'RL Dungeon',
-    'dev.subtitle': 'Reinforcement Learning Dungeon — Dev Mode',
+    'dev.subtitle': 'Serpa Guild — Guildmaster\'s Log',
 
     // === Mode tabs ===
     'mode.play': 'Play',
@@ -53,10 +56,10 @@ export const EN = {
 
     // === Overlays ===
     'overlay.game_over.title': 'GAME OVER',
-    'overlay.game_over.note': 'Q-table is preserved. Your Sherpas remember everything.',
+    'overlay.game_over.note': 'The Sherpa\'s memory persists. The next attempt will reach further.',
     'overlay.game_over.new_run': 'New Run',
     'overlay.ending.title': 'ALL DUNGEONS CLEARED!',
-    'overlay.ending.note': 'Q-tables preserved. Can you beat your record?',
+    'overlay.ending.note': 'The Sherpa\'s memory persists. Can you beat your record?',
     'overlay.ending.new_game_plus': 'New Game+',
     'overlay.briefing.back': 'Back',
     'overlay.briefing.deploy': 'Deploy',
@@ -260,7 +263,7 @@ export const EN = {
     // === Tutorial steps (5개) ===
     'tutorial.welcome': "Welcome! Use arrow keys to move your Sherpa to the green G (goal).",
     'tutorial.first_dungeon': "First dungeon cleared! Move on, or use AI Training to teach your Sherpa the path.",
-    'tutorial.ai_training': 'AI Training lets your Sherpa find the optimal path on its own. Try different speeds — Instant is fastest. Each episode costs gold.',
+    'tutorial.ai_training': 'The Sherpa learns the dungeon through repeated exploration. Try different speeds — Instant is fastest. Each exploration costs gold.',
     'tutorial.economy': 'Dungeons now cost gold to enter. Sell maps for instant cash, or keep them for farming runs.',
     'tutorial.farming': 'Farming unlocked! Assign a trained Sherpa to a cleared dungeon to earn gold automatically.',
     'tutorial.dismiss': 'OK',
@@ -278,9 +281,9 @@ export const EN = {
     'item.escape_rope.name': 'Emergency Rope',
     'item.escape_rope.desc': 'Instant return to start (death prevention)',
     'item.defense_contract.name': 'Defense Contract',
-    'item.defense_contract.desc': 'Damage halved for 1 episode',
+    'item.defense_contract.desc': 'Damage halved for 1 exploration',
     'item.trap_nullify.name': 'Trap Disarm Contract',
-    'item.trap_nullify.desc': 'Traps nullified for 1 episode',
+    'item.trap_nullify.desc': 'Traps nullified for 1 exploration',
 
     // === Character personalities (15종, hire.confirm 노출) ===
     'character.personality.qkun': 'Cheerful Fool',
@@ -340,7 +343,7 @@ export const EN = {
     'landing.screenshots.heading': 'Screenshots',
     'landing.screenshot.training.alt': 'Q-heatmap visualization — learned values surface as cell colors and numbers.',
     'landing.screenshot.daily.alt': 'Daily challenge — seeded modifiers and dungeon in one frame.',
-    'landing.screenshot.party.alt': 'Serpa guild — hire screen where each algorithm is a hireable character.',
+    'landing.screenshot.party.alt': 'Serpa guild — hire screen with one character per algorithm.',
     'landing.screenshot.quest.alt': 'Chapter progression — clearing dungeons unlocks the next chapter.',
 
     'landing.quickstart.heading': 'Quick Start',

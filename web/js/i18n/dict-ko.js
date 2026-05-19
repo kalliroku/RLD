@@ -30,7 +30,7 @@
 
 export const KO = {
     // === Document ===
-    'document.title': 'RL Dungeon - 강화학습 던전',
+    'document.title': 'RL Dungeon — 세르파 길드',
 
     // === Title screen ===
     'title.logo': 'RL DUNGEON',
@@ -54,7 +54,7 @@ export const KO = {
     // === Dev Mode header ===
     'dev.back_to_game': '게임으로 돌아가기',
     'dev.title': 'RL Dungeon',
-    'dev.subtitle': '강화학습 던전 탐험 — Dev Mode',
+    'dev.subtitle': '세르파 길드 — 길드장의 기록',
 
     // === Mode tabs ===
     'mode.play': '플레이',
@@ -67,10 +67,10 @@ export const KO = {
 
     // === Overlays ===
     'overlay.game_over.title': 'GAME OVER',  // 게임 관례 영문 보존
-    'overlay.game_over.note': 'Q-테이블은 보존됩니다. 세르파는 모든 것을 기억합니다.',
+    'overlay.game_over.note': '세르파의 기억은 보존됩니다. 다음 시도에서 더 멀리 갈 겁니다.',
     'overlay.game_over.new_run': '새 런',
     'overlay.ending.title': '모든 던전 답파!',
-    'overlay.ending.note': 'Q-테이블은 보존됩니다. 자신의 기록을 갱신해보세요.',
+    'overlay.ending.note': '세르파의 기억은 보존됩니다. 자신의 기록을 갱신해보세요.',
     'overlay.ending.new_game_plus': 'New Game+',  // NG+ 게임 관례 영문 보존
     'overlay.briefing.back': '뒤로',
     'overlay.briefing.deploy': '출진',
@@ -91,7 +91,7 @@ export const KO = {
 
     // === Game UI ===
     'food_warning': '식량 부족! 세르파가 굶주리고 있습니다!',
-    'sparkline.label': '학습 성공률',
+    'sparkline.label': '탐험 성공률',
     'placeholder.silent_q.title': '침묵의 학습',
     'placeholder.silent_q.desc': '시각화 차단됨 — 모디파이어 효과',
 
@@ -274,7 +274,7 @@ export const KO = {
     // === Tutorial steps (5개, 컨텍스트 트리거) ===
     'tutorial.welcome': '환영합니다! 방향키로 세르파를 움직여 녹색 G (목표) 에 도달하세요.',
     'tutorial.first_dungeon': '첫 던전 클리어! 다음 던전으로 가거나, AI 학습 패널에서 세르파에게 길을 외우게 시켜보세요.',
-    'tutorial.ai_training': 'AI 학습은 세르파가 최적 경로를 스스로 찾게 합니다. 속도를 바꿔보세요 — 즉시가 가장 빠릅니다. 에피소드마다 골드가 소비됩니다.',
+    'tutorial.ai_training': '세르파는 던전을 반복 탐험하며 길을 익힙니다. 속도를 바꿔보세요 — 즉시가 가장 빠릅니다. 매 탐험마다 골드가 소비됩니다.',
     'tutorial.economy': '이제 던전 입장에 골드가 듭니다. 지도를 팔아 즉시 현금으로 바꾸거나, 보관해서 전용 파밍 런을 돌리세요.',
     'tutorial.farming': '파밍 해금! 학습 완료된 세르파를 클리어한 던전에 배치하면 자동으로 골드를 벌어옵니다.',
     'tutorial.dismiss': '확인',
@@ -292,9 +292,9 @@ export const KO = {
     'item.escape_rope.name': '긴급 탈출 로프',
     'item.escape_rope.desc': '즉시 입구로 귀환 (사망 방지)',
     'item.defense_contract.name': '방어 용병 계약',
-    'item.defense_contract.desc': '1에피소드 피해 반감',
+    'item.defense_contract.desc': '1탐험 피해 반감',
     'item.trap_nullify.name': '함정 해제사 계약',
-    'item.trap_nullify.desc': '1에피소드 함정 무효',
+    'item.trap_nullify.desc': '1탐험 함정 무효',
 
     // === Character personalities (15종, hire.confirm 노출) ===
     'character.personality.qkun': '낙관적 멍청이',
@@ -352,7 +352,7 @@ export const KO = {
     'landing.concept.visual.body': 'Q-value 히트맵 + 정책 화살표 + sparkline 디폴트 ON — 학습이 눈에 보이는 시각 시그니처.',
 
     'landing.screenshots.heading': '스크린샷',
-    'landing.screenshot.training.alt': 'Q-heatmap 시각화 — 강화학습 결과가 매 셀의 색과 가치값으로 노출.',
+    'landing.screenshot.training.alt': 'Q-heatmap 시각화 — 각 셀의 색과 값에 세르파의 학습 결과가 드러나는 화면.',
     'landing.screenshot.daily.alt': '오늘의 도전 — 시드로 결정된 모디파이어와 던전 한 컷.',
     'landing.screenshot.party.alt': '세르파 길드 — 알고리즘 별 세르파를 영입하는 파티 화면.',
     'landing.screenshot.quest.alt': '챕터 진행 — 던전을 클리어할수록 다음 챕터가 열리는 구조.',
