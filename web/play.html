@@ -423,72 +423,72 @@
 
             <div class="controls editor-controls" id="editor-controls" style="display: none;">
                 <nav class="editor-subtabs">
-                    <button class="editor-subtab active" data-subtab="stage">Stage</button>
-                    <button class="editor-subtab" data-subtab="dungeon">Dungeon</button>
+                    <button class="editor-subtab active" data-subtab="stage" data-i18n="editor.tab.stage">Stage</button>
+                    <button class="editor-subtab" data-subtab="dungeon" data-i18n="editor.tab.dungeon">Dungeon</button>
                 </nav>
 
                 <!-- ===== Stage Panel (Tile Editor) ===== -->
                 <div class="editor-panel" id="stage-panel">
                     <div class="control-section">
-                        <h3>Grid Size</h3>
+                        <h3 data-i18n="editor.head.grid_size">Grid Size</h3>
                         <div class="size-controls">
                             <label class="size-label">W: <input type="number" id="grid-width" class="size-input" value="7" min="3" max="25"></label>
                             <label class="size-label">H: <input type="number" id="grid-height" class="size-input" value="7" min="3" max="25"></label>
-                            <button class="btn-small" id="btn-apply-size">Apply</button>
+                            <button class="btn-small" id="btn-apply-size" data-i18n="editor.btn.apply">Apply</button>
                         </div>
                     </div>
 
                     <div class="control-section">
-                        <h3>Tile Palette</h3>
+                        <h3 data-i18n="editor.head.tile_palette">Tile Palette</h3>
                         <div class="tile-palette" id="tile-palette">
                             <!-- Generated dynamically by JS -->
                         </div>
                     </div>
 
                     <div class="control-section">
-                        <h3>Tools</h3>
+                        <h3 data-i18n="editor.head.tools">Tools</h3>
                         <div class="tool-buttons">
-                            <button class="btn-tool active" data-tool="brush">Brush</button>
-                            <button class="btn-tool" data-tool="eraser">Eraser</button>
-                            <button class="btn-tool" data-tool="fill">Fill</button>
+                            <button class="btn-tool active" data-tool="brush" data-i18n="editor.tool.brush">Brush</button>
+                            <button class="btn-tool" data-tool="eraser" data-i18n="editor.tool.eraser">Eraser</button>
+                            <button class="btn-tool" data-tool="fill" data-i18n="editor.tool.fill">Fill</button>
                         </div>
                     </div>
 
                     <div class="control-section">
-                        <h3>Actions</h3>
+                        <h3 data-i18n="editor.head.actions">Actions</h3>
                         <div class="action-buttons">
-                            <button class="btn-small btn-action" id="btn-undo">Undo</button>
-                            <button class="btn-small btn-action" id="btn-redo">Redo</button>
-                            <button class="btn-small btn-action" id="btn-clear">Clear</button>
-                            <button class="btn-small btn-action btn-validate" id="btn-validate">Validate</button>
+                            <button class="btn-small btn-action" id="btn-undo" data-i18n="editor.btn.undo">Undo</button>
+                            <button class="btn-small btn-action" id="btn-redo" data-i18n="editor.btn.redo">Redo</button>
+                            <button class="btn-small btn-action" id="btn-clear" data-i18n="editor.btn.clear">Clear</button>
+                            <button class="btn-small btn-action btn-validate" id="btn-validate" data-i18n="editor.btn.validate">Validate</button>
                         </div>
                     </div>
 
                     <div class="control-section">
-                        <h3>Stage Library</h3>
+                        <h3 data-i18n="editor.head.stage_library">Stage Library</h3>
                         <div class="save-controls">
-                            <input type="text" id="dungeon-name-input" class="dungeon-name-input" placeholder="Stage name...">
-                            <button class="btn-small btn-save" id="btn-save-dungeon">Save</button>
+                            <input type="text" id="dungeon-name-input" class="dungeon-name-input" placeholder="Stage name..." data-i18n-placeholder="editor.placeholder.stage_name">
+                            <button class="btn-small btn-save" id="btn-save-dungeon" data-i18n="editor.btn.save">Save</button>
                         </div>
                         <div class="load-controls">
                             <select id="custom-dungeon-select">
-                                <option value="">-- Select --</option>
+                                <option value="" data-i18n="editor.option.select">-- Select --</option>
                             </select>
                             <div class="load-buttons">
-                                <button class="btn-small" id="btn-load-dungeon">Load</button>
-                                <button class="btn-small btn-danger-small" id="btn-delete-dungeon">Delete</button>
+                                <button class="btn-small" id="btn-load-dungeon" data-i18n="editor.btn.load">Load</button>
+                                <button class="btn-small btn-danger-small" id="btn-delete-dungeon" data-i18n="editor.btn.delete">Delete</button>
                             </div>
                         </div>
                     </div>
 
                     <div class="control-section">
-                        <button class="btn-play-dungeon" id="btn-play-dungeon">Play This Stage</button>
+                        <button class="btn-play-dungeon" id="btn-play-dungeon" data-i18n="editor.btn.play_stage">Play This Stage</button>
                     </div>
 
                     <div class="control-section" id="quick-test-section">
-                        <h3>Quick Test</h3>
+                        <h3 data-i18n="editor.head.quick_test">Quick Test</h3>
                         <div class="quick-test-char-select">
-                            <span class="speed-label">Character:</span>
+                            <span class="speed-label" data-i18n="editor.qt.character">Character:</span>
                             <select id="qt-character">
                                 <option value="qkun">Q군 (Q-Learning)</option>
                                 <option value="scout">스카우트 (Local Q)</option>
@@ -508,7 +508,7 @@
                             </select>
                         </div>
                         <div class="quick-test-episodes">
-                            <span class="speed-label">Episodes:</span>
+                            <span class="speed-label" data-i18n="editor.qt.episodes">Episodes:</span>
                             <select id="qt-episodes">
                                 <option value="500">500</option>
                                 <option value="1000" selected>1000</option>
@@ -517,8 +517,8 @@
                             </select>
                         </div>
                         <div class="quick-test-buttons">
-                            <button class="btn-train" id="btn-quick-test">Quick Test</button>
-                            <button class="btn-stop" id="btn-quick-test-stop" disabled>Stop</button>
+                            <button class="btn-train" id="btn-quick-test" data-i18n="editor.btn.quick_test">Quick Test</button>
+                            <button class="btn-stop" id="btn-quick-test-stop" disabled data-i18n="editor.btn.stop">Stop</button>
                         </div>
                         <div class="quick-test-progress" id="qt-progress" style="display: none;">
                             <div class="progress-bar">
@@ -528,17 +528,17 @@
                         </div>
                         <div class="quick-test-results" id="qt-results"></div>
                         <label class="checkbox-label">
-                            <input type="checkbox" id="qt-show-policy"> Show learned policy
+                            <input type="checkbox" id="qt-show-policy"> <span data-i18n="editor.qt.show_policy">Show learned policy</span>
                         </label>
                     </div>
 
                     <div class="control-section">
-                        <h3>Shortcuts</h3>
+                        <h3 data-i18n="editor.head.shortcuts">Shortcuts</h3>
                         <div class="key-hints">
-                            <span class="key">0-8</span> Select tile<br>
-                            <span class="key">Ctrl+Z</span> Undo<br>
-                            <span class="key">Ctrl+Y</span> Redo<br>
-                            <span class="key">Right-click</span> Erase
+                            <span class="key">0-8</span> <span data-i18n="editor.short.select_tile">Select tile</span><br>
+                            <span class="key">Ctrl+Z</span> <span data-i18n="editor.btn.undo">Undo</span><br>
+                            <span class="key">Ctrl+Y</span> <span data-i18n="editor.btn.redo">Redo</span><br>
+                            <span class="key">Right-click</span> <span data-i18n="editor.short.erase">Erase</span>
                         </div>
                     </div>
                 </div>
@@ -546,45 +546,45 @@
                 <!-- ===== Dungeon Panel (Dungeon Composer) ===== -->
                 <div class="editor-panel" id="dungeon-panel" style="display: none;">
                     <div class="control-section">
-                        <h3>Dungeon Composer</h3>
-                        <input type="text" id="dungeon-composer-name" class="dungeon-name-input" placeholder="Dungeon name...">
+                        <h3 data-i18n="editor.head.dungeon_composer">Dungeon Composer</h3>
+                        <input type="text" id="dungeon-composer-name" class="dungeon-name-input" placeholder="Dungeon name..." data-i18n-placeholder="editor.placeholder.dungeon_name">
                     </div>
 
                     <div class="control-section">
-                        <h3>Floors</h3>
+                        <h3 data-i18n="editor.head.floors">Floors</h3>
                         <div id="dungeon-floor-list" class="dungeon-floor-list">
                             <!-- Dynamic floor slots -->
                         </div>
-                        <button class="btn-small btn-add-floor" id="btn-add-floor">+ Add Floor</button>
+                        <button class="btn-small btn-add-floor" id="btn-add-floor" data-i18n="editor.btn.add_floor">+ Add Floor</button>
                     </div>
 
                     <div class="control-section">
-                        <h3>Rules</h3>
+                        <h3 data-i18n="editor.head.rules">Rules</h3>
                         <label class="checkbox-label">
-                            <input type="checkbox" id="dungeon-hp-carry" checked> HP Carry Over
+                            <input type="checkbox" id="dungeon-hp-carry" checked> <span data-i18n="editor.rule.hp_carry">HP Carry Over</span>
                         </label>
                         <label class="checkbox-label">
-                            <input type="checkbox" id="dungeon-gold-on-clear" checked> Gold on Clear Only
+                            <input type="checkbox" id="dungeon-gold-on-clear" checked> <span data-i18n="editor.rule.gold_on_clear">Gold on Clear Only</span>
                         </label>
                     </div>
 
                     <div class="control-section">
                         <div class="save-controls">
-                            <button class="btn-small btn-save" id="btn-save-dungeon-comp" style="width:100%">Save Dungeon</button>
+                            <button class="btn-small btn-save" id="btn-save-dungeon-comp" style="width:100%" data-i18n="editor.btn.save_dungeon">Save Dungeon</button>
                         </div>
                         <div class="load-controls">
                             <select id="dungeon-comp-select">
-                                <option value="">-- Select Dungeon --</option>
+                                <option value="" data-i18n="editor.option.select_dungeon">-- Select Dungeon --</option>
                             </select>
                             <div class="load-buttons">
-                                <button class="btn-small" id="btn-load-dungeon-comp">Load</button>
-                                <button class="btn-small btn-danger-small" id="btn-delete-dungeon-comp">Delete</button>
+                                <button class="btn-small" id="btn-load-dungeon-comp" data-i18n="editor.btn.load">Load</button>
+                                <button class="btn-small btn-danger-small" id="btn-delete-dungeon-comp" data-i18n="editor.btn.delete">Delete</button>
                             </div>
                         </div>
                     </div>
 
                     <div class="control-section">
-                        <button class="btn-play-dungeon" id="btn-play-dungeon-comp">Play This Dungeon</button>
+                        <button class="btn-play-dungeon" id="btn-play-dungeon-comp" data-i18n="editor.btn.play_dungeon">Play This Dungeon</button>
                     </div>
                 </div>
 

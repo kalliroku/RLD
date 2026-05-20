@@ -354,6 +354,57 @@ export const KO = {
     'character.desc.treeback': 'n걸음 앞을 내다보는 전략가. 기대값의 나무를 키웁니다.',
     'character.desc.sweeper': '중요한 것부터 정리하는 효율주의자. 다이나의 진화형.',
 
+    // === Editor (D-3 던전 마스터 모드 — Act 2 후 콘텐츠, 시스템 라벨이라 학명 보존: 에피소드 / HP) ===
+    // Subtabs
+    'editor.tab.stage': '스테이지',
+    'editor.tab.dungeon': '던전',
+    // Section headings
+    'editor.head.grid_size': '그리드 크기',
+    'editor.head.tile_palette': '타일 팔레트',
+    'editor.head.tools': '도구',
+    'editor.head.actions': '동작',
+    'editor.head.stage_library': '스테이지 라이브러리',
+    'editor.head.quick_test': '빠른 테스트',
+    'editor.head.shortcuts': '단축키',
+    'editor.head.dungeon_composer': '던전 구성기',
+    'editor.head.floors': '층',
+    'editor.head.rules': '규칙',
+    // Buttons
+    'editor.btn.apply': '적용',
+    'editor.btn.undo': '되돌리기',
+    'editor.btn.redo': '다시 실행',
+    'editor.btn.clear': '비우기',
+    'editor.btn.validate': '검증',
+    'editor.btn.save': '저장',
+    'editor.btn.load': '불러오기',
+    'editor.btn.delete': '삭제',
+    'editor.btn.play_stage': '이 스테이지 플레이',
+    'editor.btn.save_dungeon': '던전 저장',
+    'editor.btn.play_dungeon': '이 던전 플레이',
+    'editor.btn.add_floor': '+ 층 추가',
+    'editor.btn.quick_test': '빠른 테스트',
+    'editor.btn.stop': '중지',
+    // Tools
+    'editor.tool.brush': '브러시',
+    'editor.tool.eraser': '지우개',
+    'editor.tool.fill': '채우기',
+    // Placeholders
+    'editor.placeholder.stage_name': '스테이지 이름...',
+    'editor.placeholder.dungeon_name': '던전 이름...',
+    // Select options
+    'editor.option.select': '-- 선택 --',
+    'editor.option.select_dungeon': '-- 던전 선택 --',
+    // Quick test labels
+    'editor.qt.character': '캐릭터:',
+    'editor.qt.episodes': '에피소드:',  // 학명 보존 (개발자 영역)
+    'editor.qt.show_policy': '학습 정책 보기',
+    // Shortcut hints (Undo/Redo 는 btn.* 재사용)
+    'editor.short.select_tile': '타일 선택',
+    'editor.short.erase': '지우기',
+    // Rules
+    'editor.rule.hp_carry': 'HP 이월',  // HP 학명 약어 보존
+    'editor.rule.gold_on_clear': '클리어 시만 골드',
+
     // === Language toggle ===
     'lang.toggle': 'EN',
     'lang.toggle.aria_label': '언어 전환',

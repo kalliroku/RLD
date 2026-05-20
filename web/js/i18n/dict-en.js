@@ -343,6 +343,57 @@ export const EN = {
     'character.desc.treeback': 'Strategist that sees n steps ahead. Grows trees of expectation.',
     'character.desc.sweeper': 'Prioritizes what matters most. Dyna evolved.',
 
+    // === Editor (D-3 dungeon-master mode — Act 2-onward content, system labels keep scientific terms) ===
+    // Subtabs
+    'editor.tab.stage': 'Stage',
+    'editor.tab.dungeon': 'Dungeon',
+    // Section headings
+    'editor.head.grid_size': 'Grid Size',
+    'editor.head.tile_palette': 'Tile Palette',
+    'editor.head.tools': 'Tools',
+    'editor.head.actions': 'Actions',
+    'editor.head.stage_library': 'Stage Library',
+    'editor.head.quick_test': 'Quick Test',
+    'editor.head.shortcuts': 'Shortcuts',
+    'editor.head.dungeon_composer': 'Dungeon Composer',
+    'editor.head.floors': 'Floors',
+    'editor.head.rules': 'Rules',
+    // Buttons
+    'editor.btn.apply': 'Apply',
+    'editor.btn.undo': 'Undo',
+    'editor.btn.redo': 'Redo',
+    'editor.btn.clear': 'Clear',
+    'editor.btn.validate': 'Validate',
+    'editor.btn.save': 'Save',
+    'editor.btn.load': 'Load',
+    'editor.btn.delete': 'Delete',
+    'editor.btn.play_stage': 'Play This Stage',
+    'editor.btn.save_dungeon': 'Save Dungeon',
+    'editor.btn.play_dungeon': 'Play This Dungeon',
+    'editor.btn.add_floor': '+ Add Floor',
+    'editor.btn.quick_test': 'Quick Test',
+    'editor.btn.stop': 'Stop',
+    // Tools
+    'editor.tool.brush': 'Brush',
+    'editor.tool.eraser': 'Eraser',
+    'editor.tool.fill': 'Fill',
+    // Placeholders
+    'editor.placeholder.stage_name': 'Stage name...',
+    'editor.placeholder.dungeon_name': 'Dungeon name...',
+    // Select options
+    'editor.option.select': '-- Select --',
+    'editor.option.select_dungeon': '-- Select Dungeon --',
+    // Quick test labels
+    'editor.qt.character': 'Character:',
+    'editor.qt.episodes': 'Episodes:',
+    'editor.qt.show_policy': 'Show learned policy',
+    // Shortcut hints (Undo/Redo reuse btn.*)
+    'editor.short.select_tile': 'Select tile',
+    'editor.short.erase': 'Erase',
+    // Rules
+    'editor.rule.hp_carry': 'HP Carry Over',
+    'editor.rule.gold_on_clear': 'Gold on Clear Only',
+
     // === Language toggle ===
     'lang.toggle': '한국어',
     'lang.toggle.aria_label': 'Switch language',
