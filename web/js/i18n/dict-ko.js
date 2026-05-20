@@ -436,6 +436,47 @@ export const KO = {
     'editor.err.test_running': '테스트 실행 중',
     'editor.err.qt_not_configured': '빠른 테스트 미설정',
 
+    // === Dungeon names (27 + backward compat 4, D-2026-05-19-1 narrative 흡수 — 분위기/현상 + 추상 컬러만, 출처/진영/인물 직접 박힘 0건, 깊이는 B-105 hover opt-in)
+    // Ch.1 첫 발걸음
+    'dungeon.level_01_easy': '첫걸음',
+    'dungeon.level_02_trap': '첫 함정',
+    'dungeon.level_03_maze': '시작의 미로',
+    // Ch.2 위험한 길
+    'dungeon.level_04_pit': '구덩이 골짜기',
+    'dungeon.level_05_gold': '황금의 길',
+    'dungeon.level_06_risk': '위험과 보상',
+    'dungeon.level_07_gauntlet': '시련의 회랑',
+    // Ch.3 넓은 세계 (HP 모디파이어 영역)
+    'dungeon.level_08_deadly': '죽음의 미궁',
+    'dungeon.level_09_treasure': '보물 사냥',
+    'dungeon.level_10_final': '변곡점',
+    'dungeon.level_11_hp_test': '인내 시험',  // HP 학명 회피 (in-game narrative 흡수, 단 briefing 시스템 라벨은 "HP 이월" 보존)
+    'dungeon.level_12_hp_gauntlet': '인내 회랑',
+    // Ch.4 직감과 비평
+    'dungeon.level_13_cliff': '절벽 길',
+    'dungeon.level_14_long_hall': '끝없는 복도',
+    'dungeon.level_15_multi_room': '미로의 방들',
+    'dungeon.level_16_open_field': '황량한 평원',
+    'dungeon.level_17_two_paths': '두 갈래 길',
+    // Ch.5 합의의 힘
+    'dungeon.level_18_dead_end': '막다른 미궁',
+    'dungeon.level_19_bridge': '좁은 다리',
+    'dungeon.level_24_paper_maze': '종이 미로',
+    'dungeon.level_25_paper_hard': '종이 미로 너머',
+    // Ch.6 불확실한 바닥 (빙판 모디파이어 영역)
+    'dungeon.level_26_frozen_lake': '빙판 호수',
+    'dungeon.level_27_ice_maze': '얼어붙은 미로',
+    'dungeon.level_28_frozen_cliff': '빙판 절벽',
+    // Ch.7 심연
+    'dungeon.level_29_big_maze': '거대한 미궁 (25×25)',
+    'dungeon.level_30_generated_cave': '심연의 동굴 (50×50)',
+    'dungeon.level_31_generated_rooms': '심연의 방들 (50×50)',
+    // Backward compat (B-103 컷, DUNGEON_ORDER 미포함 — 영문 잔존 방지)
+    'dungeon.level_20_sacrifice': '절벽 답파',
+    'dungeon.level_21_desert': '사막 횡단',
+    'dungeon.level_22_arena': '몬스터 투기장',
+    'dungeon.level_23_mirage': '신기루',
+
     // === Language toggle ===
     'lang.toggle': 'EN',
     'lang.toggle.aria_label': '언어 전환',

@@ -1858,40 +1858,10 @@ class Game {
     }
 
     getDungeonDisplayName(dungeonId) {
-        const names = {
-            level_01_easy: 'Tutorial',
-            level_02_trap: 'First Trap',
-            level_03_maze: 'Maze',
-            level_04_pit: 'Pit Danger',
-            level_05_gold: 'Gold Rush',
-            level_06_risk: 'Risk & Reward',
-            level_07_gauntlet: 'Gauntlet',
-            level_08_deadly: 'Deadly Maze',
-            level_09_treasure: 'Treasure Hunt',
-            level_10_final: 'Final',
-            level_11_hp_test: 'HP Test',
-            level_12_hp_gauntlet: 'HP Gauntlet',
-            level_13_cliff: 'Cliff Walk',
-            level_14_long_hall: 'Long Hall',
-            level_15_multi_room: 'Multi Room',
-            level_16_open_field: 'Open Field',
-            level_17_two_paths: 'Two Paths',
-            level_18_dead_end: 'Dead End Labyrinth',
-            level_19_bridge: 'Narrow Bridge',
-            level_20_sacrifice: 'Cliff Walking',
-            level_21_desert: 'Desert Crossing',
-            level_22_arena: 'Monster Arena',
-            level_23_mirage: 'The Mirage',
-            level_24_paper_maze: 'Paper Maze',
-            level_25_paper_hard: 'Paper Maze+',
-            level_26_frozen_lake: 'Frozen Lake',
-            level_27_ice_maze: 'Ice Maze',
-            level_28_frozen_cliff: 'Frozen Cliff',
-            level_29_big_maze: 'Big Maze (25×25)',
-            level_30_generated_cave: 'Cave (50×50)',
-            level_31_generated_rooms: 'Rooms (50×50)'
-        };
-        return names[dungeonId] || dungeonId;
+        // W16: dict 양사전 박힘 — dungeon.<level_id> 패턴. fallback = dungeonId (커스텀/preset 등).
+        const key = `dungeon.${dungeonId}`;
+        const val = t(key);
+        return val === key ? dungeonId : val;
     }
 
     getDungeonLevel(dungeonId) {
