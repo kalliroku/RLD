@@ -189,11 +189,15 @@ class Game {
         this.briefing.onBack = () => {};
 
         // W11/W12: 언어 토글 시 마지막 editor render thunk 재평가 (briefing 은 자체 구독)
+        // W15: composer floor list (dungeon subtab visible 시) 도 함께 재렌더
         this._lastEditorRender = null;
         this._lastEditorType = null;
         onLangChange(() => {
             if (this._lastEditorRender) {
                 this.showEditorMessage(this._lastEditorRender(), this._lastEditorType);
+            }
+            if (this.currentMode === 'editor' && this.editorSubtab === 'dungeon') {
+                this.renderComposerFloors();
             }
         });
 
