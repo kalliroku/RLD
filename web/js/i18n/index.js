@@ -4,10 +4,20 @@
  * 패턴 (D-2026-05-14-15 M5 폴리시):
  *   - HTML 정적: <... data-i18n="key"> / data-i18n-title / data-i18n-placeholder
  *   - JS 동적:   t('key', { steps: 12 })   //  "{steps}" 보간
+ *   - innerHTML 보간: tHtml('key', { name: x })   // params 값만 HTML escape (dict 값은 trusted)
  *
  * 누락 키는 fallback 한국어 → 그것도 없으면 key 자체 반환 (dev surface).
  * localStorage rld_lang 박제. private mode 가드.
  */
+
+function escapeHtmlValue(v) {
+    return String(v)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+}
 
 import { KO } from './dict-ko.js';
 import { EN } from './dict-en.js';
@@ -37,6 +47,21 @@ export function t(key, params) {
     if (val == null) return key;
     if (params && typeof val === 'string') {
         return val.replace(/\{(\w+)\}/g, (m, k) => (params[k] != null ? params[k] : m));
+    }
+    return val;
+}
+
+// innerHTML 경로 전용. dict 값 자체는 trusted (개발자 작성) 라 escape 안 함,
+// params 값만 HTML escape — 향후 외부 입력 (캐릭터명 등) 보간 시 XSS 가드.
+export function tHtml(key, params) {
+    const dict = DICTS[currentLang] || DICTS[FALLBACK_LANG];
+    let val = dict[key];
+    if (val == null && currentLang !== FALLBACK_LANG) {
+        val = DICTS[FALLBACK_LANG][key];
+    }
+    if (val == null) return key;
+    if (params && typeof val === 'string') {
+        return val.replace(/\{(\w+)\}/g, (m, k) => (params[k] != null ? escapeHtmlValue(params[k]) : m));
     }
     return val;
 }

@@ -5,7 +5,7 @@
 
 import { DUNGEON_CONFIG, DUNGEON_HINTS, BASE_OP_COST } from './game-config.js';
 import { CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS } from './run-state.js';
-import { t } from '../i18n/index.js';
+import { t, tHtml } from '../i18n/index.js';
 
 export class BriefingOverlay {
     constructor() {
@@ -54,32 +54,32 @@ export class BriefingOverlay {
 
         // Cost/reward details
         const reward = isCleared ? config.repeatReward : config.firstReward;
-        const rewardLabel = isCleared ? 'Repeat Reward' : 'First Clear Reward';
+        const rewardLabel = isCleared ? t('overlay.briefing.repeat_reward') : t('overlay.briefing.first_reward');
         const opCost = (BASE_OP_COST[charName] ?? 10) * parseInt(levelNum);
         const treasure = DUNGEON_TREASURES[dungeonId];
-        const slippery = config.slippery ? ' [Slippery]' : '';
-        const hpAware = config.useHpState ? ' [HP-Aware]' : '';
+        const slippery = config.slippery ? ` ${t('overlay.briefing.mod_slippery')}` : '';
+        const hpAware = config.useHpState ? ` ${t('overlay.briefing.mod_hp_aware')}` : '';
 
         let detailsHtml = `
-            <div class="brief-row"><span class="brief-label">Entry Cost</span><span class="brief-val brief-gold">${config.cost}G</span></div>
+            <div class="brief-row"><span class="brief-label">${t('overlay.briefing.entry_cost')}</span><span class="brief-val brief-gold">${config.cost}G</span></div>
             <div class="brief-row"><span class="brief-label">${rewardLabel}</span><span class="brief-val brief-reward">${reward}G</span></div>
-            <div class="brief-row"><span class="brief-label">Train Cost</span><span class="brief-val">${opCost}G/ep</span></div>
+            <div class="brief-row"><span class="brief-label">${t('overlay.briefing.train_cost')}</span><span class="brief-val">${opCost}G/ep</span></div>
         `;
         if (treasure) {
-            detailsHtml += `<div class="brief-row"><span class="brief-label">Treasure</span><span class="brief-val brief-reward">${treasure.value}G</span></div>`;
+            detailsHtml += `<div class="brief-row"><span class="brief-label">${t('overlay.briefing.treasure')}</span><span class="brief-val brief-reward">${treasure.value}G</span></div>`;
         }
         if (slippery || hpAware) {
-            detailsHtml += `<div class="brief-row"><span class="brief-label">Modifiers</span><span class="brief-val brief-warn">${slippery}${hpAware}</span></div>`;
+            detailsHtml += `<div class="brief-row"><span class="brief-label">${t('overlay.briefing.modifiers')}</span><span class="brief-val brief-warn">${slippery}${hpAware}</span></div>`;
         }
-        detailsHtml += `<div class="brief-row brief-status"><span class="brief-label">Your Gold</span><span class="brief-val ${runState.gold < config.cost ? 'brief-danger' : 'brief-gold'}">${runState.gold}G</span></div>`;
-        detailsHtml += `<div class="brief-row brief-status"><span class="brief-label">Food</span><span class="brief-val">${runState.food}</span></div>`;
+        detailsHtml += `<div class="brief-row brief-status"><span class="brief-label">${t('overlay.briefing.your_gold')}</span><span class="brief-val ${runState.gold < config.cost ? 'brief-danger' : 'brief-gold'}">${runState.gold}G</span></div>`;
+        detailsHtml += `<div class="brief-row brief-status"><span class="brief-label">${t('overlay.briefing.food')}</span><span class="brief-val">${runState.food}</span></div>`;
 
         this.detailsEl.innerHTML = detailsHtml;
 
         // Hints
         const hints = DUNGEON_HINTS[dungeonId];
         if (hints && hints.length > 0) {
-            let hintHtml = '<div class="brief-section-title">Hints</div>';
+            let hintHtml = `<div class="brief-section-title">${t('overlay.briefing.hints_title')}</div>`;
             for (let i = 0; i < hints.length; i++) {
                 const purchased = runState.hasHint(dungeonId, i);
                 if (purchased) {
@@ -95,10 +95,10 @@ export class BriefingOverlay {
 
         // Provisions quick-buy
         this.provisionsEl.innerHTML = `
-            <div class="brief-section-title">Quick Provisions</div>
+            <div class="brief-section-title">${t('overlay.briefing.provisions_title')}</div>
             <div class="brief-provisions-row">
-                <button class="btn-small btn-brief-food" data-amount="10">+10 Food (10G)</button>
-                <button class="btn-small btn-brief-food" data-amount="50">+50 Food (50G)</button>
+                <button class="btn-small btn-brief-food" data-amount="10">${tHtml('overlay.briefing.food_buy', { amount: 10, cost: 10 })}</button>
+                <button class="btn-small btn-brief-food" data-amount="50">${tHtml('overlay.briefing.food_buy', { amount: 50, cost: 50 })}</button>
             </div>
         `;
 

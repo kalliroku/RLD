@@ -84,6 +84,20 @@ export const KO = {
     'overlay.ending.new_game_plus': 'New Game+',  // NG+ 게임 관례 영문 보존
     'overlay.briefing.back': '뒤로',
     'overlay.briefing.deploy': '출진',
+    // briefing 패널 라벨 (overlay.briefing.* — D-2026-05-15-16 미터치 영역 마감)
+    'overlay.briefing.entry_cost': '입장료',
+    'overlay.briefing.first_reward': '첫 답파 보상',
+    'overlay.briefing.repeat_reward': '반복 보상',
+    'overlay.briefing.train_cost': '학습 비용',  // 학명 "학습" 유지 (D-4)
+    'overlay.briefing.treasure': '보물',
+    'overlay.briefing.modifiers': '모디파이어',
+    'overlay.briefing.your_gold': '보유 골드',
+    'overlay.briefing.food': '식량',
+    'overlay.briefing.mod_slippery': '[미끄러움]',
+    'overlay.briefing.mod_hp_aware': '[HP 인지]',  // HP 학명 약어 보존
+    'overlay.briefing.hints_title': '힌트',
+    'overlay.briefing.provisions_title': '신속 보급',
+    'overlay.briefing.food_buy': '+{amount} 식량 ({cost}G)',
     'overlay.map_choice.title': '첫 클리어!',
     'overlay.map_choice.sell': '지도 판매',
     'overlay.map_choice.keep': '지도 보관',
