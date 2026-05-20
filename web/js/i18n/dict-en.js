@@ -414,6 +414,9 @@ export const EN = {
     'editor.msg.dungeon_deleted': 'Dungeon deleted',
     'editor.msg.resolve_dungeon_failed': 'Failed to resolve dungeon stages',
     'editor.msg.max_floors': 'Maximum 5 floors',
+    'editor.msg.no_floors_yet': 'No floors yet. Click "+ Add Floor" to start.',  // sync with editor.btn.add_floor
+    'editor.btn.remove_floor': 'Remove floor',
+    'editor.btn.remove_variant': 'Remove variant',
     // Editor validation errors (editor.js errors array — { key, params? } objects, surfaced via main.js showEditorErrorsMessage with errors.map(e => t(e.key, e.params)).join(', ') re-evaluated on each toggle, W12)
     'editor.err.no_grid': 'No grid created',
     'editor.err.start_missing': 'START tile is missing',

@@ -425,6 +425,9 @@ export const KO = {
     'editor.msg.dungeon_deleted': '던전 삭제됨',
     'editor.msg.resolve_dungeon_failed': '던전 스테이지 해결 실패',
     'editor.msg.max_floors': '최대 5층',
+    'editor.msg.no_floors_yet': '층이 없습니다. "+ 층 추가" 를 눌러 시작하세요.',  // editor.btn.add_floor 카피 변경 시 함께 갱신
+    'editor.btn.remove_floor': '층 삭제',  // tooltip
+    'editor.btn.remove_variant': '변형 삭제',  // tooltip
     // Editor validation errors (editor.js errors 배열 — { key, params? } 객체 push, main.js 의 showEditorErrorsMessage 에서 errors.map(e => t(e.key, e.params)).join(', ') 으로 매 토글마다 재평가, W12)
     'editor.err.no_grid': '그리드 미생성',
     'editor.err.start_missing': 'START 타일 누락',

@@ -1340,7 +1340,7 @@ class Game {
         container.innerHTML = '';
 
         if (this.composerFloors.length === 0) {
-            container.innerHTML = '<div class="dungeon-floor-empty">No floors yet. Click "+ Add Floor" to start.</div>';
+            container.innerHTML = `<div class="dungeon-floor-empty">${t('editor.msg.no_floors_yet')}</div>`;
             return;
         }
 
@@ -1360,7 +1360,7 @@ class Game {
 
             const removeBtn = document.createElement('button');
             removeBtn.className = 'btn-remove-floor';
-            removeBtn.title = 'Remove floor';
+            removeBtn.title = t('editor.btn.remove_floor');
             removeBtn.textContent = '×';
             removeBtn.addEventListener('click', (e) => {
                 e.stopPropagation();
@@ -1402,7 +1402,7 @@ class Game {
                 if (vi > 0) {
                     const rmBtn = document.createElement('button');
                     rmBtn.className = 'btn-remove-variant';
-                    rmBtn.title = 'Remove variant';
+                    rmBtn.title = t('editor.btn.remove_variant');
                     rmBtn.textContent = '×';
                     rmBtn.addEventListener('click', (e) => {
                         e.stopPropagation();
