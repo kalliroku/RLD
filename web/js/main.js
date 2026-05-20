@@ -635,14 +635,20 @@ class Game {
             playControls.style.display = 'none';
             editorControls.style.display = 'none';
             if (dailyControls) dailyControls.style.display = '';
-            if (prevMode === 'editor') this.editor.deactivate();
+            if (prevMode === 'editor') {
+                this.editor.deactivate();
+                this._lastEditorRender = null;  // W13: editor 떠날 때 thunk 캐시 reset (briefing hide() 대칭)
+            }
             this.enterDailyMode();
         } else {
             // play
             playControls.style.display = '';
             editorControls.style.display = 'none';
             if (dailyControls) dailyControls.style.display = 'none';
-            if (prevMode === 'editor') this.editor.deactivate();
+            if (prevMode === 'editor') {
+                this.editor.deactivate();
+                this._lastEditorRender = null;  // W13: editor 떠날 때 thunk 캐시 reset (briefing hide() 대칭)
+            }
             // T2B-1: returning from daily — restore the campaign dungeon.
             // T2B-2: also restore the campaign character if two_only forced a switch,
             // and the fogOfWar checkbox state (heavy_fog may have forced it on).

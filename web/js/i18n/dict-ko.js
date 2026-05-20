@@ -425,7 +425,7 @@ export const KO = {
     'editor.msg.dungeon_deleted': '던전 삭제됨',
     'editor.msg.resolve_dungeon_failed': '던전 스테이지 해결 실패',
     'editor.msg.max_floors': '최대 5층',
-    // Editor validation errors (editor.js errors 배열 push, main.js 의 errors.join 으로 사용자 노출)
+    // Editor validation errors (editor.js errors 배열 — { key, params? } 객체 push, main.js 의 showEditorErrorsMessage 에서 errors.map(e => t(e.key, e.params)).join(', ') 으로 매 토글마다 재평가, W12)
     'editor.err.no_grid': '그리드 미생성',
     'editor.err.start_missing': 'START 타일 누락',
     'editor.err.goal_missing': 'GOAL 타일 누락',
