@@ -24,7 +24,7 @@ import { generateDungeon } from './game/dungeon-generator.js';
 import { DailyHistory, getDailyChallenge, yesterdayKey } from './game/daily-mode.js';
 import { utcDateKey } from './game/rng.js';
 import { ModifierSet, MODIFIERS } from './game/modifiers.js';
-import { t, initI18n, setLang, getLang } from './i18n/index.js';
+import { t, initI18n, setLang, getLang, onLangChange } from './i18n/index.js';
 
 const PRESET_MULTI_DUNGEONS = {
     preset_beginner_tower: {
@@ -187,6 +187,15 @@ class Game {
             this.tryEnterDungeon();
         };
         this.briefing.onBack = () => {};
+
+        // W11: 언어 토글 시 마지막 editor message 자동 재계산 (briefing 은 자체 구독)
+        this._lastEditorMessage = null;
+        onLangChange(() => {
+            if (this._lastEditorMessage) {
+                const { key, type, params } = this._lastEditorMessage;
+                this.showEditorMessage(t(key, params), type);
+            }
+        });
 
         // Step 6: Tutorial
         this.tutorial = new TutorialManager();
@@ -1028,7 +1037,7 @@ class Game {
             const w = parseInt(document.getElementById('grid-width').value) || 7;
             const h = parseInt(document.getElementById('grid-height').value) || 7;
             this.editor.resizeGrid(w, h);
-            this.showEditorMessage(t('editor.msg.grid_resized', { w: this.editor.grid.width, h: this.editor.grid.height }), 'info');
+            this.showEditorI18nMessage('editor.msg.grid_resized', 'info', { w: this.editor.grid.width, h: this.editor.grid.height });
         });
 
         // Undo/Redo/Clear/Validate buttons
@@ -1036,12 +1045,12 @@ class Game {
         document.getElementById('btn-redo').addEventListener('click', () => this.editor.redo());
         document.getElementById('btn-clear').addEventListener('click', () => {
             this.editor.clearGrid();
-            this.showEditorMessage(t('editor.msg.grid_cleared'), 'info');
+            this.showEditorI18nMessage('editor.msg.grid_cleared', 'info');
         });
         document.getElementById('btn-validate').addEventListener('click', () => {
             const result = this.editor.validate();
             if (result.valid) {
-                this.showEditorMessage(t('editor.msg.valid_ready'), 'success');
+                this.showEditorI18nMessage('editor.msg.valid_ready', 'success');
             } else {
                 this.showEditorMessage(result.errors.join(', '), 'danger');
             }
@@ -1052,16 +1061,16 @@ class Game {
             const nameInput = document.getElementById('dungeon-name-input');
             const name = nameInput.value.trim();
             if (!name) {
-                this.showEditorMessage(t('editor.msg.enter_stage_name'), 'warning');
+                this.showEditorI18nMessage('editor.msg.enter_stage_name', 'warning');
                 return;
             }
             const result = this.editor.validate();
             if (!result.valid) {
-                this.showEditorMessage(t('editor.msg.fix_errors_first', { errors: result.errors.join(', ') }), 'danger');
+                this.showEditorI18nMessage('editor.msg.fix_errors_first', 'danger', { errors: result.errors.join(', ') });
                 return;
             }
             const id = this.editor.saveStage(name);
-            this.showEditorMessage(t('editor.msg.saved', { name }), 'success');
+            this.showEditorI18nMessage('editor.msg.saved', 'success', { name });
             this.refreshCustomDungeonSelects();
         });
 
@@ -1076,7 +1085,7 @@ class Game {
                 document.getElementById('dungeon-name-input').value = item ? item.name : '';
                 document.getElementById('grid-width').value = this.editor.grid.width;
                 document.getElementById('grid-height').value = this.editor.grid.height;
-                this.showEditorMessage(t('editor.msg.loaded', { name: item ? item.name : id }), 'info');
+                this.showEditorI18nMessage('editor.msg.loaded', 'info', { name: item ? item.name : id });
             }
         });
 
@@ -1086,7 +1095,7 @@ class Game {
             const id = sel.value;
             if (!id) return;
             if (this.editor.deleteStage(id)) {
-                this.showEditorMessage(t('editor.msg.deleted'), 'warning');
+                this.showEditorI18nMessage('editor.msg.deleted', 'warning');
                 this.refreshCustomDungeonSelects();
             }
         });
@@ -1156,23 +1165,23 @@ class Game {
         document.getElementById('btn-save-dungeon-comp').addEventListener('click', () => {
             const name = document.getElementById('dungeon-composer-name').value.trim();
             if (!name) {
-                this.showEditorMessage(t('editor.msg.enter_dungeon_name'), 'warning');
+                this.showEditorI18nMessage('editor.msg.enter_dungeon_name', 'warning');
                 return;
             }
             if (this.composerFloors.length === 0) {
-                this.showEditorMessage(t('editor.msg.add_floor'), 'warning');
+                this.showEditorI18nMessage('editor.msg.add_floor', 'warning');
                 return;
             }
             // Validate all floors have at least one stage selected
             for (let i = 0; i < this.composerFloors.length; i++) {
                 if (!this.composerFloors[i].stages[0]) {
-                    this.showEditorMessage(t('editor.msg.floor_no_stage', { floor: i + 1 }), 'warning');
+                    this.showEditorI18nMessage('editor.msg.floor_no_stage', 'warning', { floor: i + 1 });
                     return;
                 }
                 // Check all variant slots are filled
                 for (let vi = 0; vi < this.composerFloors[i].stages.length; vi++) {
                     if (!this.composerFloors[i].stages[vi]) {
-                        this.showEditorMessage(t('editor.msg.floor_variant_empty', { floor: i + 1, variant: vi + 1 }), 'warning');
+                        this.showEditorI18nMessage('editor.msg.floor_variant_empty', 'warning', { floor: i + 1, variant: vi + 1 });
                         return;
                     }
                 }
@@ -1188,7 +1197,7 @@ class Game {
                 return { type: 'random', variants: f.stages.map(s => ({ stageId: s, weight: 1 })) };
             });
             const id = this.editor.saveDungeon(name, floors, rules);
-            this.showEditorMessage(t('editor.msg.saved_dungeon', { name }), 'success');
+            this.showEditorI18nMessage('editor.msg.saved_dungeon', 'success', { name });
             this.refreshDungeonComposerSelect();
             this.loadCustomDungeonOptions();
         });
@@ -1200,7 +1209,7 @@ class Game {
             if (!id) return;
             const data = this.editor.loadDungeonData(id);
             if (!data) {
-                this.showEditorMessage(t('editor.msg.dungeon_not_found'), 'danger');
+                this.showEditorI18nMessage('editor.msg.dungeon_not_found', 'danger');
                 return;
             }
             document.getElementById('dungeon-composer-name').value = data.name;
@@ -1217,7 +1226,7 @@ class Game {
             if (this.composerSelectedFloor >= 0) {
                 this.previewComposerFloor(0);
             }
-            this.showEditorMessage(t('editor.msg.loaded_dungeon', { name: data.name }), 'info');
+            this.showEditorI18nMessage('editor.msg.loaded_dungeon', 'info', { name: data.name });
         });
 
         // Delete Dungeon
@@ -1226,7 +1235,7 @@ class Game {
             const id = sel.value;
             if (!id) return;
             if (this.editor.deleteDungeon(id)) {
-                this.showEditorMessage(t('editor.msg.dungeon_deleted'), 'warning');
+                this.showEditorI18nMessage('editor.msg.dungeon_deleted', 'warning');
                 this.refreshDungeonComposerSelect();
                 this.loadCustomDungeonOptions();
             }
@@ -1236,12 +1245,12 @@ class Game {
         document.getElementById('btn-play-dungeon-comp').addEventListener('click', () => {
             const name = document.getElementById('dungeon-composer-name').value.trim() || 'Untitled';
             if (this.composerFloors.length === 0) {
-                this.showEditorMessage(t('editor.msg.add_floor'), 'warning');
+                this.showEditorI18nMessage('editor.msg.add_floor', 'warning');
                 return;
             }
             for (let i = 0; i < this.composerFloors.length; i++) {
                 if (!this.composerFloors[i].stages[0]) {
-                    this.showEditorMessage(t('editor.msg.floor_no_stage', { floor: i + 1 }), 'warning');
+                    this.showEditorI18nMessage('editor.msg.floor_no_stage', 'warning', { floor: i + 1 });
                     return;
                 }
             }
@@ -1259,7 +1268,7 @@ class Game {
             const dungeonData = { name, floors, rules };
             const resolved = DungeonEditor.resolveDungeon(dungeonData);
             if (!resolved || resolved.grids.length === 0) {
-                this.showEditorMessage(t('editor.msg.resolve_dungeon_failed'), 'danger');
+                this.showEditorI18nMessage('editor.msg.resolve_dungeon_failed', 'danger');
                 return;
             }
             // Play the dungeon (single or multi-stage)
@@ -1301,7 +1310,7 @@ class Game {
 
     addComposerFloor() {
         if (this.composerFloors.length >= 5) {
-            this.showEditorMessage(t('editor.msg.max_floors'), 'warning');
+            this.showEditorI18nMessage('editor.msg.max_floors', 'warning');
             return;
         }
         this.composerFloors.push({ stages: [''] });
@@ -1470,6 +1479,12 @@ class Game {
         const el = document.getElementById('editor-message');
         el.textContent = text;
         el.className = 'editor-message ' + type;
+    }
+
+    // W11: i18n key 기반 editor message. 마지막 호출 캐시 후 onLangChange 시 재계산.
+    showEditorI18nMessage(key, type = 'info', params) {
+        this._lastEditorMessage = { key, type, params };
+        this.showEditorMessage(t(key, params), type);
     }
 
     refreshEditorDungeonSelect() {

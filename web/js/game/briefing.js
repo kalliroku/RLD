@@ -5,7 +5,7 @@
 
 import { DUNGEON_CONFIG, DUNGEON_HINTS, BASE_OP_COST } from './game-config.js';
 import { CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS } from './run-state.js';
-import { t, tHtml } from '../i18n/index.js';
+import { t, tHtml, onLangChange } from '../i18n/index.js';
 
 export class BriefingOverlay {
     constructor() {
@@ -21,6 +21,7 @@ export class BriefingOverlay {
         this.pendingDungeon = null;
         this.onDeploy = null;
         this.onBack = null;
+        this._lastShowArgs = null;  // W11: 언어 토글 시 자동 re-render 위한 마지막 show() 인자 캐시
 
         if (this.backBtn) {
             this.backBtn.addEventListener('click', () => {
@@ -34,11 +35,19 @@ export class BriefingOverlay {
                 if (this.onDeploy) this.onDeploy(this.pendingDungeon);
             });
         }
+
+        // W11: 언어 토글 시 overlay 가 visible 이면 마지막 인자로 다시 show — toggle stale 가드
+        onLangChange(() => {
+            if (this.isVisible && this._lastShowArgs) {
+                this.show(...this._lastShowArgs);
+            }
+        });
     }
 
     show(dungeonId, runState, charName, getDungeonDisplayName) {
         if (!this.overlay) return;
         this.pendingDungeon = dungeonId;
+        this._lastShowArgs = [dungeonId, runState, charName, getDungeonDisplayName];
 
         const config = DUNGEON_CONFIG[dungeonId] || { cost: 0, firstReward: 100, repeatReward: 10 };
         const levelNum = dungeonId.match(/level_(\d+)/)?.[1] || '?';
@@ -125,6 +134,7 @@ export class BriefingOverlay {
 
     hide() {
         if (this.overlay) this.overlay.style.display = 'none';
+        this._lastShowArgs = null;  // W11: hidden 상태에서 언어 토글 시 re-render 회피
     }
 
     get isVisible() {
