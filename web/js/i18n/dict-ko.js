@@ -477,6 +477,59 @@ export const KO = {
     'dungeon.level_22_arena': '몬스터 투기장',
     'dungeon.level_23_mirage': '신기루',
 
+    // === Dungeon hints (game-config.js DUNGEON_HINTS — narrative 흡수, 학명 박힌 5건 character 어휘로 흡수)
+    // Ch.1
+    'hint.level_01_easy.0': '비좁은 공간. 다섯 걸음이면 끝에서 끝까지.',
+    'hint.level_02_trap.0': '발 밑이 무너진다. 한 칸씩 조심스레.',
+    'hint.level_03_maze.0': '일곱 걸음의 미궁. 한 번 잘못 들면 돌아오기 어렵다.',
+    // Ch.2
+    'hint.level_04_pit.0': '발을 헛디디면 끝. 절벽이 입을 벌리고 있다.',
+    'hint.level_05_gold.0': '일곱 걸음 안에 함정이 숨어 있다.',
+    'hint.level_05_gold.1': '낙관적인 녀석이면 충분하다.',
+    'hint.level_06_risk.0': '보상은 크다. 위험도 그만큼.',
+    'hint.level_06_risk.1': '치유의 자리를 잘 밟아야 한다.',
+    'hint.level_07_gauntlet.0': '함정이 연이어 기다린다.',
+    'hint.level_07_gauntlet.1': '체력 관리가 핵심이다.',
+    // Ch.3
+    'hint.level_08_deadly.0': '미궁과 함정과 구덩이가 한 자리에.',
+    'hint.level_08_deadly.1': '체력 좋은 녀석을 보내라.',
+    'hint.level_09_treasure.0': '보물이 잠들어 있다.',
+    'hint.level_09_treasure.1': '그림자를 피해 걸으면 안전하다.',
+    'hint.level_10_final.0': '마지막 시험. 모든 것이 모인다.',
+    'hint.level_10_final.1': '최고의 세르파가 필요하다.',
+    'hint.level_11_hp_test.0': '체력의 무게가 다르게 느껴진다.',
+    'hint.level_12_hp_gauntlet.0': '무게 + 연이은 충돌.',
+    'hint.level_12_hp_gauntlet.1': '치유사가 있으면 좋겠지만...',
+    // Ch.4
+    'hint.level_13_cliff.0': '절벽 옆 좁은 길. 한 발짝의 무게.',
+    'hint.level_14_long_hall.0': '끝없는 복도. 걸음을 아껴라.',
+    'hint.level_15_multi_room.0': '여러 방이 얽혀 있다.',
+    'hint.level_16_open_field.0': '넓은 공간. 시야가 멀리 닿는다.',
+    'hint.level_17_two_paths.0': '두 갈래. 한쪽은 안전, 한쪽은 함정.',
+    'hint.level_17_two_paths.1': '빠른 녀석이 유리하다.',
+    // Ch.5
+    'hint.level_18_dead_end.0': '막다른 길이 많다.',
+    'hint.level_18_dead_end.1': '상상력이 풍부한 녀석이 좋다.',
+    'hint.level_19_bridge.0': '좁은 다리. 뒤로는 갈 수 없다.',
+    'hint.level_24_paper_maze.0': '종이처럼 얇은 벽.',
+    'hint.level_25_paper_hard.0': '종이 미로 — 더 깊어졌다.',
+    'hint.level_25_paper_hard.1': '여러 녀석의 합의가 필요하다.',  // 학명 회피 (ensemble)
+    // Ch.6
+    'hint.level_26_frozen_lake.0': '얼음 위. 발걸음이 의지대로 가지 않는다.',
+    'hint.level_26_frozen_lake.1': '평균에 기대는 녀석이 유리하다.',  // 학명 회피 (Expected SARSA)
+    'hint.level_27_ice_maze.0': '얼음 미궁. 미끄러지면 벽이 멈춰 세운다.',
+    'hint.level_28_frozen_cliff.0': '얼음 절벽. 미끄러지면 떨어진다.',
+    'hint.level_28_frozen_cliff.1': '두 눈으로 보는 녀석이 필요하다.',  // 학명 회피 (Double-Q)
+    // Ch.7
+    'hint.level_29_big_maze.0': '거대한 미궁. 천 걸음 안에 끝내야 한다.',
+    'hint.level_29_big_maze.1': '머릿속에 던전을 그리는 녀석이 효율적이다.',  // 학명 회피 (Dyna-Q model-based)
+    'hint.level_30_generated_cave.0': '지도가 매번 다르다.',
+    'hint.level_30_generated_cave.1': '중요한 것부터 정리하는 녀석이 필요하다.',  // 학명 회피 (Prioritized Sweeping)
+    'hint.level_31_generated_rooms.0': '방의 배치가 매번 바뀐다.',
+    'hint.level_31_generated_rooms.1': '여러 걸음 내다보는 녀석이 필요하다.',  // 학명 회피 (Tree Backup / n-step)
+    // Hint purchase toast (W17 추가 — main.js updateHintUI 의 hint 구매 메시지)
+    'hint.purchased': '힌트 입수! -{cost}G',
+
     // === Language toggle ===
     'lang.toggle': 'EN',
     'lang.toggle.aria_label': '언어 전환',

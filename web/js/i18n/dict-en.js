@@ -458,6 +458,51 @@ export const EN = {
     'dungeon.level_22_arena': 'Monster Arena',
     'dungeon.level_23_mirage': 'The Mirage',
 
+    // === Dungeon hints (game-config.js DUNGEON_HINTS — D-15 Crisp tone, scientific terms absorbed into character idiom)
+    'hint.level_01_easy.0': 'Cramped. Five paces end to end.',
+    'hint.level_02_trap.0': 'The floor gives way. Step softly.',
+    'hint.level_03_maze.0': "Seven paces of labyrinth. One wrong turn and you're lost.",
+    'hint.level_04_pit.0': 'One misstep and it ends. The cliff yawns wide.',
+    'hint.level_05_gold.0': 'Traps lurk within seven paces.',
+    'hint.level_05_gold.1': 'An optimistic one will do.',
+    'hint.level_06_risk.0': 'The reward is great. So is the danger.',
+    'hint.level_06_risk.1': 'Step on the healing tiles wisely.',
+    'hint.level_07_gauntlet.0': 'Traps await in succession.',
+    'hint.level_07_gauntlet.1': 'Vitality management is key.',
+    'hint.level_08_deadly.0': 'Maze, traps, and pits in one place.',
+    'hint.level_08_deadly.1': 'Send a sturdy one.',
+    'hint.level_09_treasure.0': 'Treasure lies hidden.',
+    'hint.level_09_treasure.1': 'Walk in the shadows to stay safe.',
+    'hint.level_10_final.0': 'The final trial. Everything converges.',
+    'hint.level_10_final.1': 'The best of the Sherpas is needed.',
+    'hint.level_11_hp_test.0': 'Vitality feels different here.',
+    'hint.level_12_hp_gauntlet.0': 'Weight plus successive blows.',
+    'hint.level_12_hp_gauntlet.1': 'A healer would help, if only...',
+    'hint.level_13_cliff.0': 'A narrow path along the cliff. Every step matters.',
+    'hint.level_14_long_hall.0': 'An endless hall. Conserve your steps.',
+    'hint.level_15_multi_room.0': 'Many rooms intertwined.',
+    'hint.level_16_open_field.0': 'An open space. Vision reaches far.',
+    'hint.level_17_two_paths.0': 'Two paths. One safe, one trapped.',
+    'hint.level_17_two_paths.1': 'A quick one fares better.',
+    'hint.level_18_dead_end.0': 'Many dead ends.',
+    'hint.level_18_dead_end.1': 'An imaginative one is suited.',
+    'hint.level_19_bridge.0': 'A narrow bridge. No turning back.',
+    'hint.level_24_paper_maze.0': 'Walls thin as paper.',
+    'hint.level_25_paper_hard.0': 'The paper maze, deeper.',
+    'hint.level_25_paper_hard.1': 'A consensus of several is needed.',  // absorbs ensemble
+    'hint.level_26_frozen_lake.0': "Ice. Steps don't follow intent.",
+    'hint.level_26_frozen_lake.1': 'One who trusts averages fares better.',  // absorbs Expected SARSA
+    'hint.level_27_ice_maze.0': 'An icy maze. Slipping ends at the walls.',
+    'hint.level_28_frozen_cliff.0': 'An icy cliff. Slipping means falling.',
+    'hint.level_28_frozen_cliff.1': 'A two-eyed one is needed.',  // absorbs Double-Q
+    'hint.level_29_big_maze.0': 'A vast labyrinth. End it within a thousand steps.',
+    'hint.level_29_big_maze.1': 'One who maps the dungeon in mind is efficient.',  // absorbs Dyna-Q model-based
+    'hint.level_30_generated_cave.0': 'The map differs each time.',
+    'hint.level_30_generated_cave.1': 'One who sorts what matters first is needed.',  // absorbs Prioritized Sweeping
+    'hint.level_31_generated_rooms.0': 'Room layouts change each time.',
+    'hint.level_31_generated_rooms.1': 'One who sees several steps ahead is needed.',  // absorbs Tree Backup / n-step
+    'hint.purchased': 'Hint acquired! -{cost}G',
+
     // === Language toggle ===
     'lang.toggle': '한국어',
     'lang.toggle.aria_label': 'Switch language',

@@ -119,102 +119,103 @@ export const BASE_OP_COST = {
 };
 
 // B-6: Dungeon hints (purchasable information)
+// W17: text 필드 → key 박힘. briefing.js 의 t(hints[i].key) 로 매 토글 재평가 (D-2026-05-19-1 narrative 흡수).
 export const DUNGEON_HINTS = {
     level_01_easy: [
-        { text: '5x5 크기의 작은 미로입니다.', cost: 50 },
+        { key: 'hint.level_01_easy.0', cost: 50 },
     ],
     level_02_trap: [
-        { text: '함정이 있습니다. 신중하게.', cost: 50 },
+        { key: 'hint.level_02_trap.0', cost: 50 },
     ],
     level_03_maze: [
-        { text: '7x7 미로. 길을 잃기 쉽습니다.', cost: 50 },
+        { key: 'hint.level_03_maze.0', cost: 50 },
     ],
     level_04_pit: [
-        { text: '낙사 구간이 있습니다. 즉사 주의!', cost: 50 },
+        { key: 'hint.level_04_pit.0', cost: 50 },
     ],
     level_05_gold: [
-        { text: '7x7 규모입니다. 함정에 주의.', cost: 50 },
-        { text: '"낙관적인 녀석이면 충분합니다."', cost: 100 },
+        { key: 'hint.level_05_gold.0', cost: 50 },
+        { key: 'hint.level_05_gold.1', cost: 100 },
     ],
     level_06_risk: [
-        { text: '보상이 크지만 위험도 큽니다.', cost: 50 },
-        { text: '치유 타일을 잘 활용하세요.', cost: 100 },
+        { key: 'hint.level_06_risk.0', cost: 50 },
+        { key: 'hint.level_06_risk.1', cost: 100 },
     ],
     level_07_gauntlet: [
-        { text: '연속 함정 구간입니다.', cost: 50 },
-        { text: 'HP 관리가 핵심입니다.', cost: 100 },
+        { key: 'hint.level_07_gauntlet.0', cost: 50 },
+        { key: 'hint.level_07_gauntlet.1', cost: 100 },
     ],
     level_08_deadly: [
-        { text: '미로 + 함정 + 구덩이.', cost: 80 },
-        { text: '"체력이 좋은 녀석을 보내라."', cost: 120 },
+        { key: 'hint.level_08_deadly.0', cost: 80 },
+        { key: 'hint.level_08_deadly.1', cost: 120 },
     ],
     level_09_treasure: [
-        { text: '보물이 숨겨져 있습니다.', cost: 80 },
-        { text: '몬스터를 피하면 안전합니다.', cost: 120 },
+        { key: 'hint.level_09_treasure.0', cost: 80 },
+        { key: 'hint.level_09_treasure.1', cost: 120 },
     ],
     level_10_final: [
-        { text: '최종 시험. 모든 요소가 등장합니다.', cost: 100 },
-        { text: '"최고의 세르파가 필요합니다."', cost: 150 },
+        { key: 'hint.level_10_final.0', cost: 100 },
+        { key: 'hint.level_10_final.1', cost: 150 },
     ],
     level_11_hp_test: [
-        { text: 'HP 상태를 인식하는 던전입니다.', cost: 50 },
+        { key: 'hint.level_11_hp_test.0', cost: 50 },
     ],
     level_12_hp_gauntlet: [
-        { text: 'HP 인식 + 연속 전투.', cost: 80 },
-        { text: '"힐러가 있으면 좋겠지만..."', cost: 120 },
+        { key: 'hint.level_12_hp_gauntlet.0', cost: 80 },
+        { key: 'hint.level_12_hp_gauntlet.1', cost: 120 },
     ],
     level_13_cliff: [
-        { text: '절벽 옆 좁은 길. 한 발짝 실수가 치명적.', cost: 80 },
+        { key: 'hint.level_13_cliff.0', cost: 80 },
     ],
     level_14_long_hall: [
-        { text: '긴 복도. 스텝 효율이 중요합니다.', cost: 80 },
+        { key: 'hint.level_14_long_hall.0', cost: 80 },
     ],
     level_15_multi_room: [
-        { text: '여러 방을 연결하는 구조.', cost: 80 },
+        { key: 'hint.level_15_multi_room.0', cost: 80 },
     ],
     level_16_open_field: [
-        { text: '넓은 공간. 탐색 범위가 넓습니다.', cost: 80 },
+        { key: 'hint.level_16_open_field.0', cost: 80 },
     ],
     level_17_two_paths: [
-        { text: '두 갈래 길. 하나는 안전, 하나는 위험.', cost: 80 },
-        { text: '"빠른 녀석이 유리합니다."', cost: 120 },
+        { key: 'hint.level_17_two_paths.0', cost: 80 },
+        { key: 'hint.level_17_two_paths.1', cost: 120 },
     ],
     level_18_dead_end: [
-        { text: '막다른 골목이 많습니다.', cost: 80 },
-        { text: '"상상력이 풍부한 녀석이 좋습니다."', cost: 120 },
+        { key: 'hint.level_18_dead_end.0', cost: 80 },
+        { key: 'hint.level_18_dead_end.1', cost: 120 },
     ],
     level_19_bridge: [
-        { text: '좁은 다리. 돌아갈 수 없습니다.', cost: 100 },
+        { key: 'hint.level_19_bridge.0', cost: 100 },
     ],
     level_24_paper_maze: [
-        { text: '종이 미로. 벽이 얇습니다.', cost: 80 },
+        { key: 'hint.level_24_paper_maze.0', cost: 80 },
     ],
     level_25_paper_hard: [
-        { text: '종이 미로 강화판.', cost: 100 },
-        { text: '"여러 알고리즘의 합의가 필요합니다."', cost: 150 },
+        { key: 'hint.level_25_paper_hard.0', cost: 100 },
+        { key: 'hint.level_25_paper_hard.1', cost: 150 },
     ],
     level_26_frozen_lake: [
-        { text: '얼음 호수. 미끄럽습니다! (확률적 이동)', cost: 100 },
-        { text: '"기대값으로 학습하는 녀석이 유리합니다."', cost: 150 },
+        { key: 'hint.level_26_frozen_lake.0', cost: 100 },
+        { key: 'hint.level_26_frozen_lake.1', cost: 150 },
     ],
     level_27_ice_maze: [
-        { text: '얼음 미로. 미끄러지면 벽에 부딪힙니다.', cost: 120 },
+        { key: 'hint.level_27_ice_maze.0', cost: 120 },
     ],
     level_28_frozen_cliff: [
-        { text: '얼음 절벽. 미끄러지면 추락.', cost: 120 },
-        { text: '"이중 학습으로 편향을 줄이는 게 핵심."', cost: 180 },
+        { key: 'hint.level_28_frozen_cliff.0', cost: 120 },
+        { key: 'hint.level_28_frozen_cliff.1', cost: 180 },
     ],
     level_29_big_maze: [
-        { text: '25x25 대형 미로. 스텝 한도 1000.', cost: 150 },
-        { text: '"모델 기반 학습이 효율적입니다."', cost: 200 },
+        { key: 'hint.level_29_big_maze.0', cost: 150 },
+        { key: 'hint.level_29_big_maze.1', cost: 200 },
     ],
     level_30_generated_cave: [
-        { text: '50x50 동굴. 자동 생성됩니다.', cost: 200 },
-        { text: '"우선순위 정리가 필요합니다."', cost: 300 },
+        { key: 'hint.level_30_generated_cave.0', cost: 200 },
+        { key: 'hint.level_30_generated_cave.1', cost: 300 },
     ],
     level_31_generated_rooms: [
-        { text: '50x50 방 구조. 자동 생성됩니다.', cost: 200 },
-        { text: '"n걸음 앞을 내다보는 전략이 필요합니다."', cost: 300 },
+        { key: 'hint.level_31_generated_rooms.0', cost: 200 },
+        { key: 'hint.level_31_generated_rooms.1', cost: 300 },
     ],
 };
 

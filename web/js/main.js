@@ -190,6 +190,7 @@ class Game {
 
         // W11/W12: 언어 토글 시 마지막 editor render thunk 재평가 (briefing 은 자체 구독)
         // W15: composer floor list (dungeon subtab visible 시) 도 함께 재렌더
+        // W17: 인-게임 hint area (#hint-area) 도 재렌더 — updateHintUI 호출
         this._lastEditorRender = null;
         this._lastEditorType = null;
         onLangChange(() => {
@@ -198,6 +199,10 @@ class Game {
             }
             if (this.currentMode === 'editor' && this.editorSubtab === 'dungeon') {
                 this.renderComposerFloors();
+            }
+            // hint area 는 dungeon 선택 시 채워지는 영역 — currentDungeon 박혀있으면 갱신
+            if (this.currentDungeon) {
+                this.updateHintUI();
             }
         });
 
@@ -3862,7 +3867,8 @@ class Game {
             row.className = 'hint-row';
 
             if (purchased) {
-                row.innerHTML = `<span class="hint-text">"${hint.text}"</span>`;
+                // W17: hint.text → t(hint.key) (DUNGEON_HINTS schema 변경). onLangChange 시 updateHintUI 재호출로 갱신
+                row.innerHTML = `<span class="hint-text">"${t(hint.key)}"</span>`;
             } else {
                 row.innerHTML = `
                     <button class="btn-small btn-hint" data-dungeon="${dungeonId}" data-index="${i}" data-cost="${hint.cost}"
@@ -3884,7 +3890,7 @@ class Game {
                 if (this.runState.purchaseHint(dId, idx, cost)) {
                     this.updateHintUI();
                     this.updateUI();
-                    this.showMessage(`Hint purchased! -${cost}G`, 'success');
+                    this.showMessage(t('hint.purchased', { cost }), 'success');
                 }
             });
         });
