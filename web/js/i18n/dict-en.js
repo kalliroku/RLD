@@ -393,6 +393,34 @@ export const EN = {
     // Rules
     'editor.rule.hp_carry': 'HP Carry Over',
     'editor.rule.gold_on_clear': 'Gold on Clear Only',
+    // Default name (editor.js onPlayDungeon fallback)
+    'editor.default.custom_dungeon': 'Custom Dungeon',
+    // Editor messages (showEditorMessage body — main.js call sites, textContent safe)
+    'editor.msg.grid_resized': 'Grid resized to {w}×{h}',
+    'editor.msg.grid_cleared': 'Grid cleared',
+    'editor.msg.valid_ready': 'Valid! Ready to play.',
+    'editor.msg.enter_stage_name': 'Enter a stage name',
+    'editor.msg.enter_dungeon_name': 'Enter a dungeon name',
+    'editor.msg.fix_errors_first': 'Fix errors first: {errors}',
+    'editor.msg.saved': 'Saved "{name}"',
+    'editor.msg.loaded': 'Loaded "{name}"',
+    'editor.msg.deleted': 'Deleted',
+    'editor.msg.add_floor': 'Add at least one floor',
+    'editor.msg.floor_no_stage': 'Floor {floor} has no stage selected',
+    'editor.msg.floor_variant_empty': 'Floor {floor}, variant {variant} is empty',
+    'editor.msg.saved_dungeon': 'Saved dungeon "{name}"',
+    'editor.msg.dungeon_not_found': 'Dungeon not found',
+    'editor.msg.loaded_dungeon': 'Loaded dungeon "{name}"',
+    'editor.msg.dungeon_deleted': 'Dungeon deleted',
+    'editor.msg.resolve_dungeon_failed': 'Failed to resolve dungeon stages',
+    'editor.msg.max_floors': 'Maximum 5 floors',
+    // Editor validation errors (editor.js errors array, surfaced via main.js errors.join)
+    'editor.err.no_grid': 'No grid created',
+    'editor.err.start_missing': 'START tile is missing',
+    'editor.err.goal_missing': 'GOAL tile is missing',
+    'editor.err.no_path': 'No path from START to GOAL',
+    'editor.err.test_running': 'Test already running',
+    'editor.err.qt_not_configured': 'Quick test not configured',
 
     // === Language toggle ===
     'lang.toggle': '한국어',

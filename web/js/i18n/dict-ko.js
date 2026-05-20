@@ -404,6 +404,34 @@ export const KO = {
     // Rules
     'editor.rule.hp_carry': 'HP 이월',  // HP 학명 약어 보존
     'editor.rule.gold_on_clear': '클리어 시만 골드',
+    // Default name (editor.js 의 onPlayDungeon 폴백)
+    'editor.default.custom_dungeon': '커스텀 던전',
+    // Editor messages (showEditorMessage 본문 — main.js 호출, textContent 안전)
+    'editor.msg.grid_resized': '그리드 크기 {w}×{h} 적용',
+    'editor.msg.grid_cleared': '그리드 초기화',
+    'editor.msg.valid_ready': '검증 통과. 플레이 가능.',
+    'editor.msg.enter_stage_name': '스테이지 이름을 입력하세요',
+    'editor.msg.enter_dungeon_name': '던전 이름을 입력하세요',
+    'editor.msg.fix_errors_first': '오류 먼저 수정: {errors}',
+    'editor.msg.saved': '"{name}" 저장됨',
+    'editor.msg.loaded': '"{name}" 불러옴',
+    'editor.msg.deleted': '삭제됨',
+    'editor.msg.add_floor': '최소 1개 층 추가 필요',
+    'editor.msg.floor_no_stage': '{floor}층에 스테이지 미선택',
+    'editor.msg.floor_variant_empty': '{floor}층 {variant}번 변형이 비어있음',
+    'editor.msg.saved_dungeon': '던전 "{name}" 저장됨',
+    'editor.msg.dungeon_not_found': '던전을 찾을 수 없음',
+    'editor.msg.loaded_dungeon': '던전 "{name}" 불러옴',
+    'editor.msg.dungeon_deleted': '던전 삭제됨',
+    'editor.msg.resolve_dungeon_failed': '던전 스테이지 해결 실패',
+    'editor.msg.max_floors': '최대 5층',
+    // Editor validation errors (editor.js errors 배열 push, main.js 의 errors.join 으로 사용자 노출)
+    'editor.err.no_grid': '그리드 미생성',
+    'editor.err.start_missing': 'START 타일 누락',
+    'editor.err.goal_missing': 'GOAL 타일 누락',
+    'editor.err.no_path': 'START 에서 GOAL 까지 경로 없음',
+    'editor.err.test_running': '테스트 실행 중',
+    'editor.err.qt_not_configured': '빠른 테스트 미설정',
 
     // === Language toggle ===
     'lang.toggle': 'EN',

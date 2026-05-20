@@ -4,6 +4,7 @@
 
 import { Grid } from './grid.js';
 import { TileType, TileProperties, getTileColor } from './tiles.js';
+import { t } from '../i18n/index.js';
 
 const STORAGE_KEY_STAGES = 'rld_stages';
 const STORAGE_KEY_DUNGEONS = 'rld_dungeons';
@@ -468,23 +469,23 @@ export class DungeonEditor {
         const errors = [];
 
         if (!this.grid) {
-            return { valid: false, errors: ['No grid created'] };
+            return { valid: false, errors: [t('editor.err.no_grid')] };
         }
 
         // Check START
         if (!this.grid.startPos) {
-            errors.push('START tile is missing');
+            errors.push(t('editor.err.start_missing'));
         }
 
         // Check GOAL
         if (!this.grid.goalPos) {
-            errors.push('GOAL tile is missing');
+            errors.push(t('editor.err.goal_missing'));
         }
 
         // Check path exists (BFS)
         if (this.grid.startPos && this.grid.goalPos) {
             if (!this.bfsPathExists(this.grid.startPos, this.grid.goalPos)) {
-                errors.push('No path from START to GOAL');
+                errors.push(t('editor.err.no_path'));
             }
         }
 
@@ -763,7 +764,7 @@ export class DungeonEditor {
     // ========== Quick Test ==========
 
     startQuickTest(character, maxEpisodes) {
-        if (this.quickTestRunning) return { success: false, errors: ['Test already running'] };
+        if (this.quickTestRunning) return { success: false, errors: [t('editor.err.test_running')] };
 
         const result = this.validate();
         if (!result.valid) {
@@ -771,7 +772,7 @@ export class DungeonEditor {
         }
 
         if (!this.onQuickTest) {
-            return { success: false, errors: ['Quick test not configured'] };
+            return { success: false, errors: [t('editor.err.qt_not_configured')] };
         }
 
         this.quickTestRunning = true;
@@ -839,7 +840,7 @@ export class DungeonEditor {
             return { success: false, errors: result.errors };
         }
         if (this.onPlayDungeon) {
-            this.onPlayDungeon(this.grid, 'Custom Dungeon');
+            this.onPlayDungeon(this.grid, t('editor.default.custom_dungeon'));
         }
         return { success: true };
     }
