@@ -5,6 +5,8 @@
 import { Grid } from './grid.js';
 import { TileType, TileProperties, getTileColor } from './tiles.js';
 import { t } from '../i18n/index.js';
+// W12: errors 배열은 { key, params? } 객체로 박힘 — main.js 의 join 시점에 t() 재평가 (토글 stale 회피).
+// t() 직접 호출은 Custom Dungeon default name 1건만 (line 843) — onPlayDungeon 호출 시 1회, 토글 stale 영향 없음.
 
 const STORAGE_KEY_STAGES = 'rld_stages';
 const STORAGE_KEY_DUNGEONS = 'rld_dungeons';
@@ -469,23 +471,23 @@ export class DungeonEditor {
         const errors = [];
 
         if (!this.grid) {
-            return { valid: false, errors: [t('editor.err.no_grid')] };
+            return { valid: false, errors: [{ key: 'editor.err.no_grid' }] };
         }
 
         // Check START
         if (!this.grid.startPos) {
-            errors.push(t('editor.err.start_missing'));
+            errors.push({ key: 'editor.err.start_missing' });
         }
 
         // Check GOAL
         if (!this.grid.goalPos) {
-            errors.push(t('editor.err.goal_missing'));
+            errors.push({ key: 'editor.err.goal_missing' });
         }
 
         // Check path exists (BFS)
         if (this.grid.startPos && this.grid.goalPos) {
             if (!this.bfsPathExists(this.grid.startPos, this.grid.goalPos)) {
-                errors.push(t('editor.err.no_path'));
+                errors.push({ key: 'editor.err.no_path' });
             }
         }
 
@@ -764,7 +766,7 @@ export class DungeonEditor {
     // ========== Quick Test ==========
 
     startQuickTest(character, maxEpisodes) {
-        if (this.quickTestRunning) return { success: false, errors: [t('editor.err.test_running')] };
+        if (this.quickTestRunning) return { success: false, errors: [{ key: 'editor.err.test_running' }] };
 
         const result = this.validate();
         if (!result.valid) {
@@ -772,7 +774,7 @@ export class DungeonEditor {
         }
 
         if (!this.onQuickTest) {
-            return { success: false, errors: [t('editor.err.qt_not_configured')] };
+            return { success: false, errors: [{ key: 'editor.err.qt_not_configured' }] };
         }
 
         this.quickTestRunning = true;

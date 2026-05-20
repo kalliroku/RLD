@@ -188,12 +188,12 @@ class Game {
         };
         this.briefing.onBack = () => {};
 
-        // W11: 언어 토글 시 마지막 editor message 자동 재계산 (briefing 은 자체 구독)
-        this._lastEditorMessage = null;
+        // W11/W12: 언어 토글 시 마지막 editor render thunk 재평가 (briefing 은 자체 구독)
+        this._lastEditorRender = null;
+        this._lastEditorType = null;
         onLangChange(() => {
-            if (this._lastEditorMessage) {
-                const { key, type, params } = this._lastEditorMessage;
-                this.showEditorMessage(t(key, params), type);
+            if (this._lastEditorRender) {
+                this.showEditorMessage(this._lastEditorRender(), this._lastEditorType);
             }
         });
 
@@ -1052,7 +1052,7 @@ class Game {
             if (result.valid) {
                 this.showEditorI18nMessage('editor.msg.valid_ready', 'success');
             } else {
-                this.showEditorMessage(result.errors.join(', '), 'danger');
+                this.showEditorErrorsMessage(result.errors, 'danger');
             }
         });
 
@@ -1066,7 +1066,7 @@ class Game {
             }
             const result = this.editor.validate();
             if (!result.valid) {
-                this.showEditorI18nMessage('editor.msg.fix_errors_first', 'danger', { errors: result.errors.join(', ') });
+                this.showEditorErrorsMessage(result.errors, 'danger', 'editor.msg.fix_errors_first');
                 return;
             }
             const id = this.editor.saveStage(name);
@@ -1104,7 +1104,7 @@ class Game {
         document.getElementById('btn-play-dungeon').addEventListener('click', () => {
             const result = this.editor.playDungeon();
             if (!result.success) {
-                this.showEditorMessage(result.errors.join(', '), 'danger');
+                this.showEditorErrorsMessage(result.errors, 'danger');
             }
         });
 
@@ -1125,7 +1125,7 @@ class Game {
 
             const result = this.editor.startQuickTest(character, maxEpisodes);
             if (!result.success) {
-                this.showEditorMessage(result.errors.join(', '), 'danger');
+                this.showEditorErrorsMessage(result.errors, 'danger');
                 document.getElementById('btn-quick-test').disabled = false;
                 document.getElementById('btn-quick-test-stop').disabled = true;
                 document.getElementById('qt-progress').style.display = 'none';
@@ -1481,10 +1481,26 @@ class Game {
         el.className = 'editor-message ' + type;
     }
 
-    // W11: i18n key 기반 editor message. 마지막 호출 캐시 후 onLangChange 시 재계산.
+    // W11/W12: thunk 기반 editor render. 마지막 호출 thunk 캐시 후 onLangChange 시 재평가.
+    // — i18n dict 키 메시지 → showEditorI18nMessage 사용
+    // — errors 배열 ({key, params?}[]) → showEditorErrorsMessage 사용
+    // — 순수 raw 텍스트 → showEditorMessage 직접 호출 (onLangChange 갱신 안 됨)
+    _renderEditorMessage(thunk, type) {
+        this._lastEditorRender = thunk;
+        this._lastEditorType = type;
+        this.showEditorMessage(thunk(), type);
+    }
+
     showEditorI18nMessage(key, type = 'info', params) {
-        this._lastEditorMessage = { key, type, params };
-        this.showEditorMessage(t(key, params), type);
+        this._renderEditorMessage(() => t(key, params), type);
+    }
+
+    // W12: editor.js 의 errors 배열을 받음 — [{ key, params? }]. join 결과를 prefix 키에 보간 가능.
+    showEditorErrorsMessage(errors, type = 'danger', prefixKey = null) {
+        this._renderEditorMessage(() => {
+            const joined = errors.map(e => t(e.key, e.params)).join(', ');
+            return prefixKey ? t(prefixKey, { errors: joined }) : joined;
+        }, type);
     }
 
     refreshEditorDungeonSelect() {
