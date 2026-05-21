@@ -13,13 +13,13 @@
 
 | 필드 | 값 | 메모 |
 |---|---|---|
-| URL slug | `kalliroku.itch.io/rld` | 미확정 — `rl-dungeon` 도 후보 |
+| URL slug | `kalliroku.itch.io/rld` | 2026-05-21 확정 — GitHub Pages `kalliroku.github.io/RLD/` 와 일관성 우선 |
 | Classification | Game | |
 | Kind of project | HTML | 브라우저 플레이 (캔버스) |
 | Genre | Adventure | 보조: Strategy |
 | Tags | `roguelike`, `reinforcement-learning`, `html5`, `procedural-generation`, `dungeon-crawler`, `free`, `indie`, `casual`, `educational`, `daily-challenge` | itch.io 검색 노출 |
 | Rating | Everyone | 폭력 = cartoon HP only |
-| Pricing | `$0 minimum` + optional "pay what you want" suggested `$3` | VISION §1 결정 — pay-what-you-want 선택적 |
+| Pricing | `$0 minimum` + optional "pay what you want" (no suggested tip — donation fully voluntary) | VISION §1 결정 + 2026-05-21 사용자 결정 (tip suggestion 제거, 무료 정체성 우선) |
 | Platforms | Browser (HTML5) | 데스크탑 + 모바일 반응형 |
 | Mobile-friendly | Yes | B-201/202/204 모바일 트랙 마감 |
 
@@ -41,7 +41,7 @@ An algorithm-as-character seeded roguelike.
 ```
 (44 chars ✓)
 
-KO (별 페이지 또는 본문 내 한국어 섹션):
+KO (본문 내 한국어 섹션, 2026-05-21 EN+KO 통합 확정):
 ```
 알고리즘이 곧 캐릭터인 시드 기반 로그라이크.
 ```
@@ -104,7 +104,7 @@ KO:
 ## Tech
 
 - HTML5 canvas. No backend (all state in localStorage).
-- 15 tabular RL algorithms (Q-Learning, SARSA, Dyna-Q, REINFORCE, Actor-Critic, Expected SARSA, Double Q-Learning, n-step Tree Backup, Prioritized Sweeping, QV-Learning, ACLA, Ensemble, ...) + experimental PPO.
+- 15 tabular RL algorithms (Q-Learning, SARSA, Dyna-Q, REINFORCE, Actor-Critic, Expected SARSA, Double Q-Learning, n-step Tree Backup, Prioritized Sweeping, QV-Learning, ACLA, Ensemble, ...) + experimental PPO (in `sim/` tooling, not in-game characters).
 - 27 hand-crafted dungeons (5×5 → 50×50) + procedural daily generator.
 - Bilingual (Korean / English) — toggle in the top right.
 - MIT license. [Source on GitHub](https://github.com/kalliroku/RLD).
@@ -153,7 +153,7 @@ KO:
 ### 기술
 
 - HTML5 캔버스. 백엔드 없음 (모든 상태는 localStorage)
-- 15종 RL 알고리즘 (Q-Learning, SARSA, Dyna-Q, REINFORCE, Actor-Critic 등) + 실험적 PPO
+- 15종 RL 알고리즘 (Q-Learning, SARSA, Dyna-Q, REINFORCE, Actor-Critic 등) + 실험적 PPO (`sim/` 도구 한정, 게임 내 캐릭터 아님)
 - 27 핸드크래프트 던전 (5×5 → 50×50) + 데일리 절차적 생성기
 - 한국어 / 영어 양언어 (우측 상단 토글)
 - MIT 라이선스. [GitHub 소스](https://github.com/kalliroku/RLD)
@@ -225,19 +225,20 @@ KO:
 
 ## 10. 검수 체크리스트 (사용자)
 
-- [ ] URL slug 확정 (`rld` vs `rl-dungeon`)
+- [x] **URL slug 확정 → `rld`** (2026-05-21 결정, GitHub Pages `kalliroku.github.io/RLD/` 와 일관성 우선)
 - [ ] Tagline 영문/한국어 본문 톤 OK
-- [ ] Short desc 글자 수 ≤ 180 (영문 175 ✓ — 한국어 183자, itch.io 카운트 기준 확인 필요. byte 카운트면 549 byte 한도 초과 가능)
-- [ ] Long desc 의 "What this is not" 절 — 메타 자기참조 [[feedback_no_meta_lessons]] 위반 X 확인
-- [ ] 가격 정책 — pay-what-you-want suggested tip 금액 (3 USD 적정?)
+- [x] **Short desc 글자 수 결정 → 한국어 183자 그대로 업로드** (2026-05-21, itch.io 실측 후 잘리면 그때 에디트 — 손실 없는 시도)
+- [x] **"What this is not" 메타 자기참조 검수** (2026-05-21, EN §100 / KO §149 모두 *byproduct, not the goal* — 교육 의도 차단 방향이므로 [[feedback_no_meta_lessons]] 룰 정합 ✓)
+- [x] **가격 정책 → `$0 minimum` + suggested tip 제거** (2026-05-21, 기부 완전 자율, 무료 정체성 우선)
 - [ ] 태그 10개 적정 (search 노출 / spam 방지)
-- [ ] 한국어 섹션을 본문 내 통합 vs 별 itch.io 페이지 분리 결정
+- [x] **한국어 섹션 배치 → EN + KO 한 페이지 통합** (2026-05-21, draft 구조 유지, itch 계정 단일 운영)
 - [ ] B-208.1 스크린샷 후 cover image / screenshots 4~6 결정
 - [ ] **W1**: §6 Embed Index file — itch.io 페이지 자체가 랜딩 역할 → embed 진입은 `play.html` 직접 권장. 업로드용 별 빌드 필요 (web/play.html → ZIP 의 index.html 로 rename, 또는 `release-itch/` 디렉토리 생성). §11 절차 4번 보강
 - [ ] **W2**: Three pillars 의 모디파이어 6개 예시 — `(6 environment + 6 constraint, 12 in total)` 분류 추가 검토 (영문/한국어 양쪽)
 - [ ] **W3**: itch.io tagline (Crisp/Functional) vs 게임 내 `title.tagline` ("Dumb Sherpas, Deep Dungeons" / "멍청한 세르파와 던전 답파") 톤 분리 — 의도된 분리 유지 vs 일치화 결정
 - [ ] **NG+ 카피 확인**: 1.0 출시 시점 NG+ = Q-table 보존 + 캠페인 리셋 (modifier pool 확장은 post-1.0 로드맵, VISION §5/§4). 카피 정합 ✓ (2026-05-15 C1 수정 후)
-- [ ] **PPO 표기 명확화**: §107 "+ experimental PPO" — 게임 캐릭터 아닌 `sim/` 측 실험. "+ experimental PPO (in `sim/` tooling)" 한정 검토
+- [x] **PPO 표기 명확화 → `sim/` tooling 한정 명시** (2026-05-21, §107 EN + §156 KO 양사전 박힘 — 게임 캐릭터 오해 차단, D-2026-05-12-4 정체성 보호)
+- [x] **daily.compare 카피 결정 → 현 `'X steps under/over yesterday'` 유지** (2026-05-21 W3 closure 재확인, Crisp/Functional 통일 의도, +/- 기호 미도입)
 
 ---
 
