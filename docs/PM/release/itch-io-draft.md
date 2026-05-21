@@ -17,7 +17,7 @@
 | Classification | Game | |
 | Kind of project | HTML | 브라우저 플레이 (캔버스) |
 | Genre | Adventure | 보조: Strategy |
-| Tags | `roguelike`, `reinforcement-learning`, `html5`, `procedural-generation`, `dungeon-crawler`, `free`, `indie`, `casual`, `educational`, `daily-challenge` | itch.io 검색 노출 |
+| Tags | `roguelike`, `reinforcement-learning`, `html5`, `procedural-generation`, `dungeon-crawler`, `free`, `indie`, `casual`, `singleplayer`, `daily-challenge` | itch.io 검색 노출. 2026-05-21 `educational` → `singleplayer` 교체 (D-4 "RL 교육은 부산물" 정체성 룰과 충돌 차단) |
 | Rating | Everyone | 폭력 = cartoon HP only |
 | Pricing | `$0 minimum` + optional "pay what you want" (no suggested tip — donation fully voluntary) | VISION §1 결정 + 2026-05-21 사용자 결정 (tip suggestion 제거, 무료 정체성 우선) |
 | Platforms | Browser (HTML5) | 데스크탑 + 모바일 반응형 |
@@ -185,28 +185,33 @@ KO:
 
 ## 7. Cover image (630 × 500)
 
-**Status**: 미작성. B-208.1 (스크린샷 캡처) 사이클에서 결정.
+**Status**: 자율 추천 박힘 (2026-05-21). B-208.1 캡처 6장 자산 활용.
 
 **후보 컨셉**:
 - 옵션 A: 게임 캔버스 + Q-value 히트맵 시각 (강한 시그니처)
 - 옵션 B: "RL DUNGEON" 로고 + 캐릭터 4명 실루엣 + 모디파이어 띠
 - 옵션 C: 4-grid 콜라주 — 캐릭터 / 던전 / 학습 시각 / 모디파이어
 
-권장: A — 학습 시각화가 게임의 유일한 시각 시그니처. 첫 인상으로 직진.
+**자율 추천 → A 채택** (사용자 검수 대기): 학습 시각화 (`play-training.png`) 가 RLD 의 유일한 시각 시그니처. itch 썸네일에서 "RL Dungeon" 알고리즘=캐릭터 정체성을 한 컷에 전달 가능. B/C 는 별도 제작 비용 큼 (로고/실루엣/콜라주 합성). A 는 기존 6장 중 `play-training.png` 를 630×500 crop/리사이즈로 즉시 활용 (1~2분).
+
+**작업**: `play-training.png` (현 1280×800) → 630×500 crop (캔버스 중심 + Q-heatmap 보존). 별 캡처 사이클 불필요.
 
 ---
 
 ## 8. Screenshots (4 ~ 6, 1280 × 720 권장)
 
-**Status**: 미캡처. B-208.1 사이클.
+**Status**: 자율 추천 박힘 (2026-05-21). B-208.1 캡처 6장 중 5장 채택.
 
-**후보 화면**:
-1. 캠페인 진행 — 캐릭터 선택 + 던전 입장
-2. AI 학습 시각화 — Q-value 히트맵 + sparkline 활성
-3. 모디파이어 데일리 — 띠 + 칩 + 데일리 패널
-4. 게임 오버 — 사망 한도 (4/4) 표시
-5. 길드홀 — Quest / Party / Shop / Map 탭
-6. 모바일 view — 하단 탭 바 + 미니맵
+**자율 추천 5장** (사용자 검수 대기 / 1280×800 → 1280×720 crop):
+1. `play-training.png` — **학습 시각화** (Q-heatmap + sparkline + "Converged! Clear: 100%" — 시그니처 화면)
+2. `play-daily.png` — **모디파이어 데일리** (모디파이어 띠 + 20×20 fog-of-war 던전 — 시드 챌린지 시그니처)
+3. `play-party.png` — **캐릭터 다양성** (Hired Q군 + 영입 가능 6명 — 알고리즘=캐릭터 직접 노출)
+4. `play-gameover.png` — **게임 오버** (HP 0 + 누적 사망 1/4 + 세르파 기억 보존 카피 — 사망 페널티 + narrative)
+5. `play-daily-mobile.png` — **모바일 view** (420×900 fit — 모바일 친화 강조)
+
+**미채택**: `play-quest.png` (길드홀 탭 — itch 페이지 카피의 "Three pillars" 와 직접 연결 약함, 5장으로 충분).
+
+**작업**: 6장 모두 이미 `web/assets/screenshots/` 박힘. itch 업로드 시 5장 선택 + 1280×720 crop (상단/하단 토스트 영역 제거).
 
 ---
 
@@ -230,9 +235,9 @@ KO:
 - [x] **Short desc 글자 수 결정 → 한국어 183자 그대로 업로드** (2026-05-21, itch.io 실측 후 잘리면 그때 에디트 — 손실 없는 시도)
 - [x] **"What this is not" 메타 자기참조 검수** (2026-05-21, EN §100 / KO §149 모두 *byproduct, not the goal* — 교육 의도 차단 방향이므로 [[feedback_no_meta_lessons]] 룰 정합 ✓)
 - [x] **가격 정책 → `$0 minimum` + suggested tip 제거** (2026-05-21, 기부 완전 자율, 무료 정체성 우선)
-- [ ] 태그 10개 적정 (search 노출 / spam 방지)
+- [x] **태그 10개 검증** (2026-05-21 자율 박힘) → `educational` 제거 (D-4 "RL 교육은 부산물" 충돌) + `singleplayer` 추가. roguelike / reinforcement-learning / html5 / procedural-generation / dungeon-crawler / free / indie / casual / singleplayer / daily-challenge. spam 회피 ✓ (장르+기술+가격+모드+모더 균형).
 - [x] **한국어 섹션 배치 → EN + KO 한 페이지 통합** (2026-05-21, draft 구조 유지, itch 계정 단일 운영)
-- [ ] B-208.1 스크린샷 후 cover image / screenshots 4~6 결정
+- [x] **cover image / screenshots 결정** (2026-05-21 자율 추천 박힘) → cover = `play-training.png` 630×500 crop (옵션 A), screenshots 5장 = training/daily/party/gameover/daily-mobile (1280×720 crop). 사용자 검수 대기.
 - [ ] **W1**: §6 Embed Index file — itch.io 페이지 자체가 랜딩 역할 → embed 진입은 `play.html` 직접 권장. 업로드용 별 빌드 필요 (web/play.html → ZIP 의 index.html 로 rename, 또는 `release-itch/` 디렉토리 생성). §11 절차 4번 보강
 - [x] **W2 마감 → Three pillars 모디파이어 분류 박힘** (2026-05-21, 영문 §75 + 한국어 §126 양쪽 — 환경 6 + 제약 6 = 12 in total. D-2026-05-14-14 인용)
 - [ ] **W3**: itch.io tagline (Crisp/Functional) vs 게임 내 `title.tagline` ("Dumb Sherpas, Deep Dungeons" / "멍청한 세르파와 던전 답파") 톤 분리 — 의도된 분리 유지 vs 일치화 결정
