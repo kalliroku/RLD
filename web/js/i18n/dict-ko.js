@@ -176,6 +176,7 @@ export const KO = {
     // === Game mode toggles ===
     'game_mode.fog_of_war': '전장의 안개',
     'game_mode.sound': '소리',
+    'game_mode.music': 'BGM',
 
     // === Visualization toggles ===
     'visualization.q_values': 'Q값 보기',

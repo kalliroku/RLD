@@ -9,6 +9,7 @@ import { Renderer } from './game/renderer.js';
 import { TilemapRenderer } from './game/tilemap-renderer.js';
 import { TileType, TileProperties } from './game/tiles.js';
 import { sound } from './game/sound.js';
+import { music, MusicManager } from './game/music.js';
 import { DungeonEditor } from './game/editor.js';
 import { MultiStageGrid } from './game/multi-stage-grid.js';
 import { RunState, CHARACTER_STATS, CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS, HIRE_COSTS, DEATH_LIMIT } from './game/run-state.js';
@@ -884,6 +885,10 @@ class Game {
         this.grid = Grid.fromString(gridStr);
         this.currentDungeon = `daily_${dateKey}`;
         this.renderer.setGrid(this.grid);
+
+        // BGM T4 데일리 트랙 (D-2026-05-21-1) — seed 기반 절차적
+        music.setDailySeed(seed);
+        music.crossFade('T4');
         this.qlearning = this.createAlgorithm({ cost: 0, firstReward: 0, repeatReward: 0 });
         this.trainStats.innerHTML = '';
         this.renderer.setQData(null, null);
@@ -1893,6 +1898,16 @@ class Game {
         return typeof dungeonId === 'string' && dungeonId.startsWith('daily_');
     }
 
+    // BGM 트랙 선택 — runState.getChapterForDungeon (SSOT, CHAPTER_CONFIG) 의존.
+    // null = 현재 트랙 유지 정책 (custom_*/dungeon_composer_temp/preset_* 진입 시 BGM 끊김 회피).
+    // 호출처가 `if (trackId) music.crossFade(trackId)` 박혀있어 null 일 때 crossFade 호출 X.
+    _bgmTrackFor(dungeonId) {
+        if (!dungeonId) return null;
+        if (this.isDailyDungeon(dungeonId)) return MusicManager.trackForDaily();
+        const chapter = this.runState.getChapterForDungeon(dungeonId);
+        return chapter > 0 ? MusicManager.trackForChapter(chapter) : null;
+    }
+
     /**
      * Run greedy episode to reconstruct answer path after instant training.
      * Uses epsilon=0 to get the best learned policy, without modifying algorithm files.
@@ -2049,9 +2064,10 @@ class Game {
     }
 
     setupEventListeners() {
-        // Initialize sound on first interaction
+        // Initialize sound + music on first interaction (browser AudioContext autoplay policy)
         const initSound = () => {
             sound.init();
+            music.init();
             document.removeEventListener('keydown', initSound);
             document.removeEventListener('click', initSound);
             document.removeEventListener('touchstart', initSound);
@@ -2302,6 +2318,21 @@ class Game {
             }
         });
 
+        // Music (BGM) toggle (D-2026-05-21-1)
+        const musicToggle = document.getElementById('music-toggle');
+        if (musicToggle) {
+            musicToggle.addEventListener('change', (e) => {
+                music.enabled = e.target.checked;
+                if (e.target.checked) {
+                    // Re-trigger current dungeon's track
+                    const trackId = this._bgmTrackFor(this.currentDungeon);
+                    if (trackId) music.crossFade(trackId);
+                } else {
+                    music.stop(true, 0.3);
+                }
+            });
+        }
+
         // Visualization toggles
         this.showQValuesCheck.addEventListener('change', (e) => {
             this.renderer.showQValues = e.target.checked;
@@ -2375,6 +2406,10 @@ class Game {
         this.currentDungeon = name;
         // F2: 새 던전 진입 시 식량 임계 경고 flag 리셋 (다음 임계 도달 시 다시 1회 토스트)
         this._foodWarnShown = false;
+
+        // BGM 트랙 전환 (D-2026-05-21-1) — chapter 단위 cross-fade
+        const trackId = this._bgmTrackFor(name);
+        if (trackId) music.crossFade(trackId);
 
         // T2B-2 (D-9): every campaign / custom / preset path enters with no
         // runtime modifier. Done once at the top so the custom_ / dungeon_ /

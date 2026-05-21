@@ -164,6 +164,7 @@ export const EN = {
     // === Game mode toggles ===
     'game_mode.fog_of_war': 'Fog of War',
     'game_mode.sound': 'Sound',
+    'game_mode.music': 'BGM',
 
     // === Visualization toggles ===
     'visualization.q_values': 'Show Q-values',
