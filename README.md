@@ -79,7 +79,7 @@ python -m http.server 8080
 - Fog of War: 전장의 안개 토글
 
 ### 웹 호스팅 (출시 1.0)
-- github pages — https://kalliroku.github.io/RLD/ (자동 배포, `.github/workflows/pages.yml` — master push 시 `web/` 만 deploy)
+- github pages — https://kalliroku.github.io/RLD/ (자동 배포, `.github/workflows/pages.yml` — main push 시 `web/` 만 deploy)
 - itch.io — `kalliroku.itch.io/rld` (예정, 무료 + pay-what-you-want)
 
 ## 샘플 던전
