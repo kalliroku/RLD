@@ -72,7 +72,7 @@ KO:
 
 ## Three pillars
 
-- **Seeded Runs** — New modifiers each run (slippery floor / heavy fog / two only / poison floor / mirror input / wind gust ... 12 in total). The daily seed is shared by every player — the bedrock of a 10-minute challenge.
+- **Seeded Runs** — New modifiers each run (6 environment: slippery / heavy fog / dim torch / poison floor / acid rain / wind gust + 6 constraint: two only / hp cap 50 / mirror input / no heal / damage boost / silent Q = 12 in total). The daily seed is shared by every player — the bedrock of a 10-minute challenge.
 
 - **Algorithms as Characters** — 15 reinforcement learning algorithms appear as Sherpas with distinct personalities. Hover for the academic name; surface tags read *optimistic fool / coward / dreamer / committee / skeptic*.
 
@@ -123,7 +123,7 @@ KO:
 
 ### 세 축
 
-- **시드 기반 런** — 매 런 다른 모디파이어 12종 (미끄러운 바닥 / 안개 짙음 / 두 명만 / 독 바닥 / 거울 입력 / 돌풍 등). 데일리 시드는 모든 플레이어가 공유 — 10분 챌린지의 토대.
+- **시드 기반 런** — 매 런 다른 모디파이어 12종 (환경 6: 미끄러운 바닥 / 짙은 안개 / 어둑한 횃불 / 독 바닥 / 산성비 / 돌풍 + 제약 6: 둘만 / HP 50 한도 / 거울 입력 / 회복 봉인 / 데미지 증폭 / 침묵의 학습). 데일리 시드는 모든 플레이어가 공유 — 10분 챌린지의 토대.
 - **알고리즘 = 캐릭터** — 15종 RL 알고리즘이 각기 다른 성격의 세르파로 등장. 학명은 hover 툴팁, 표면은 "낙관적 멍청이 / 겁쟁이 / 공상가 / 합의체 / 의심쟁이" 같은 성격 태그.
 - **시각적 RL 양념** — Q-value 히트맵 + 정책 화살표 + sparkline 디폴트 ON. 학습이 눈에 보이는 시각 시그니처. 단, RL 교육 자체는 게임 목적이 아닌 부산물.
 
@@ -234,7 +234,7 @@ KO:
 - [x] **한국어 섹션 배치 → EN + KO 한 페이지 통합** (2026-05-21, draft 구조 유지, itch 계정 단일 운영)
 - [ ] B-208.1 스크린샷 후 cover image / screenshots 4~6 결정
 - [ ] **W1**: §6 Embed Index file — itch.io 페이지 자체가 랜딩 역할 → embed 진입은 `play.html` 직접 권장. 업로드용 별 빌드 필요 (web/play.html → ZIP 의 index.html 로 rename, 또는 `release-itch/` 디렉토리 생성). §11 절차 4번 보강
-- [ ] **W2**: Three pillars 의 모디파이어 6개 예시 — `(6 environment + 6 constraint, 12 in total)` 분류 추가 검토 (영문/한국어 양쪽)
+- [x] **W2 마감 → Three pillars 모디파이어 분류 박힘** (2026-05-21, 영문 §75 + 한국어 §126 양쪽 — 환경 6 + 제약 6 = 12 in total. D-2026-05-14-14 인용)
 - [ ] **W3**: itch.io tagline (Crisp/Functional) vs 게임 내 `title.tagline` ("Dumb Sherpas, Deep Dungeons" / "멍청한 세르파와 던전 답파") 톤 분리 — 의도된 분리 유지 vs 일치화 결정
 - [ ] **NG+ 카피 확인**: 1.0 출시 시점 NG+ = Q-table 보존 + 캠페인 리셋 (modifier pool 확장은 post-1.0 로드맵, VISION §5/§4). 카피 정합 ✓ (2026-05-15 C1 수정 후)
 - [x] **PPO 표기 명확화 → `sim/` tooling 한정 명시** (2026-05-21, §107 EN + §156 KO 양사전 박힘 — 게임 캐릭터 오해 차단, D-2026-05-12-4 정체성 보호)

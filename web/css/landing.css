@@ -301,6 +301,11 @@ a {
 
     .concept-card {
         padding: 20px;
+        text-align: left; /* 한국어 wrap 시 마지막 줄 정렬 가드 (D-2026-05-15-17 잔존 결함 보강) */
+    }
+
+    .concept-card p {
+        overflow-wrap: anywhere; /* keep-all 의 너무 긴 어절 escape hatch (모바일 420 한국어 끝 글자 정렬) */
     }
 
     .screenshot-grid {
