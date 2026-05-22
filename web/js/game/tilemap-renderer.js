@@ -10,7 +10,7 @@ import { TileAtlas } from './tile-atlas.js';
 import { Tilemap, Layer } from './tilemap.js';
 
 export class TilemapRenderer {
-    constructor(canvas, tileSize = 48) {
+    constructor(canvas, tileSize = 64) {
         this.canvas = canvas;
         this.ctx = canvas.getContext('2d');
         this.tileSize = tileSize;

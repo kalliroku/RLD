@@ -64,6 +64,7 @@ export const KO = {
     // === Game area ===
     'game.minimap': '미니맵',
     'game.step0_hint': '방향키 / WASD 로 세르파를 움직여 녹색 G 에 도달.',
+    'game.bump_toast': '벽! (-1)',
 
     // === Opening card (W7.1 — 첫 새 게임 1회) ===
     'opening.heading': '세르파 길드',
@@ -172,6 +173,12 @@ export const KO = {
     'training.mode.continuous': '계속',
     'training.btn.start': '학습 시작',
     'training.btn.stop': '정지',
+    'training.finish.converged': '학습 완료. 답파율 {rate}% ({episode}회 탐험)',
+    'training.finish.max_episodes': '최대 탐험 도달 ({max}회). 답파율 {rate}%',
+    'training.finish.out_of_gold': '골드 부족. 1탐험 {cost}G 필요. 답파율 {rate}%',
+    'training.finish.stopped': '중단 ({episode}회 탐험). 답파율 {rate}%',
+    'training.start.instant': '즉시 학습 시작... [{name}]',
+    'ngplus.entered': 'New Game+ {n}! 세르파의 기억은 보존됩니다. 골드: {gold}G',
 
     // === Game mode toggles ===
     'game_mode.fog_of_war': '전장의 안개',

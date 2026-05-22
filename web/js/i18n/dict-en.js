@@ -63,6 +63,7 @@ export const EN = {
     // === Game area ===
     'game.minimap': 'Minimap',
     'game.step0_hint': 'Use arrow keys / WASD to move your Sherpa to the green G.',
+    'game.bump_toast': 'Bump! (-1)',
 
     // === Overlays ===
     'overlay.game_over.title': 'GAME OVER',
@@ -160,6 +161,12 @@ export const EN = {
     'training.mode.continuous': 'Continuous',
     'training.btn.start': 'Train',
     'training.btn.stop': 'Stop',
+    'training.finish.converged': 'Training complete. Clear: {rate}% ({episode} runs)',
+    'training.finish.max_episodes': 'Max runs reached ({max}). Clear: {rate}%',
+    'training.finish.out_of_gold': 'Out of gold. {cost}G/run required. Clear: {rate}%',
+    'training.finish.stopped': 'Stopped after {episode} runs. Clear: {rate}%',
+    'training.start.instant': 'Instant training... [{name}]',
+    'ngplus.entered': 'New Game+ {n}! Memories preserved. Gold: {gold}G',
 
     // === Game mode toggles ===
     'game_mode.fog_of_war': 'Fog of War',

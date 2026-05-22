@@ -64,12 +64,16 @@ main {
     border-radius: 12px;
     padding: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    flex: 2 1 600px;
 }
 
 #game-canvas {
     display: block;
     background: #000;
     border-radius: 8px;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
 }
 
 /* Game UI */
@@ -168,6 +172,7 @@ main {
     padding: 20px;
     min-width: 200px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    flex: 1 1 280px;
 }
 
 .control-section {
@@ -1195,7 +1200,9 @@ body.editor-mode .dpad-container {
 .game-over-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.85);
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -1636,7 +1643,9 @@ body.editor-mode .dpad-container {
 .ending-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0, 0, 0, 0.9);
+    background: rgba(0, 0, 0, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
     display: flex;
     align-items: center;
     justify-content: center;

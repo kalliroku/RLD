@@ -359,9 +359,13 @@ class Game {
         const rs = this.runState;
         let html = '';
 
-        // Group by chapter
+        // Group by chapter — Task #6: collapsible (was 30+ LOCKED gray fill)
+        const currentCh = this.runState.getCurrentChapter();
         for (const ch of CHAPTER_CONFIG) {
-            html += `<div class="quest-section-title">Ch.${ch.chapter} ${t(`chapter.${ch.chapter}`)}</div>`;
+            // Open if: current chapter, or has cleared dungeons (player has reached)
+            const isOpen = ch.chapter === currentCh || ch.dungeons.some(d => rs.clearedDungeons.has(d));
+            html += `<details class="quest-section" ${isOpen ? 'open' : ''}>`;
+            html += `<summary class="quest-section-title">Ch.${ch.chapter} ${t(`chapter.${ch.chapter}`)}</summary>`;
             for (const did of ch.dungeons) {
                 const config = DUNGEON_CONFIG[did];
                 const cleared = rs.clearedDungeons.has(did);
@@ -389,6 +393,7 @@ class Game {
                     <div class="quest-card-reward">${reward}</div>
                 </div>`;
             }
+            html += `</details>`;
         }
 
         panel.innerHTML = html;
@@ -2849,7 +2854,7 @@ class Game {
             }
         } else if (!result.success) {
             sound.bump();
-            this.showMessage('Bump! (-1)', 'warning');
+            this.showMessage(t('game.bump_toast'), 'warning', { dedupe: true, duration: 1000 });
         } else if (result.tile === TileType.TRAP) {
             sound.trap();
             this.showMessage(`TRAP! HP -10`, 'danger');
@@ -2970,20 +2975,10 @@ class Game {
 
             this.updateDungeonSelect();
             this.updateCharacterGrid();
-
-            // Step 6: Tutorial triggers on first clear
-            this.tutorial.tryShow('first_clear');
             this.updateProgressiveDisclosure();
 
-            // B-004: First ever clear — guide player toward newly revealed AI Training
-            if (this.runState.clearedDungeons.size === 1 && this.toast) {
-                this.toast.show(t('tutorial.train_now'), 'info');
-            }
-            // Tutorial: economy when reaching chapter 2
-            const curChapter = this.runState.getCurrentChapter();
-            if (curChapter >= 2) this.tutorial.tryShow('chapter2');
-            // Tutorial: farming unlock
-            if (this.runState.clearedDungeons.size >= 1) this.tutorial.tryShow('first_farm_unlock');
+            // Task #5: tutorial/toast chain sequenced after map choice (was 5-message explosion)
+            this._pendingFirstClearTutorials = true;
 
             // C-3: Ending — all dungeons cleared?
             if (this.runState.isAllDungeonsCleared()) {
@@ -3046,6 +3041,10 @@ class Game {
             this.updateUI();
             this.updateFarmingUI();
             this.updateItemUI();
+            if (this._pendingFirstClearTutorials) {
+                this._pendingFirstClearTutorials = false;
+                this._queueFirstClearTutorials();
+            }
         };
 
         document.getElementById('btn-keep-map').onclick = () => {
@@ -3056,9 +3055,30 @@ class Game {
             this.updateUI();
             this.updateFarmingUI();
             this.updateItemUI();
+            if (this._pendingFirstClearTutorials) {
+                this._pendingFirstClearTutorials = false;
+                this._queueFirstClearTutorials();
+            }
         };
 
         overlay.style.display = 'flex';
+    }
+
+    // ========== First Clear Tutorial Chain (Task #5: sequenced) ==========
+
+    _queueFirstClearTutorials() {
+        // Sequenced after map choice — was 5-message explosion (2차 sonnet P0)
+        setTimeout(() => this.tutorial.tryShow('first_clear'), 400);
+        setTimeout(() => {
+            if (this.runState.clearedDungeons.size === 1 && this.toast) {
+                this.toast.show(t('tutorial.train_now'), 'info');
+            }
+        }, 2200);
+        setTimeout(() => {
+            const curChapter = this.runState.getCurrentChapter();
+            if (curChapter >= 2) this.tutorial.tryShow('chapter2');
+            if (this.runState.clearedDungeons.size >= 1) this.tutorial.tryShow('first_farm_unlock');
+        }, 4000);
     }
 
     // ========== Game Over & New Run ==========
@@ -3399,14 +3419,14 @@ class Game {
         this.updateTrainingUI(clearRate);
 
         if (this.trainingEpisode >= MAX_EPISODES) {
-            this.finishTraining(`Max episodes (${MAX_EPISODES}) reached. Clear: ${clearRate}%`);
+            this.finishTraining(t('training.finish.max_episodes', { max: MAX_EPISODES, rate: clearRate }));
             return;
         }
 
         if (this.trainingMode === 'until_success' &&
             this.recentResults.length >= CONVERGENCE_WINDOW &&
             successCount / this.recentResults.length >= CONVERGENCE_THRESHOLD) {
-            this.finishTraining(`Converged! Clear: ${clearRate}% after ${this.trainingEpisode} episodes`);
+            this.finishTraining(t('training.finish.converged', { rate: clearRate, episode: this.trainingEpisode }));
             return;
         }
 
@@ -3414,7 +3434,7 @@ class Game {
         if (this.isBuiltInDungeon(this.currentDungeon)) {
             const nextCost = this.getOperatingCost(this.currentCharacter, this.currentDungeon);
             if (this.runState.gold < nextCost) {
-                this.finishTraining(`Out of gold! Need ${nextCost}G/ep. Clear: ${clearRate}%`);
+                this.finishTraining(t('training.finish.out_of_gold', { cost: nextCost, rate: clearRate }));
                 return;
             }
         }
@@ -3425,7 +3445,7 @@ class Game {
     // Instant training: no visualization, fast execution
     async startInstantTraining() {
         const charDef = CHARACTERS[this.currentCharacter];
-        this.showMessage(`Instant training... [${charDef ? charDef.name : this.currentCharacter}]`, 'info');
+        this.showMessage(t('training.start.instant', { name: charDef ? charDef.name : this.currentCharacter }), 'info');
 
         const batchSize = 10;
         const isBuiltIn = this.isBuiltInDungeon(this.currentDungeon);
@@ -3440,7 +3460,7 @@ class Game {
                     const clearRate = this.recentResults.length > 0
                         ? (successCount / this.recentResults.length * 100).toFixed(0)
                         : 0;
-                    this.finishTraining(`Out of gold! Need ${opCost}G/ep. Clear: ${clearRate}%`);
+                    this.finishTraining(t('training.finish.out_of_gold', { cost: opCost, rate: clearRate }));
                     running = false;
                     break;
                 }
@@ -3472,7 +3492,7 @@ class Game {
             if (this.trainingMode === 'until_success' &&
                 this.recentResults.length >= CONVERGENCE_WINDOW &&
                 successCount / this.recentResults.length >= CONVERGENCE_THRESHOLD) {
-                this.finishTraining(`Converged! Clear: ${clearRate}% after ${this.trainingEpisode} episodes`);
+                this.finishTraining(t('training.finish.converged', { rate: clearRate, episode: this.trainingEpisode }));
                 running = false;
                 break;
             }
@@ -3486,7 +3506,7 @@ class Game {
             const clearRate = this.recentResults.length > 0
                 ? (successCount / this.recentResults.length * 100).toFixed(0)
                 : 0;
-            this.finishTraining(`Max episodes reached. Clear: ${clearRate}%`);
+            this.finishTraining(t('training.finish.max_episodes', { max: MAX_EPISODES, rate: clearRate }));
         }
     }
 
@@ -3637,7 +3657,7 @@ class Game {
             ? (successCount / this.recentResults.length * 100).toFixed(0)
             : 0;
 
-        this.finishTraining(`Stopped at episode ${this.trainingEpisode}. Clear: ${clearRate}%`);
+        this.finishTraining(t('training.finish.stopped', { episode: this.trainingEpisode, rate: clearRate }));
     }
 
     // ========== Clear Rate ==========
@@ -3978,7 +3998,7 @@ class Game {
         this.updateStatsUI();
         this.updateHintUI();
         this.updateItemUI();
-        this.showMessage(`New Game+ ${this.runState.ngPlusCount}! Q-tables preserved. Gold: ${this.runState.gold}G`, 'success');
+        this.showMessage(t('ngplus.entered', { n: this.runState.ngPlusCount, gold: this.runState.gold }), 'success');
     }
 
     // ========== C-4: Treasure System ==========
@@ -4116,14 +4136,14 @@ class Game {
         this.rewardText.style.color = reward >= 0 ? '#4ade80' : '#ef4444';
     }
 
-    showMessage(text, type = 'info') {
+    showMessage(text, type = 'info', options = {}) {
         this.messageEl.textContent = text;
         this.messageEl.className = 'message ' + type;
 
         // Step 1: Toast (skip during instant training to avoid spam)
         if (this.toast && !(this.isTraining && this.trainingSpeed === 0)) {
             const toastType = type === 'danger' ? 'damage' : type;
-            this.toast.show(text, toastType);
+            this.toast.show(text, toastType, options.duration ?? 3000, options.dedupe ?? false);
         }
     }
 

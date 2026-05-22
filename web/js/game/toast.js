@@ -18,8 +18,19 @@ export class ToastManager {
         this.maxToasts = 3;
     }
 
-    show(text, type = 'info', duration = 3000) {
+    show(text, type = 'info', duration = 3000, dedupe = false) {
         if (!this.container) return;
+
+        // Dedupe: same text+type → reset timer instead of stacking
+        if (dedupe) {
+            for (const entry of this.toasts) {
+                if (entry.text === text && entry.type === type) {
+                    clearTimeout(entry.timer);
+                    entry.timer = setTimeout(() => this._dismiss(entry), duration);
+                    return;
+                }
+            }
+        }
 
         // Remove oldest if at max
         while (this.toasts.length >= this.maxToasts) {
@@ -35,7 +46,7 @@ export class ToastManager {
         // Trigger entrance animation
         requestAnimationFrame(() => el.classList.add('toast-show'));
 
-        const entry = { el, timer: null };
+        const entry = { el, timer: null, text, type };
         this.toasts.push(entry);
 
         entry.timer = setTimeout(() => this._dismiss(entry), duration);
