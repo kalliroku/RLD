@@ -2585,15 +2585,7 @@ class Game {
         this.trainStats.innerHTML = '';
         this.renderer.setQData(null, null);
 
-        const charDef = CHARACTERS[this.currentCharacter];
-        const hpNote = config.useHpState ? ' [HP-Aware]' : '';
-        const slipNote = config.slippery ? ' [Slippery ❄️]' : '';
-        const charNote = charDef ? ` [${charDef.name}]` : '';
-        const loadNote = loaded ? ' (Data loaded)' : '';
-        // B-1: Show operating cost in dungeon info
-        const opCost = this.getOperatingCost(this.currentCharacter, name);
-        const opNote = ` | Train: ${opCost}G/ep`;
-        this.showMessage(`${name} - Cost: ${config.cost}G, Reward: ${config.firstReward}G${hpNote}${slipNote}${charNote}${loadNote}${opNote}`, 'info');
+        // Task #27 (Cycle 5 P0): 디버그 메시지 박힘 제거 — briefing overlay 가 동일 정보 (Cost/Reward/HP/Slippery/Char/Train) 박힘. 캔버스 위 풀와이드 영문+학명 노출 회귀 해소.
 
         if (loaded) {
             this.updateVisualization();
@@ -2995,9 +2987,8 @@ class Game {
 
             this.updateDungeonSelect();
             this.updateCharacterGrid();
-            this.updateProgressiveDisclosure();
 
-            // Task #5: tutorial/toast chain sequenced after map choice (was 5-message explosion)
+            // Task #5+#28: progressive disclosure + tutorial chain 박힘 모두 map choice 후 시퀀셜 (celebration 동시 박힘 회피)
             this._pendingFirstClearTutorials = true;
 
             // C-3: Ending — all dungeons cleared?
@@ -3100,18 +3091,19 @@ class Game {
     // ========== First Clear Tutorial Chain (Task #5: sequenced) ==========
 
     _queueFirstClearTutorials() {
-        // Sequenced after map choice — was 5-message explosion (2차 sonnet P0)
-        setTimeout(() => this.tutorial.tryShow('first_clear'), 400);
+        // Task #28 (Cycle 5): progressive disclosure (NEW! 배지 시퀀스) + tutorial 박힘 모두 시퀀셜 — celebration 1.8s 끝난 후
+        setTimeout(() => this.updateProgressiveDisclosure(), 200);
+        setTimeout(() => this.tutorial.tryShow('first_clear'), 1500);
         setTimeout(() => {
             if (this.runState.clearedDungeons.size === 1 && this.toast) {
                 this.toast.show(t('tutorial.train_now'), 'info');
             }
-        }, 2200);
+        }, 3000);
         setTimeout(() => {
             const curChapter = this.runState.getCurrentChapter();
             if (curChapter >= 2) this.tutorial.tryShow('chapter2');
             if (this.runState.clearedDungeons.size >= 1) this.tutorial.tryShow('first_farm_unlock');
-        }, 4000);
+        }, 4500);
     }
 
     // ========== Game Over & New Run ==========
