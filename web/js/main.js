@@ -3029,6 +3029,28 @@ class Game {
         }, 1800);
     }
 
+    // Task #29 (Cycle 8 옵션 A — Q3): 첫 클리어 toast 와 함께 우측 'AI 학습' 섹션 강조
+    // - 7s 자동 해제 또는 사용자가 학습 시작 클릭 시 즉시 해제 (startTraining)
+    _pulseTrainingSection() {
+        const el = document.getElementById('training-section');
+        if (!el) return;
+        el.classList.add('attention-pulse');
+        if (this._pulseTrainTimer) clearTimeout(this._pulseTrainTimer);
+        this._pulseTrainTimer = setTimeout(() => {
+            el.classList.remove('attention-pulse');
+            this._pulseTrainTimer = null;
+        }, 7000);
+    }
+
+    _stopPulseTrainingSection() {
+        const el = document.getElementById('training-section');
+        if (el) el.classList.remove('attention-pulse');
+        if (this._pulseTrainTimer) {
+            clearTimeout(this._pulseTrainTimer);
+            this._pulseTrainTimer = null;
+        }
+    }
+
     // B-5: Map choice overlay (sell vs keep map)
     showMapChoiceOverlay(dungeonId, config, unlockedNext) {
         const overlay = document.getElementById('map-choice-overlay');
@@ -3042,20 +3064,20 @@ class Game {
         let unlockMsg = '';
         if (unlockedNext) {
             const nextName = this.getDungeonDisplayName(DUNGEON_ORDER[DUNGEON_ORDER.indexOf(dungeonId) + 1]);
-            unlockMsg = `<div class="map-unlock-msg">${nextName} Unlocked!</div>`;
+            unlockMsg = `<div class="map-unlock-msg">${t('overlay.map_choice.unlock_next', { name: nextName })}</div>`;
         }
         // C-2: Chapter join message
         if (this.newChapterInfo) {
             const names = this.newChapterInfo.storySerpas.map(s => CHARACTERS[s]?.name || s).join(', ');
-            unlockMsg += `<div class="chapter-join-msg">Ch.${this.newChapterInfo.chapter} "${this.newChapterInfo.name}": ${names} joined!</div>`;
+            unlockMsg += `<div class="chapter-join-msg">${t('overlay.map_choice.chapter_join', { ch: this.newChapterInfo.chapter, name: this.newChapterInfo.name, members: names })}</div>`;
             this.newChapterInfo = null;
         }
 
         document.getElementById('map-choice-dungeon').textContent = `${dungeonName} (Lv.${level})`;
         document.getElementById('map-choice-details').innerHTML =
             `${unlockMsg}` +
-            `<div>Sell: +${salePrice}G (instant)</div>` +
-            `<div>Keep: ${exclusiveReward}G/farm x ${exclusiveRuns} runs (exclusive)</div>`;
+            `<div>${t('overlay.map_choice.sell_detail', { price: salePrice })}</div>` +
+            `<div>${t('overlay.map_choice.keep_detail', { reward: exclusiveReward, runs: exclusiveRuns })}</div>`;
 
         document.getElementById('btn-sell-map').onclick = () => {
             const earned = this.runState.sellMap(dungeonId, DUNGEON_CONFIG);
@@ -3097,6 +3119,8 @@ class Game {
         setTimeout(() => {
             if (this.runState.clearedDungeons.size === 1 && this.toast) {
                 this.toast.show(t('tutorial.train_now'), 'info');
+                // Task #29 (Cycle 8 옵션 A — Q3): 우측 'AI 학습' 섹션 일시 강조 (~7s 또는 학습 시작 버튼 클릭 시 해제)
+                this._pulseTrainingSection();
             }
         }, 3000);
         setTimeout(() => {
@@ -3189,6 +3213,9 @@ class Game {
     startTraining() {
         if (this.isTraining) return;
         if (this.isGameOver) return;
+
+        // Task #29 (Cycle 8 옵션 A — Q3): 사용자가 학습 시작 박은 순간 attention-pulse 자동 해제
+        this._stopPulseTrainingSection();
 
         // B-4: Block if character is farming
         if (this.runState.isFarming(this.currentCharacter)) {

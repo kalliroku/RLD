@@ -95,11 +95,16 @@ export const EN = {
     'overlay.briefing.mod_slippery': '[Slippery]',
     'overlay.briefing.mod_hp_aware': '[HP-Aware]',
     'overlay.briefing.hints_title': 'Hints',
+    'overlay.briefing.hint_locked': '???',  // narrative 미스터리 유지 (한/영 동일)
     'overlay.briefing.provisions_title': 'Quick Provisions',
     'overlay.briefing.food_buy': '+{amount} Food ({cost}G)',
     'overlay.map_choice.title': 'FIRST CLEAR!',
     'overlay.map_choice.sell': 'Sell Map',
     'overlay.map_choice.keep': 'Keep Map',
+    'overlay.map_choice.sell_detail': 'Sell: +{price}G (instant)',
+    'overlay.map_choice.keep_detail': 'Keep: {reward}G/run × {runs} runs (exclusive farm)',
+    'overlay.map_choice.unlock_next': '{name} Unlocked!',
+    'overlay.map_choice.chapter_join': 'Ch.{ch} "{name}": {members} joined!',
 
     // === Stats panel ===
     'stat.run': 'Run',

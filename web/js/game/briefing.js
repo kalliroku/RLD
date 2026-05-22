@@ -95,7 +95,7 @@ export class BriefingOverlay {
                     // W17: hints[i].key 박힘 (D-2026-05-19-1 narrative 흡수) — show() 시점 t() 호출, onLangChange 시 자동 재평가 (W11 _lastShowArgs 캐시)
                     hintHtml += `<div class="brief-hint brief-hint-owned">"${t(hints[i].key)}"</div>`;
                 } else {
-                    hintHtml += `<div class="brief-hint brief-hint-locked">${hints[i].cost}G - ???</div>`;
+                    hintHtml += `<div class="brief-hint brief-hint-locked">${hints[i].cost}G - ${t('overlay.briefing.hint_locked')}</div>`;
                 }
             }
             this.hintsEl.innerHTML = hintHtml;

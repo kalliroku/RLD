@@ -106,11 +106,16 @@ export const KO = {
     'overlay.briefing.mod_slippery': '[미끄러움]',
     'overlay.briefing.mod_hp_aware': '[HP 인지]',  // HP 학명 약어 보존
     'overlay.briefing.hints_title': '힌트',
+    'overlay.briefing.hint_locked': '???',  // narrative 미스터리 유지 (한/영 동일)
     'overlay.briefing.provisions_title': '신속 보급',
     'overlay.briefing.food_buy': '+{amount} 식량 ({cost}G)',
     'overlay.map_choice.title': '첫 클리어!',
     'overlay.map_choice.sell': '지도 판매',
     'overlay.map_choice.keep': '지도 보관',
+    'overlay.map_choice.sell_detail': '판매: +{price}G (즉시)',
+    'overlay.map_choice.keep_detail': '보관: {reward}G/run × {runs}회 (전용 파밍)',
+    'overlay.map_choice.unlock_next': '{name} 해방!',
+    'overlay.map_choice.chapter_join': '챕터 {ch} "{name}": {members} 합류!',
 
     // === Stats panel ===
     'stat.run': '런',
