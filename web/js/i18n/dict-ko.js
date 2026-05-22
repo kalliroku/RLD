@@ -65,6 +65,15 @@ export const KO = {
     'game.minimap': '미니맵',
     'game.step0_hint': '방향키 / WASD 로 세르파를 움직여 녹색 G 에 도달.',
     'game.bump_toast': '벽! (-1)',
+    'game.reset_log': '던전 진입! 식량: {food}. 녹색 G 에 도달하라.',
+    'game.clear_repeat': '답파! +{reward}G (스텝: {steps}){treasure}',
+    'game.first_clear.map_sold': '첫 답파! 지도 판매 +{earned}G',
+    'game.first_clear.map_kept': '첫 답파! 지도 보관! 전용 파밍: {reward}G × {runs}회',
+    'quest.cost_label': '입장료: {cost}G | {size}',
+    'quest.reward_first': '첫 답파: +{reward}G',
+    'quest.reward_farming': '파밍: +{reward}G',
+    'celebration.first_clear': '첫 답파!',
+    'game.paid_entry': '입장료 {cost}G 지불. 식량: {food}. 행운을 빈다.',
 
     // === Opening card (W7.1 — 첫 새 게임 1회) ===
     'opening.heading': '세르파 길드',

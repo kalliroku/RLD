@@ -31,11 +31,7 @@ export class DungeonMap {
             // Check if any dungeon in chapter is unlocked
             const anyUnlocked = ch.dungeons.some(d => runState.unlockedDungeons.has(d));
             if (!anyUnlocked && ch.chapter > 1) {
-                // Show locked chapter header
-                const header = document.createElement('div');
-                header.className = 'dm-chapter dm-chapter-locked';
-                header.innerHTML = `<span class="dm-chapter-icon">\uD83D\uDD12</span> Ch.${ch.chapter} ???`;
-                this.container.appendChild(header);
+                // Task #25: \uC7A0\uAE08 \uCC55\uD130 header hide \u2014 Quest \uD0ED <details> \uD3F4\uB529 (Task #6) \uC5D0 \uC9C4\uD589\uAC10 \uBC15\uD798 (3\uCC28 \uC9C4\uB2E8 cycle 5 P1)
                 continue;
             }
 

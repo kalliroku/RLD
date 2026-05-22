@@ -64,6 +64,15 @@ export const EN = {
     'game.minimap': 'Minimap',
     'game.step0_hint': 'Use arrow keys / WASD to move your Sherpa to the green G.',
     'game.bump_toast': 'Bump! (-1)',
+    'game.reset_log': 'Game Reset! Food: {food}. Reach the green G.',
+    'game.clear_repeat': 'Clear! +{reward}G (Steps: {steps}){treasure}',
+    'game.first_clear.map_sold': 'First Clear! Map sold for {earned}G!',
+    'game.first_clear.map_kept': 'First Clear! Map kept! Exclusive farming: {reward}G x {runs} runs',
+    'quest.cost_label': 'Cost: {cost}G | {size}',
+    'quest.reward_first': 'First Clear: +{reward}G',
+    'quest.reward_farming': 'Farming: +{reward}G',
+    'celebration.first_clear': 'First Clear!',
+    'game.paid_entry': 'Paid {cost}G to enter. Food: {food}. Good luck!',
 
     // === Overlays ===
     'overlay.game_over.title': 'GAME OVER',

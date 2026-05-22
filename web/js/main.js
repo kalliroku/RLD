@@ -379,8 +379,8 @@ class Game {
                 else badge = '<span class="quest-card-badge locked">LOCKED</span>';
 
                 const reward = cleared
-                    ? `Farming: +${config.repeatReward}G`
-                    : `First Clear: +${config.firstReward}G`;
+                    ? t('quest.reward_farming', { reward: config.repeatReward })
+                    : t('quest.reward_first', { reward: config.firstReward });
 
                 const cardClass = cleared ? 'quest-card cleared' : (unlocked ? 'quest-card' : 'quest-card locked');
 
@@ -389,7 +389,7 @@ class Game {
                         <span class="quest-card-name">Lv.${level} ${name}</span>
                         ${badge}
                     </div>
-                    <div class="quest-card-info">Cost: ${config.cost}G | ${this._getDungeonSize(did)}</div>
+                    <div class="quest-card-info">${t('quest.cost_label', { cost: config.cost, size: this._getDungeonSize(did) })}</div>
                     <div class="quest-card-reward">${reward}</div>
                 </div>`;
             }
@@ -2626,10 +2626,13 @@ class Game {
         this.reset();
 
         sound.start();
-        if (isBuiltIn && config.cost > 0) {
-            this.showMessage(`Paid ${config.cost}G to enter. Food: ${this.runState.food}. Good luck!`, 'warning');
-        } else {
-            this.showMessage(`Game Reset! Food: ${this.runState.food}. Reach the green goal.`, 'info');
+        // Task #24: step0 (clearedDungeons.size === 0) 시점에 reset toast 박지 말기 — step0-hint 와 겹침 회피 (3차 진단 P0)
+        if (this.runState.clearedDungeons.size > 0) {
+            if (isBuiltIn && config.cost > 0) {
+                this.showMessage(t('game.paid_entry', { cost: config.cost, food: this.runState.food }), 'warning');
+            } else {
+                this.showMessage(t('game.reset_log', { food: this.runState.food }), 'info');
+            }
         }
     }
 
@@ -3008,18 +3011,31 @@ class Game {
             // B-5: Show map choice overlay on first clear
             sound.victory();
             this.renderer.flash('rgba(34, 197, 94, 0.4)');
+            this._showFirstClearCelebration();
             this.showMapChoiceOverlay(this.currentDungeon, config, unlockedNext);
         } else {
             sound.victory();
             const reward = config.repeatReward;
             this.runState.gold += reward;
-            this.showMessage(`CLEAR! +${reward}G (Steps: ${this.steps})${treasureMsg}`, 'success');
+            this.showMessage(t('game.clear_repeat', { reward, steps: this.steps, treasure: treasureMsg }), 'success');
             this.saveProgress();
             this.renderer.flash('rgba(34, 197, 94, 0.4)');
         }
 
         this.updateUI();
         this.updateItemUI();
+    }
+
+    // Task #23: First clear celebration (cycle 4 — 외부 비평 P0)
+    _showFirstClearCelebration() {
+        const el = document.getElementById('first-clear-celebration');
+        if (!el) return;
+        el.style.display = 'flex';
+        el.classList.add('show');
+        setTimeout(() => {
+            el.classList.remove('show');
+            el.style.display = 'none';
+        }, 1800);
     }
 
     // B-5: Map choice overlay (sell vs keep map)
@@ -3053,7 +3069,7 @@ class Game {
         document.getElementById('btn-sell-map').onclick = () => {
             const earned = this.runState.sellMap(dungeonId, DUNGEON_CONFIG);
             overlay.style.display = 'none';
-            this.showMessage(`FIRST CLEAR! Map sold for ${earned}G!`, 'success');
+            this.showMessage(t('game.first_clear.map_sold', { earned }), 'success');
             this.saveProgress();
             this.updateUI();
             this.updateFarmingUI();
@@ -3067,7 +3083,7 @@ class Game {
         document.getElementById('btn-keep-map').onclick = () => {
             this.runState.keepMap(dungeonId);
             overlay.style.display = 'none';
-            this.showMessage(`FIRST CLEAR! Map kept! Exclusive farming: ${exclusiveReward}G x ${exclusiveRuns} runs`, 'success');
+            this.showMessage(t('game.first_clear.map_kept', { reward: exclusiveReward, runs: exclusiveRuns }), 'success');
             this.saveProgress();
             this.updateUI();
             this.updateFarmingUI();
