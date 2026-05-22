@@ -2412,6 +2412,11 @@ class Game {
         // F2: 새 던전 진입 시 식량 임계 경고 flag 리셋 (다음 임계 도달 시 다시 1회 토스트)
         this._foodWarnShown = false;
 
+        // Task #10: 캔버스 viewport 정착 (3차 외부 비평 — Lv.1 진입 시 y=-475px 회귀)
+        requestAnimationFrame(() => {
+            this.canvas?.closest('.game-area')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+
         // BGM 트랙 전환 (D-2026-05-21-1) — chapter 단위 cross-fade
         const trackId = this._bgmTrackFor(name);
         if (trackId) music.crossFade(trackId);
@@ -4194,13 +4199,27 @@ class Game {
 
     _addNewBadge(section) {
         const h3 = section.querySelector('h3');
-        if (h3 && !h3.querySelector('.badge-new')) {
+        if (!h3 || h3.querySelector('.badge-new')) return;
+
+        // Task #11: NEW! 시퀀셜 (3차 외부 비평 — 6 동시 폭발 회피)
+        const queueIdx = this._newBadgeActive ?? 0;
+        this._newBadgeActive = queueIdx + 1;
+        const delay = queueIdx * 1500;
+
+        setTimeout(() => {
+            if (h3.querySelector('.badge-new')) {
+                this._newBadgeActive = Math.max(0, (this._newBadgeActive ?? 1) - 1);
+                return;
+            }
             const badge = document.createElement('span');
             badge.className = 'badge-new';
             badge.textContent = 'NEW!';
             h3.appendChild(badge);
-            setTimeout(() => badge.remove(), 15000);
-        }
+            setTimeout(() => {
+                badge.remove();
+                this._newBadgeActive = Math.max(0, (this._newBadgeActive ?? 1) - 1);
+            }, 15000);
+        }, delay);
     }
 
     render() {

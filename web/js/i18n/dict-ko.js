@@ -151,7 +151,7 @@ export const KO = {
     'char.sweeper': '스위퍼',
 
     // === Character desc default (B-105) ===
-    'character.desc.default': '좌표를 외워서 학습합니다. 던전별 전문가.',
+    'character.desc.default': '한 번 가본 길을 그대로 기억합니다. 같은 던전을 반복하면 강합니다.',
 
     // === Dungeon controls ===
     'dungeon.reset': '초기화 (R)',
@@ -346,7 +346,7 @@ export const KO = {
     'character.personality.sweeper': '효율주의자',
 
     // === Character descriptions (15종, character-desc UI) ===
-    'character.desc.qkun': '좌표를 외워서 학습합니다. 던전별 전문가.',
+    'character.desc.qkun': '한 번 가본 길을 그대로 기억합니다. 같은 던전을 반복하면 강합니다.',
     'character.desc.scout': '주변을 관찰해서 학습합니다. 처음 보는 던전도 경험을 활용!',
     'character.desc.sarsa': '실수에서 배우는 신중파. 안전한 길을 선호합니다.',
     'character.desc.monte': '끝까지 가봐야 안다! 완주 후 복기하는 사색가.',

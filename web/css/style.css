@@ -2315,7 +2315,7 @@ body.editor-mode .dpad-container {
 }
 
 .title-btn-dev {
-    margin-top: 40px;
+    margin-top: 24px;
     padding: 8px 16px;
     font-size: 0.8rem;
     border: 1px solid #333;
@@ -2324,6 +2324,8 @@ body.editor-mode .dpad-container {
     color: #666;
     cursor: pointer;
     transition: all 0.2s;
+    width: 220px;
+    align-self: center;
 }
 
 .title-btn-dev:hover {

@@ -139,7 +139,7 @@ export const EN = {
     'char.sweeper': 'Sweeper',
 
     // === Character desc default (B-105) ===
-    'character.desc.default': 'Memorizes coordinates. Dungeon specialist.',
+    'character.desc.default': 'Remembers the exact path once walked. Strong on repeated dungeons.',
 
     // === Dungeon controls ===
     'dungeon.reset': 'Reset (R)',
@@ -335,7 +335,7 @@ export const EN = {
     'character.personality.sweeper': 'Efficient',
 
     // === Character descriptions (15종) ===
-    'character.desc.qkun': 'Memorizes coordinates. Dungeon specialist.',
+    'character.desc.qkun': 'Remembers the exact path once walked. Strong on repeated dungeons.',
     'character.desc.scout': 'Learns from surroundings. Brings experience to new dungeons.',
     'character.desc.sarsa': 'Learns from mistakes. Prefers the safe path.',
     'character.desc.monte': "Has to see it through to the end! A finisher who reflects after the run.",
