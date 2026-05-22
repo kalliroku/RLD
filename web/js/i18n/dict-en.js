@@ -24,9 +24,18 @@ export const EN = {
     // === Title screen ===
     'title.logo': 'RL DUNGEON',
     'title.tagline': 'Dumb Sherpas, Deep Dungeons',
-    'title.new_game': 'New Game',
+    'title.new_game': 'Start',
     'title.continue': 'Continue',
     'title.dev_mode': 'Dev Mode',
+
+    // === Opening sequence ===
+    'opening.father_line': "Head back to the surface first. I'll be there soon.",
+    'opening.child_cry': "Please, don't go!",
+    'opening.repli_morning': 'Are you up, Master? Good afternoon.',
+    'opening.reta_quest': "A request from the Adventurers' Guild.",
+    'opening.speaker.repli': 'Repli',
+    'opening.speaker.reta': 'Reta',
+    'opening.hint.click': 'Click to continue',
 
     // === Guild hall ===
     'guild.title': 'RL Dungeon',

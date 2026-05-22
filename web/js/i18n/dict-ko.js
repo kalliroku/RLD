@@ -35,9 +35,18 @@ export const KO = {
     // === Title screen ===
     'title.logo': 'RL DUNGEON',
     'title.tagline': '멍청한 세르파와 던전 답파',
-    'title.new_game': '새 게임',
+    'title.new_game': '시작',
     'title.continue': '이어하기',
-    'title.dev_mode': '개발자 모드',
+    'title.dev_mode': 'Dev Mode',
+
+    // === Opening sequence ===
+    'opening.father_line': '먼저 지상으로 돌아가 있어. 금방 갈게.',
+    'opening.child_cry': '안돼요 가지마요!',
+    'opening.repli_morning': '마스터 일어나셨나요? 좋은 점심입니다.',
+    'opening.reta_quest': '모험가 길드의 의뢰에요.',
+    'opening.speaker.repli': '레플리',
+    'opening.speaker.reta': '레타',
+    'opening.hint.click': '클릭하여 진행',
 
     // === Guild hall ===
     'guild.title': 'RL Dungeon',

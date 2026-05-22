@@ -2315,7 +2315,8 @@ body.editor-mode .dpad-container {
 }
 
 /* ========================================
-   Title Screen
+   Title Screen — Palette A (Darkest Dungeon-ish)
+   bg #1a1814 / bone #e8dcc4 / crimson #5a1a1a / rust #8b3a1f / stone #3a3530 / brass #b8860b
    ======================================== */
 
 .title-container {
@@ -2324,18 +2325,26 @@ body.editor-mode .dpad-container {
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 12px;
-    background: linear-gradient(180deg, #0d0d1a 0%, var(--bg-primary) 40%, var(--bg-secondary) 100%);
+    gap: 14px;
+    background:
+        radial-gradient(ellipse at center top, rgba(90, 26, 26, 0.15) 0%, transparent 60%),
+        linear-gradient(180deg, #0a0907 0%, #15120e 45%, #1a1814 100%);
+    padding: 24px 16px;
+    position: relative;
 }
 
 .title-logo {
     font-size: 3.5rem;
     font-weight: 900;
     letter-spacing: 6px;
-    color: var(--accent);
-    text-shadow: 0 0 30px rgba(233, 69, 96, 0.6), 0 0 60px rgba(233, 69, 96, 0.3);
+    color: #e8dcc4;
+    text-shadow:
+        0 0 24px rgba(90, 26, 26, 0.7),
+        0 0 48px rgba(90, 26, 26, 0.35),
+        2px 2px 0 rgba(0, 0, 0, 0.6);
     text-align: center;
     max-width: 100%;
+    margin-bottom: 4px;
 }
 
 /* 모바일: 로고 overflow 방지 (420px viewport 에서 "RL DUNGEON" 10글자 잘림) */
@@ -2346,10 +2355,14 @@ body.editor-mode .dpad-container {
     }
 }
 
-.title-subtitle {
-    color: var(--text-secondary);
-    font-size: 1.1rem;
-    margin-bottom: 32px;
+.title-art {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    width: 480px;
+    max-width: 90vw;
+    height: auto;
+    margin: 4px 0 16px;
+    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.55));
 }
 
 .title-buttons {
@@ -2361,54 +2374,213 @@ body.editor-mode .dpad-container {
 
 .title-btn {
     padding: 14px 24px;
-    font-size: 1.1rem;
+    font-size: 1.05rem;
     font-weight: 600;
-    border: 2px solid var(--bg-tertiary);
-    border-radius: 8px;
-    background: var(--bg-secondary);
-    color: var(--text-primary);
+    border: 2px solid #3a3530;
+    border-radius: 4px;
+    background: #2a2520;
+    color: #e8dcc4;
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all 0.18s;
+    letter-spacing: 0.05em;
+    font-family: 'Segoe UI', system-ui, sans-serif;
 }
 
 .title-btn:hover:not(:disabled) {
-    background: var(--bg-tertiary);
-    border-color: var(--accent);
+    background: #3a3530;
+    border-color: #8b3a1f;
+    color: #f4d4a8;
 }
 
 .title-btn:disabled {
-    opacity: 0.4;
+    opacity: 0.35;
     cursor: not-allowed;
 }
 
 .title-btn-primary {
-    background: var(--accent);
-    border-color: var(--accent);
-    color: white;
+    background: #8b3a1f;
+    border-color: #a04823;
+    color: #f4d4a8;
 }
 
-.title-btn-primary:hover {
-    background: #d63851;
-    border-color: #d63851;
+.title-btn-primary:hover:not(:disabled) {
+    background: #a04823;
+    border-color: #b85528;
+    color: #ffffff;
+}
+
+.title-btn-lang {
+    width: auto;
+    margin-top: 4px;
+    margin-bottom: 0;
+    padding: 5px 14px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    background: transparent;
+    color: #5a554d;
+    border: 1px solid #3a3530;
+    border-radius: 3px;
+    cursor: pointer;
+    letter-spacing: 0.05em;
+    transition: all 0.18s;
+}
+
+.title-btn-lang:hover {
+    color: #b8860b;
+    border-color: #5a554d;
 }
 
 .title-btn-dev {
-    margin-top: 24px;
-    padding: 8px 16px;
-    font-size: 0.8rem;
-    border: 1px solid #333;
-    border-radius: 4px;
+    position: absolute;
+    bottom: 16px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: auto;
+    margin-bottom: 0;
+    padding: 6px 14px;
+    font-size: 0.72rem;
+    border: 1px solid transparent;
+    border-radius: 3px;
     background: transparent;
-    color: #666;
+    color: #4a453e;
     cursor: pointer;
-    transition: all 0.2s;
-    width: 220px;
-    align-self: center;
+    transition: all 0.18s;
+    letter-spacing: 0.05em;
 }
 
 .title-btn-dev:hover {
-    color: var(--text-secondary);
-    border-color: #555;
+    color: #5a554d;
+    border-color: #3a3530;
+}
+
+/* ========================================
+   Opening Sequence — full-screen prologue
+   ======================================== */
+
+#screen-opening {
+    background: #050403;
+}
+
+.opening-stage {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 24px;
+    padding: 24px 16px;
+    cursor: pointer;
+    user-select: none;
+    transition: background 0.6s ease;
+}
+
+.opening-canvas {
+    image-rendering: pixelated;
+    image-rendering: crisp-edges;
+    width: 720px;
+    max-width: 92vw;
+    height: auto;
+    filter: drop-shadow(0 6px 24px rgba(0, 0, 0, 0.7));
+}
+
+.opening-dialog {
+    width: 720px;
+    max-width: 92vw;
+    min-height: 80px;
+    padding: 14px 20px;
+    background: rgba(20, 16, 12, 0.55);
+    border: 1px solid rgba(58, 53, 48, 0.7);
+    border-radius: 4px;
+    color: #e8dcc4;
+    font-size: 1.05rem;
+    line-height: 1.55;
+    letter-spacing: 0.02em;
+}
+
+.opening-speaker {
+    color: #b8860b;
+    font-weight: 700;
+    font-size: 0.92rem;
+    margin-bottom: 6px;
+    letter-spacing: 0.06em;
+}
+
+.opening-text {
+    color: #e8dcc4;
+}
+
+.opening-hint {
+    position: absolute;
+    bottom: 18px;
+    right: 24px;
+    color: #5a554d;
+    font-size: 0.78rem;
+    letter-spacing: 0.05em;
+    animation: opening-blink 1.6s ease-in-out infinite;
+}
+
+@keyframes opening-blink {
+    0%, 100% { opacity: 0.4; }
+    50% { opacity: 0.9; }
+}
+
+/* ── Page-type variants ── */
+
+#screen-opening.op-black .opening-stage {
+    background: #000000;
+}
+
+#screen-opening.op-black .opening-canvas,
+#screen-opening.op-black .opening-dialog {
+    display: none;
+}
+
+#screen-opening.op-illustration .opening-stage {
+    background: linear-gradient(180deg, #050403 0%, #0d0b08 100%);
+}
+
+/* Dialog visibility driven by JS (opening.js renderCurrent) for broader
+   browser support — avoid `:has()` selector. */
+
+#screen-opening.op-cry .opening-stage {
+    background: #000000;
+}
+
+#screen-opening.op-cry .opening-canvas {
+    display: none;
+}
+
+#screen-opening.op-cry .opening-dialog {
+    background: transparent;
+    border: none;
+    text-align: center;
+    color: #e8dcc4;
+}
+
+#screen-opening.op-cry .opening-text {
+    font-size: 2.4rem;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+    text-shadow: 0 0 18px rgba(90, 26, 26, 0.5);
+    animation: opening-cry 0.6s ease-out;
+}
+
+@keyframes opening-cry {
+    0% { opacity: 0; transform: scale(0.9); }
+    100% { opacity: 1; transform: scale(1); }
+}
+
+#screen-opening.op-guild .opening-stage {
+    background: linear-gradient(180deg, #1c1812 0%, #2a2520 100%);
+}
+
+#screen-opening.op-guild .opening-canvas {
+    display: none;
+}
+
+#screen-opening.op-guild .opening-dialog {
+    background: rgba(13, 11, 8, 0.7);
+    border-color: #5a554d;
 }
 
 /* ========================================

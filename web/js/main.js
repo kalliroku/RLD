@@ -26,6 +26,8 @@ import { DailyHistory, getDailyChallenge, yesterdayKey } from './game/daily-mode
 import { utcDateKey } from './game/rng.js';
 import { ModifierSet, MODIFIERS } from './game/modifiers.js';
 import { t, initI18n, setLang, getLang, onLangChange } from './i18n/index.js';
+import { renderTitleArt } from './game/title-art.js';
+import { OpeningManager } from './game/opening.js';
 
 const PRESET_MULTI_DUNGEONS = {
     preset_beginner_tower: {
@@ -258,6 +260,28 @@ class Game {
     // ========== Screen System ==========
 
     setupScreens() {
+        // Title art (procedural pixel illustration, palette A)
+        const titleArtCanvas = document.getElementById('title-art-canvas');
+        if (titleArtCanvas) renderTitleArt(titleArtCanvas);
+
+        // Opening manager — instantiated once, shown on New Game if not seen yet
+        this.openingManager = new OpeningManager();
+
+        // Title language toggle (separate from Dev Mode lang toggle)
+        const titleLangBtn = document.getElementById('btn-title-lang');
+        if (titleLangBtn) {
+            const updateLabel = () => {
+                titleLangBtn.textContent = getLang() === 'ko' ? 'EN' : '한국어';
+            };
+            updateLabel();
+            titleLangBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                setLang(getLang() === 'ko' ? 'en' : 'ko');
+                updateLabel();
+                // Re-render title art is palette-static, so just keep
+            });
+        }
+
         // Title buttons
         document.getElementById('btn-new-game').addEventListener('click', () => {
             this.runState = new RunState();
@@ -267,23 +291,7 @@ class Game {
             this.updateStatsUI();
             this.updateFarmingUI();
             this.updateCharacterGrid();
-
-            // W7.1: 첫 새 게임 1회만 오프닝 카드 (rld_opening_seen flag)
-            let openingSeen = false;
-            try { openingSeen = localStorage.getItem('rld_opening_seen') === 'true'; } catch {}
-            const enterGuild = () => {
-                this.screenManager.show('screen-guild');
-                this.updateGuildHall();
-                this.tutorial.tryShow('init');
-            };
-            if (!openingSeen) {
-                this._showOpeningCard(() => {
-                    try { localStorage.setItem('rld_opening_seen', 'true'); } catch {}
-                    enterGuild();
-                });
-            } else {
-                enterGuild();
-            }
+            this._enterGameStart();
         });
 
         document.getElementById('btn-continue').addEventListener('click', () => {
@@ -313,9 +321,39 @@ class Game {
         });
     }
 
+    /** New Game post-init flow: show opening prologue if not seen, else go straight to guild. */
+    _enterGameStart() {
+        if (OpeningManager.hasBeenSeen()) {
+            this.screenManager.show('screen-guild');
+            this.updateGuildHall();
+            return;
+        }
+        this.screenManager.show('screen-opening');
+        this.openingManager.start(() => {
+            this.screenManager.show('screen-guild');
+            this.updateGuildHall();
+        });
+    }
+
     _updateTitleButtons() {
         const hasSave = localStorage.getItem('rld_run_state') !== null;
-        document.getElementById('btn-continue').disabled = !hasSave;
+        const btnNew = document.getElementById('btn-new-game');
+        const btnCont = document.getElementById('btn-continue');
+        if (hasSave) {
+            btnCont.style.display = '';
+            btnCont.disabled = false;
+            // When a save exists, "Continue" is the primary action and "New Game" is secondary.
+            btnNew.classList.remove('title-btn-primary');
+            btnCont.classList.add('title-btn-primary');
+            // Swap order visually so Continue is on top: rely on flex order to keep it cheap.
+            btnCont.style.order = '0';
+            btnNew.style.order = '1';
+        } else {
+            btnCont.style.display = 'none';
+            btnCont.classList.remove('title-btn-primary');
+            btnNew.classList.add('title-btn-primary');
+            btnNew.style.order = '0';
+        }
     }
 
     _clearAllQTables() {
