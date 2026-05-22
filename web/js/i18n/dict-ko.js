@@ -53,7 +53,7 @@ export const KO = {
 
     // === Dev Mode header ===
     'dev.back_to_game': '게임으로 돌아가기',
-    'dev.title': 'RL Dungeon',
+    'dev.title': 'RL DUNGEON',
     'dev.subtitle': '세르파 길드 — 길드장의 기록',
 
     // === Mode tabs ===

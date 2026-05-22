@@ -430,12 +430,24 @@ class Game {
         const startBtn = document.getElementById('opening-start');
         if (!overlay || !startBtn) { onClose?.(); return; }
         overlay.style.display = 'flex';
+        startBtn.focus();
         const handler = () => {
             overlay.style.display = 'none';
             startBtn.removeEventListener('click', handler);
+            document.removeEventListener('keydown', keyHandler);
             onClose?.();
         };
+        // Task #15: 키보드 진입 (Enter / Space / 방향키 모두 시작)
+        const keyHandler = (e) => {
+            if (e.key === 'Enter' || e.key === ' ' || e.key.startsWith('Arrow') ||
+                e.key === 'w' || e.key === 'a' || e.key === 's' || e.key === 'd' ||
+                e.key === 'W' || e.key === 'A' || e.key === 'S' || e.key === 'D') {
+                e.preventDefault();
+                handler();
+            }
+        };
         startBtn.addEventListener('click', handler);
+        document.addEventListener('keydown', keyHandler);
     }
 
     _updateGuildParty() {

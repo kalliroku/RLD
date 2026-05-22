@@ -42,7 +42,7 @@ export const EN = {
 
     // === Dev Mode header ===
     'dev.back_to_game': 'Back to Game',
-    'dev.title': 'RL Dungeon',
+    'dev.title': 'RL DUNGEON',
     'dev.subtitle': 'Serpa Guild — Guildmaster\'s Log',
 
     // === Mode tabs ===
