@@ -4,19 +4,32 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="document.title">RL Dungeon - 강화학습 던전</title>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/style.css?v=opening2">
 </head>
 <body>
     <!-- Title Screen -->
     <div id="screen-title" class="screen active">
         <div class="title-container">
             <div class="title-logo" data-i18n="title.logo">RL DUNGEON</div>
-            <p class="title-subtitle" data-i18n="title.tagline">멍청한 세르파와 던전 답파</p>
+            <canvas id="title-art-canvas" class="title-art"></canvas>
             <div class="title-buttons">
-                <button id="btn-new-game" class="title-btn title-btn-primary" data-i18n="title.new_game">New Game</button>
-                <button id="btn-continue" class="title-btn" disabled data-i18n="title.continue">Continue</button>
+                <button id="btn-new-game" class="title-btn title-btn-primary" data-i18n="title.new_game">시작</button>
+                <button id="btn-continue" class="title-btn" data-i18n="title.continue" style="display:none">Continue</button>
             </div>
+            <button id="btn-title-lang" class="title-btn-lang" aria-label="언어 전환" data-i18n-aria-label="lang.toggle.aria_label">EN</button>
             <button id="btn-dev-mode" class="title-btn-dev" data-i18n="title.dev_mode">Dev Mode</button>
+        </div>
+    </div>
+
+    <!-- Opening Sequence Screen (one-time prologue per [[project-opening-scene]]) -->
+    <div id="screen-opening" class="screen">
+        <div class="opening-stage">
+            <canvas id="opening-canvas" class="opening-canvas"></canvas>
+            <div class="opening-dialog">
+                <div id="opening-speaker" class="opening-speaker"></div>
+                <div id="opening-text" class="opening-text"></div>
+            </div>
+            <div id="opening-hint" class="opening-hint" data-i18n="opening.hint.click">클릭하여 진행</div>
         </div>
     </div>
 
@@ -682,6 +695,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js"></script>
+    <script type="module" src="js/main.js?v=opening1"></script>
 </body>
 </html>
