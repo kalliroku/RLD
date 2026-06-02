@@ -7,6 +7,7 @@ export class SoundManager {
         this.ctx = null;
         this.enabled = true;
         this.volume = 0.3;
+        this._stepTone = 0;   // cycles footstep pitch so repeated steps don't sound identical
     }
 
     init() {
@@ -106,9 +107,11 @@ export class SoundManager {
 
     // === Sound Effects ===
 
-    // Movement sound - short blip
+    // Movement sound - short blip with subtle pitch variation so repeated
+    // steps don't sound identical (mirrors the opening tutorial footsteps).
     move() {
-        this.playTone(220, 0.05, 'square', 0.15);
+        const tones = [196, 220, 208, 233, 202];
+        this.playTone(tones[this._stepTone++ % tones.length], 0.05, 'square', 0.15);
     }
 
     // Wall bump - low thud
