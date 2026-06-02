@@ -264,8 +264,12 @@ class Game {
         const titleArtCanvas = document.getElementById('title-art-canvas');
         if (titleArtCanvas) renderTitleArt(titleArtCanvas);
 
-        // Opening manager — instantiated once, shown on New Game if not seen yet
+        // Opening manager — instantiated once, shown on New Game if not seen yet.
+        // Dev: `?opening` query param replays the opening (clears the seen flag).
         this.openingManager = new OpeningManager();
+        if (new URLSearchParams(location.search).has('opening')) {
+            OpeningManager.reset();
+        }
 
         // Title language toggle (separate from Dev Mode lang toggle)
         const titleLangBtn = document.getElementById('btn-title-lang');
@@ -2404,6 +2408,9 @@ class Game {
     }
 
     handleKeyDown(e) {
+        // The opening sequence owns keyboard input while it is on screen —
+        // otherwise arrow keys leak into the live run (wall-bump / death SFX).
+        if (this.screenManager && this.screenManager.current === 'screen-opening') return;
         // In editor mode, let the editor handle keys
         if (this.currentMode === 'editor') return;
         if (this.isTraining) return;
@@ -2419,25 +2426,18 @@ class Game {
 
         let action = null;
 
+        // Movement is arrow-keys only (single scheme; touch uses the D-pad).
         switch (e.key) {
             case 'ArrowUp':
-            case 'w':
-            case 'W':
                 action = Action.UP;
                 break;
             case 'ArrowDown':
-            case 's':
-            case 'S':
                 action = Action.DOWN;
                 break;
             case 'ArrowLeft':
-            case 'a':
-            case 'A':
                 action = Action.LEFT;
                 break;
             case 'ArrowRight':
-            case 'd':
-            case 'D':
                 action = Action.RIGHT;
                 break;
             case 'r':

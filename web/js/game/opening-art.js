@@ -1,318 +1,341 @@
 /**
- * Opening sequence procedural pixel art.
+ * Opening V2 — procedural pixel-art toolkit.
  *
- * Two illustrations for the opening cutscene:
- *   - renderManInDungeon(canvas) — middle-aged man (father), eyes covered with a
- *     dark band (memory motif), confident stance, dungeon interior backdrop.
- *   - renderManLeaving(canvas)   — same man walking away toward a dungeon arch.
+ * Ported from the Claude Design mockup (canvas-art.jsx, 2026-05-28) into a
+ * dependency-free ES module. All routines write to a 2D context at the base
+ * resolution (BASE_W × BASE_H); the canvas element is CSS-scaled up with
+ * `image-rendering: pixelated` so the chunky pixel grain reads as intentional.
  *
- * Both share the title-art palette (Palette A — Darkest Dungeon-ish) so the
- * transitions from title → opening → guild feel cohesive.
+ * Palette A is mirrored here as JS values — the SAME hex live in :root via
+ * --col-* in style.css. Two accent tones coexist by design:
+ *   rust (brick-red)  → menu / title UI only   (untouched by the opening)
+ *   amber             → opening + in-dungeon    (torch / return / ember)
+ *
+ * Synced to RLD V1 source (title-art.js + style.css); V1 names noted inline.
  */
 
-const PW = 240;
-const PH = 120;
-const SCALE = 4;
+export const BASE_W = 480;
+export const BASE_H = 270;
+export const TILE = 24;
 
-const COLOR = {
-    bgTop:       '#08070a',
-    bgMid:       '#12100e',
-    bgBot:       '#1a1814',
-    cave:        '#1f1c17',
-    caveShadow:  '#0d0b08',
-    stoneLight:  '#3a3530',
-    stoneMid:    '#2a2520',
-    stoneCrack:  '#0d0b08',
-    voidInside:  '#050403',
-    skin:        '#d4a878',
-    bone:        '#e8dcc4',
-    brass:       '#b8860b',
-    crimson:     '#5a1a1a',
-    rust:        '#8b3a1f',
-    stoneDk:     '#3a3530',
-    faded:       '#5a554d',
-    capeMain:    '#8b3a1f',  // rust red cape (former hero)
-    capeShadow:  '#3a1208',
-    bodyDk:      '#1a1410',
-    eyeBand:     '#000000',
+export const PAL = {
+    black:       '#07060a',
+    bg:          '#0a0907',   // V1 bgTop          (--col-bg)
+    bgDeep:      '#15120e',   // V1 bgMid
+    bgLight:     '#1c1813',
+    stone:       '#2a2520',   // V1 stoneMid       (dungeon wall/floor)
+    stoneLight:  '#382c20',   // PDF brown, kept
+    stoneHi:     '#4c3c2c',
+    text:        '#e8dcc4',   // V1 bone           (--col-text, higher contrast)
+    textDim:     '#8a7a59',   // PDF warm, kept
+    textMuted:   '#544a37',
+    accent:      '#c08a3a',   // amber — IN-GAME accent (torch/return/ember)
+    accentHi:    '#e6b562',   // PDF amber-hi, kept
+    accentDim:   '#6a4a1f',
+    rust:        '#8b3a1f',   // V1 brick-red — MENU/TITLE accent only
+    playerBlue:  '#4c5a72',
+    playerSkin:  '#a07a55',
+    fatherBrown: '#3a2a1c',
+    fatherCloak: '#241810',
+    goal:        '#d4c07a',   // PDF, kept
 };
 
-function setupCanvas(canvas) {
-    canvas.width = PW * SCALE;
-    canvas.height = PH * SCALE;
-    const ctx = canvas.getContext('2d');
-    ctx.imageSmoothingEnabled = false;
-    ctx.save();
-    ctx.scale(SCALE, SCALE);
-    return ctx;
+// ── Seeded RNG so pixel noise is stable per scene ────────────────────────────
+export function mulberry32(a) {
+    return function () {
+        let t = (a += 0x6d2b79f5);
+        t = Math.imul(t ^ (t >>> 15), t | 1);
+        t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+        return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+    };
 }
 
-function drawCaveBackground(ctx) {
-    const bg = ctx.createLinearGradient(0, 0, 0, PH);
-    bg.addColorStop(0,    COLOR.bgTop);
-    bg.addColorStop(0.55, COLOR.bgMid);
-    bg.addColorStop(1,    COLOR.bgBot);
-    ctx.fillStyle = bg;
-    ctx.fillRect(0, 0, PW, PH);
-
-    // Ceiling stalactite hints
-    for (let i = 0; i < 40; i++) {
-        const x = (i * 73) % PW;
-        const y = (i * 11) % 24;
-        const alpha = 0.3 + ((i * 19) % 6) / 12;
-        ctx.fillStyle = `rgba(8, 6, 4, ${alpha})`;
-        ctx.fillRect(x, y, 2, 1);
+// Fill a rect with a base color + scattered darker/lighter "pixel" flecks —
+// gives every surface that canvas-textured feel.
+export function flecks(ctx, x, y, w, h, base, dark, light, seed, density = 0.12) {
+    const rng = mulberry32(seed);
+    if (base !== 'rgba(0,0,0,0)') {
+        ctx.fillStyle = base;
+        ctx.fillRect(x, y, w, h);
+    }
+    const px = 2;
+    const count = Math.floor((w * h * density) / (px * px));
+    for (let i = 0; i < count; i++) {
+        const fx = x + Math.floor(rng() * (w / px)) * px;
+        const fy = y + Math.floor(rng() * (h / px)) * px;
+        ctx.fillStyle = rng() < 0.55 ? dark : light;
+        ctx.fillRect(fx, fy, px, px);
     }
 }
 
-function drawCaveGround(ctx) {
-    const groundY = PH - 22;
-    ctx.fillStyle = COLOR.cave;
-    ctx.fillRect(0, groundY, PW, PH - groundY);
+/**
+ * Dungeon floor grid with subtle stone variation + thin grout lines and a dark
+ * wall band on top/sides. Returns the floor rect + tile size so callers can
+ * place characters in tile coordinates.
+ */
+export function drawDungeon(ctx, w, h, opts = {}) {
+    const {
+        tile = TILE,
+        seed = 1,
+        wallTop = 28,
+        wallSide = 20,
+        floor = PAL.stone,
+        floorLight = PAL.stoneLight,
+        floorHi = PAL.stoneHi,
+    } = opts;
 
-    // Tile joints
-    ctx.fillStyle = COLOR.caveShadow;
-    for (let row = 0; row < 4; row++) {
-        const y = groundY + 1 + row * 6;
-        ctx.fillRect(0, y, PW, 1);
-        const offset = (row % 2) * 8;
-        for (let x = offset; x < PW; x += 16) {
-            ctx.fillRect(x, y, 1, 5);
+    // backdrop wall (above the floor area)
+    flecks(ctx, 0, 0, w, wallTop, PAL.bg, PAL.black, PAL.stone, seed * 3, 0.18);
+    // side strips
+    flecks(ctx, 0, wallTop, wallSide, h - wallTop, PAL.bgDeep, PAL.black, PAL.stone, seed * 5, 0.16);
+    flecks(ctx, w - wallSide, wallTop, wallSide, h - wallTop, PAL.bgDeep, PAL.black, PAL.stone, seed * 7, 0.16);
+
+    const fx = wallSide;
+    const fy = wallTop;
+    const fw = w - wallSide * 2;
+    const fh = h - wallTop;
+
+    flecks(ctx, fx, fy, fw, fh, floor, PAL.bgDeep, floorLight, seed * 11, 0.2);
+
+    // tile lines (low-contrast)
+    ctx.fillStyle = PAL.bgDeep;
+    for (let x = fx; x <= fx + fw; x += tile) ctx.fillRect(x, fy, 1, fh);
+    for (let y = fy; y <= fy + fh; y += tile) ctx.fillRect(fx, y, fw, 1);
+
+    // occasional brighter "stone" tile
+    const rng = mulberry32(seed * 13);
+    const cols = Math.floor(fw / tile);
+    const rows = Math.floor(fh / tile);
+    for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+            if (rng() < 0.08) {
+                flecks(ctx, fx + c * tile + 1, fy + r * tile + 1, tile - 1, tile - 1,
+                    floorLight, PAL.bgDeep, floorHi, seed * (c + 1) * (r + 1), 0.18);
+            }
         }
     }
 
-    // Dust speckles
-    for (let i = 0; i < 60; i++) {
-        const x = (i * 47) % PW;
-        const y = groundY + 2 + ((i * 13) % (PH - groundY - 3));
-        const alpha = 0.25 + ((i * 23) % 6) / 18;
-        ctx.fillStyle = `rgba(58, 53, 48, ${alpha})`;
-        ctx.fillRect(x, y, 1, 1);
-    }
+    // wall cap highlight just above the floor
+    ctx.fillStyle = PAL.stoneHi;
+    ctx.globalAlpha = 0.25;
+    ctx.fillRect(fx, fy, fw, 1);
+    ctx.globalAlpha = 1;
+
+    return { fx, fy, fw, fh, tile, cols, rows };
 }
 
-function drawSideWalls(ctx) {
-    // Left and right cave-wall hints — simple darker columns
-    const wallY = 16;
-    const wallH = PH - wallY - 22;
-    // Left
-    ctx.fillStyle = COLOR.stoneMid;
-    for (let y = wallY; y < wallY + wallH; y++) {
-        const dx = Math.max(0, 18 - (y - wallY) * 0.1);
-        ctx.fillRect(0, y, dx, 1);
-    }
-    // Right
-    for (let y = wallY; y < wallY + wallH; y++) {
-        const dx = Math.max(0, 18 - (y - wallY) * 0.1);
-        ctx.fillRect(PW - dx, y, dx, 1);
-    }
-    // Crack details
-    ctx.fillStyle = COLOR.stoneCrack;
-    for (let i = 0; i < 8; i++) {
-        ctx.fillRect(3 + (i * 17) % 13, 22 + i * 9, 1, 4);
-        ctx.fillRect(PW - 4 - (i * 13) % 13, 30 + i * 8, 1, 3);
-    }
+// Radial darkness — the fog-of-war feel. Soft outer black with a hole over the
+// focal point.
+export function drawFog(ctx, w, h, center, radius) {
+    const grd = ctx.createRadialGradient(center.x, center.y, radius * 0.25, center.x, center.y, radius);
+    // tiles within vision stay clearly lit; only the outer edge fades to black
+    grd.addColorStop(0, 'rgba(8,6,4,0)');
+    grd.addColorStop(0.5, 'rgba(8,6,4,0.04)');
+    grd.addColorStop(0.78, 'rgba(8,6,4,0.6)');
+    grd.addColorStop(1, 'rgba(5,4,2,0.98)');
+    ctx.fillStyle = grd;
+    ctx.fillRect(0, 0, w, h);
 }
 
-function drawVignette(ctx, sides = true, topBottom = true) {
-    if (sides) {
-        const v = ctx.createLinearGradient(0, 0, PW, 0);
-        v.addColorStop(0,    'rgba(0,0,0,0.7)');
-        v.addColorStop(0.2,  'rgba(0,0,0,0)');
-        v.addColorStop(0.8,  'rgba(0,0,0,0)');
-        v.addColorStop(1,    'rgba(0,0,0,0.7)');
-        ctx.fillStyle = v;
-        ctx.fillRect(0, 0, PW, PH);
+/** Cave-entrance arch silhouette with a glow inside — Page 1 fade-in target. */
+export function drawCaveArch(ctx, w, h, opts = {}) {
+    const { glow = 0.6 } = opts;
+    // outside — desaturated slate, light enough that a black silhouette reads
+    const sky = ctx.createLinearGradient(0, 0, 0, h);
+    sky.addColorStop(0, '#46453f');
+    sky.addColorStop(0.6, '#2d2a23');
+    sky.addColorStop(1, '#1a1610');
+    ctx.fillStyle = sky;
+    ctx.fillRect(0, 0, w, h);
+    flecks(ctx, 0, 0, w, h, 'rgba(0,0,0,0)', PAL.bgDeep, PAL.stoneHi, 21, 0.08);
+
+    // ground line — darker dirt
+    flecks(ctx, 0, h - 36, w, 36, PAL.bgDeep, PAL.black, PAL.stone, 23, 0.2);
+
+    // arch silhouette (jagged rocky frame around an arched opening)
+    ctx.fillStyle = PAL.black;
+    const cx = w / 2;
+    const archW = w * 0.5;
+    const archH = h * 0.72;
+    const rng = mulberry32(31);
+    const steps = 40;
+    const left = cx - archW / 2;
+    const right = cx + archW / 2;
+    const baseY = h - 36;
+    ctx.beginPath();
+    ctx.moveTo(0, h);
+    ctx.lineTo(0, 0);
+    ctx.lineTo(w, 0);
+    ctx.lineTo(w, h);
+    ctx.lineTo(right + rng() * 8, h - 36);
+    for (let i = 0; i <= steps; i++) {
+        const t = i / steps;
+        const ang = Math.PI * (1 - t);
+        const jitter = (rng() - 0.5) * 14;
+        const ax = cx + Math.cos(ang) * (archW / 2 + jitter);
+        const ay = baseY - Math.sin(ang) * archH + jitter * 0.3;
+        ctx.lineTo(ax, ay);
     }
-    if (topBottom) {
-        const v2 = ctx.createLinearGradient(0, 0, 0, PH);
-        v2.addColorStop(0,    'rgba(0,0,0,0.65)');
-        v2.addColorStop(0.2,  'rgba(0,0,0,0)');
-        v2.addColorStop(0.85, 'rgba(0,0,0,0)');
-        v2.addColorStop(1,    'rgba(0,0,0,0.45)');
-        ctx.fillStyle = v2;
-        ctx.fillRect(0, 0, PW, PH);
+    ctx.lineTo(left - rng() * 8, h - 36);
+    ctx.lineTo(0, h);
+    ctx.closePath();
+    ctx.fill();
+
+    // inner glow (torch beyond the arch)
+    const glowGrd = ctx.createRadialGradient(cx, baseY - archH * 0.55, 4, cx, baseY - archH * 0.55, archH * 0.7);
+    glowGrd.addColorStop(0, `rgba(230,181,98,${0.55 * glow})`);
+    glowGrd.addColorStop(0.4, `rgba(192,138,58,${0.22 * glow})`);
+    glowGrd.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glowGrd;
+    ctx.fillRect(0, 0, w, h);
+}
+
+/**
+ * Tiny character on a tile. player = blue tunic boy (short); father = brown
+ * cloak (tall); goal = a faintly glowing G glyph.
+ */
+export function drawCharacter(ctx, cx, cy, kind = 'player', tile = TILE) {
+    const px = tile / 8;
+    const x0 = Math.floor(cx - tile / 2);
+    const y0 = Math.floor(cy - tile / 2);
+
+    if (kind === 'player') {
+        ctx.fillStyle = PAL.playerSkin;
+        ctx.fillRect(x0 + 3 * px, y0 + 2 * px, 2 * px, 2 * px);   // head
+        ctx.fillStyle = PAL.playerBlue;
+        ctx.fillRect(x0 + 2 * px, y0 + 4 * px, 4 * px, 3 * px);   // tunic
+        ctx.fillStyle = PAL.fatherCloak;
+        ctx.fillRect(x0 + 2 * px, y0 + 7 * px, 2 * px, px);       // legs
+        ctx.fillRect(x0 + 4 * px, y0 + 7 * px, 2 * px, px);
+        ctx.fillStyle = PAL.fatherBrown;
+        ctx.fillRect(x0 + 3 * px, y0 + 1 * px, 2 * px, px);       // hair tuft
+    } else if (kind === 'father') {
+        ctx.fillStyle = PAL.fatherBrown;
+        ctx.fillRect(x0 + 2 * px, y0, 4 * px, 2 * px);            // hood
+        ctx.fillStyle = PAL.playerSkin;
+        ctx.fillRect(x0 + 3 * px, y0 + 2 * px, 2 * px, px);       // face
+        ctx.fillStyle = PAL.fatherCloak;
+        ctx.fillRect(x0 + 2 * px, y0 + 3 * px, 4 * px, 5 * px);   // cloak
+        ctx.fillStyle = PAL.fatherBrown;
+        ctx.fillRect(x0 + 5 * px, y0 + 3 * px, px, 4 * px);       // highlight
+    } else if (kind === 'goal') {
+        ctx.fillStyle = PAL.goal;
+        ctx.fillRect(x0 + 2 * px, y0 + 2 * px, 4 * px, px);       // G — top
+        ctx.fillRect(x0 + 2 * px, y0 + 2 * px, px, 4 * px);       // left
+        ctx.fillRect(x0 + 2 * px, y0 + 5 * px, 4 * px, px);       // bottom
+        ctx.fillRect(x0 + 4 * px, y0 + 4 * px, 2 * px, px);       // middle nub
+        ctx.fillRect(x0 + 5 * px, y0 + 4 * px, px, 2 * px);
+        const g = ctx.createRadialGradient(cx, cy, 1, cx, cy, tile * 0.9);
+        g.addColorStop(0, 'rgba(230,200,120,0.35)');
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(x0 - tile, y0 - tile, tile * 3, tile * 3);
     }
 }
 
 /**
- * Middle-aged man (the father) — front-facing, eyes covered by a horizontal
- * band (memory/unreliable-narration motif). Confident stance, sturdy build,
- * rust-red cape draped over shoulders. Stands center-stage in a cave.
- *
- *   Sprite footprint: ~9 wide × ~22 tall, drawn around (cx, baseY).
+ * Standing father portrait (VN-style) — front-facing, eyes covered by a dark
+ * band (memory motif), rust cape, faint hero glow. Ported from the V1 opening
+ * art; drawn around feet-base (cx, baseY) and scaled up for dialogue beats.
  */
-function drawFather(ctx, cx, baseY) {
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.5)';
-    ctx.fillRect(cx - 5, baseY + 1, 11, 2);
-    ctx.fillRect(cx - 4, baseY + 3, 9, 1);
-
-    // Legs (sturdy, wider than sherpa)
-    ctx.fillStyle = COLOR.bodyDk;
-    ctx.fillRect(cx - 3, baseY - 5, 2, 6);
-    ctx.fillRect(cx + 1, baseY - 5, 2, 6);
-    // Boots accent
-    ctx.fillStyle = COLOR.stoneDk;
-    ctx.fillRect(cx - 3, baseY, 2, 1);
-    ctx.fillRect(cx + 1, baseY, 2, 1);
-
-    // Body (chest out, broader than sherpa)
-    ctx.fillStyle = COLOR.crimson;
-    ctx.fillRect(cx - 4, baseY - 12, 9, 7);
-    // Belt
-    ctx.fillStyle = COLOR.stoneDk;
-    ctx.fillRect(cx - 4, baseY - 6, 9, 1);
-    ctx.fillStyle = COLOR.brass;
-    ctx.fillRect(cx, baseY - 6, 1, 1);  // belt buckle
-
-    // Cape (rust red, draping behind the shoulders down to mid-thigh)
-    ctx.fillStyle = COLOR.capeMain;
-    // shoulders extend
-    ctx.fillRect(cx - 6, baseY - 12, 2, 8);
-    ctx.fillRect(cx + 5, baseY - 12, 2, 8);
-    // drape behind
-    ctx.fillRect(cx - 5, baseY - 4, 11, 4);
-    // cape inner shadow
-    ctx.fillStyle = COLOR.capeShadow;
-    ctx.fillRect(cx - 6, baseY - 10, 1, 5);
-    ctx.fillRect(cx + 6, baseY - 10, 1, 5);
-
-    // Head (a bit larger than sherpa, square jaw)
-    ctx.fillStyle = COLOR.skin;
-    ctx.fillRect(cx - 2, baseY - 17, 5, 5);
-
-    // Eye band — horizontal black bar across the eyes (memory motif)
-    ctx.fillStyle = COLOR.eyeBand;
-    ctx.fillRect(cx - 3, baseY - 15, 7, 2);
-
-    // Hair — short, neat (just a top crown)
-    ctx.fillStyle = COLOR.stoneDk;
-    ctx.fillRect(cx - 2, baseY - 18, 5, 1);
-    ctx.fillRect(cx - 3, baseY - 17, 1, 1);
-    ctx.fillRect(cx + 3, baseY - 17, 1, 1);
-
-    // Faint torch glow at chest (former hero aura)
-    const glow = ctx.createRadialGradient(cx, baseY - 9, 1, cx, baseY - 9, 14);
-    glow.addColorStop(0,   'rgba(184, 134, 11, 0.30)');
-    glow.addColorStop(0.5, 'rgba(139, 58, 31, 0.12)');
-    glow.addColorStop(1,   'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(cx - 14, baseY - 22, 28, 24);
-}
-
-/**
- * Same father, but from behind, walking toward a distant dungeon arch.
- * Smaller frame to suggest distance.
- */
-function drawFatherFromBehind(ctx, cx, baseY) {
-    // Shadow
-    ctx.fillStyle = 'rgba(0,0,0,0.4)';
-    ctx.fillRect(cx - 4, baseY + 1, 9, 1);
-
-    // Legs
-    ctx.fillStyle = COLOR.bodyDk;
-    ctx.fillRect(cx - 2, baseY - 4, 2, 5);
-    ctx.fillRect(cx + 1, baseY - 4, 2, 5);
-
-    // Body (back, narrower visible)
-    ctx.fillStyle = COLOR.crimson;
-    ctx.fillRect(cx - 3, baseY - 10, 7, 6);
-
-    // Cape billowing behind (slight motion — wider at bottom)
-    ctx.fillStyle = COLOR.capeMain;
-    ctx.fillRect(cx - 5, baseY - 10, 2, 7);
-    ctx.fillRect(cx + 4, baseY - 10, 2, 7);
-    ctx.fillRect(cx - 6, baseY - 6, 1, 4);
-    ctx.fillRect(cx + 6, baseY - 6, 1, 4);
-    ctx.fillRect(cx - 4, baseY - 3, 9, 2);
-    // shadow inner
-    ctx.fillStyle = COLOR.capeShadow;
-    ctx.fillRect(cx - 5, baseY - 8, 1, 4);
-    ctx.fillRect(cx + 5, baseY - 8, 1, 4);
-
-    // Head (back of head, just hair)
-    ctx.fillStyle = COLOR.stoneDk;
-    ctx.fillRect(cx - 2, baseY - 14, 5, 3);
-}
-
-/**
- * Distant dungeon arch — receding perspective for [3].
- */
-function drawDistantArch(ctx, cx, archBaseY) {
-    const archTopY = archBaseY - 36;
-    const innerHalf = 12;
-    const frameW = 2;
-    const curveEnd = archTopY + innerHalf;
-
-    // Outer stone frame
-    ctx.fillStyle = COLOR.stoneMid;
-    for (let y = archTopY; y < archBaseY; y++) {
-        const halfW = halfWidthAtY(y, archTopY, curveEnd, innerHalf + frameW);
-        if (halfW > 0) ctx.fillRect(Math.floor(cx - halfW), y, Math.ceil(halfW * 2), 1);
-    }
-    // Inner void
-    ctx.fillStyle = COLOR.voidInside;
-    for (let y = archTopY + 1; y < archBaseY; y++) {
-        const halfW = halfWidthAtY(y, archTopY + 1, curveEnd, innerHalf);
-        if (halfW > 0) ctx.fillRect(Math.floor(cx - halfW), y, Math.ceil(halfW * 2), 1);
-    }
-
-    // Faint torch glow from inside
-    const glow = ctx.createRadialGradient(cx, archBaseY - 6, 2, cx, archBaseY - 6, 18);
-    glow.addColorStop(0,    'rgba(184, 134, 11, 0.30)');
-    glow.addColorStop(0.5,  'rgba(139, 58, 31, 0.15)');
-    glow.addColorStop(1,    'rgba(0, 0, 0, 0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(cx - innerHalf, archTopY, innerHalf * 2, archBaseY - archTopY);
-}
-
-function halfWidthAtY(y, topY, curveEndY, curveRadius) {
-    if (y < curveEndY) {
-        const dy = curveEndY - y;
-        const r2 = curveRadius * curveRadius - dy * dy;
-        return r2 > 0 ? Math.sqrt(r2) : 0;
-    }
-    return curveRadius;
-}
-
-// ─────────────────────────────────────────────────────────────────────────
-// Exports
-// ─────────────────────────────────────────────────────────────────────────
-
-export function renderManInDungeon(canvas) {
-    if (!canvas) return;
-    const ctx = setupCanvas(canvas);
-
-    drawCaveBackground(ctx);
-    drawSideWalls(ctx);
-    drawCaveGround(ctx);
-
-    // Father stands center stage
-    const cx = Math.floor(PW / 2);
-    const groundY = PH - 22;
-    drawFather(ctx, cx, groundY - 1);
-
-    drawVignette(ctx, true, true);
+export function drawFatherPortrait(ctx, cx, baseY, scale = 5) {
+    const C = {
+        skin: '#d4a878', brass: '#b8860b', crimson: '#5a1a1a',
+        stoneDk: '#3a3530', bodyDk: '#1a1410',
+        capeMain: '#8b3a1f', capeShadow: '#3a1208', eyeBand: '#000000',
+    };
+    ctx.save();
+    ctx.translate(Math.round(cx), Math.round(baseY));
+    ctx.scale(scale, scale);
+    // legs
+    ctx.fillStyle = C.bodyDk; ctx.fillRect(-3, -5, 2, 6); ctx.fillRect(1, -5, 2, 6);
+    ctx.fillStyle = C.stoneDk; ctx.fillRect(-3, 0, 2, 1); ctx.fillRect(1, 0, 2, 1);
+    // body
+    ctx.fillStyle = C.crimson; ctx.fillRect(-4, -12, 9, 7);
+    // belt
+    ctx.fillStyle = C.stoneDk; ctx.fillRect(-4, -6, 9, 1);
+    ctx.fillStyle = C.brass; ctx.fillRect(0, -6, 1, 1);
+    // cape
+    ctx.fillStyle = C.capeMain;
+    ctx.fillRect(-6, -12, 2, 8); ctx.fillRect(5, -12, 2, 8); ctx.fillRect(-5, -4, 11, 4);
+    ctx.fillStyle = C.capeShadow; ctx.fillRect(-6, -10, 1, 5); ctx.fillRect(6, -10, 1, 5);
+    // head
+    ctx.fillStyle = C.skin; ctx.fillRect(-2, -17, 5, 5);
+    // eye band (memory motif)
+    ctx.fillStyle = C.eyeBand; ctx.fillRect(-3, -15, 7, 2);
+    // hair
+    ctx.fillStyle = C.stoneDk;
+    ctx.fillRect(-2, -18, 5, 1); ctx.fillRect(-3, -17, 1, 1); ctx.fillRect(3, -17, 1, 1);
     ctx.restore();
+    // faint hero glow (world-space gradient, not scaled rects)
+    const gy = baseY - 9 * scale;
+    const glow = ctx.createRadialGradient(cx, gy, 1, cx, gy, 14 * scale);
+    glow.addColorStop(0, 'rgba(184,134,11,0.30)');
+    glow.addColorStop(0.5, 'rgba(139,58,31,0.12)');
+    glow.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(cx - 14 * scale, baseY - 22 * scale, 28 * scale, 24 * scale);
 }
 
-export function renderManLeaving(canvas) {
-    if (!canvas) return;
-    const ctx = setupCanvas(canvas);
+/** Small flickering torch glow at (x,y). intensity 0..1. */
+export function drawTorch(ctx, x, y, intensity = 1) {
+    const g = ctx.createRadialGradient(x, y, 1, x, y, 60 * intensity);
+    g.addColorStop(0, `rgba(230,181,98,${0.7 * intensity})`);
+    g.addColorStop(0.4, `rgba(192,138,58,${0.25 * intensity})`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(x - 80, y - 80, 160, 160);
+    ctx.fillStyle = PAL.accentHi;
+    ctx.fillRect(x - 1, y - 1, 2, 2);   // bright core
+}
 
-    drawCaveBackground(ctx);
-    drawSideWalls(ctx);
-    drawCaveGround(ctx);
+/** Guild hall — wider, warmer interior. Page 8. */
+export function drawGuildHall(ctx, w, h) {
+    // back wall — wooden plank pattern
+    flecks(ctx, 0, 0, w, h * 0.62, PAL.bgLight, PAL.bgDeep, PAL.stoneLight, 41, 0.18);
+    ctx.fillStyle = PAL.bgDeep;
+    for (let y = 24; y < h * 0.62; y += 22) ctx.fillRect(0, y, w, 1);
+    // floor — stone
+    flecks(ctx, 0, h * 0.62, w, h * 0.38, PAL.stone, PAL.bgDeep, PAL.stoneHi, 43, 0.2);
+    ctx.fillStyle = PAL.bgDeep;
+    for (let x = 0; x <= w; x += 36) ctx.fillRect(x, h * 0.62, 1, h * 0.38);
 
-    // Distant arch toward which the father walks
-    const cx = Math.floor(PW / 2);
-    const groundY = PH - 22;
-    drawDistantArch(ctx, cx, groundY);
+    // bulletin board
+    const boardX = w * 0.18, boardY = h * 0.12, boardW = w * 0.22, boardH = h * 0.32;
+    flecks(ctx, boardX, boardY, boardW, boardH, PAL.fatherBrown, PAL.fatherCloak, PAL.stoneLight, 47, 0.22);
+    ctx.fillStyle = PAL.text;
+    ctx.globalAlpha = 0.6;
+    ctx.fillRect(boardX + 12, boardY + 14, 28, 22);
+    ctx.fillRect(boardX + 50, boardY + 20, 22, 18);
+    ctx.fillRect(boardX + 14, boardY + 50, 32, 26);
+    ctx.fillRect(boardX + 60, boardY + 56, 26, 20);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = PAL.black;
+    ctx.lineWidth = 2;
+    ctx.strokeRect(boardX, boardY, boardW, boardH);
 
-    // Father (smaller, receding) — placed slightly ahead/below the arch
-    drawFatherFromBehind(ctx, cx, groundY - 4);
+    // fireplace center-right
+    const fpX = w * 0.6, fpY = h * 0.28, fpW = w * 0.18, fpH = h * 0.34;
+    flecks(ctx, fpX, fpY, fpW, fpH, PAL.stone, PAL.bgDeep, PAL.stoneHi, 53, 0.2);
+    ctx.fillStyle = PAL.black;
+    ctx.fillRect(fpX + fpW * 0.18, fpY + fpH * 0.35, fpW * 0.64, fpH * 0.55);
+    ctx.fillStyle = PAL.accent;
+    ctx.fillRect(fpX + fpW * 0.3, fpY + fpH * 0.65, fpW * 0.4, fpH * 0.2);
+    ctx.fillStyle = PAL.accentHi;
+    ctx.fillRect(fpX + fpW * 0.4, fpY + fpH * 0.72, fpW * 0.2, fpH * 0.1);
+    const g = ctx.createRadialGradient(fpX + fpW / 2, fpY + fpH * 0.8, 6, fpX + fpW / 2, fpY + fpH * 0.8, 140);
+    g.addColorStop(0, 'rgba(230,181,98,0.45)');
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = g;
+    ctx.fillRect(0, 0, w, h);
 
-    drawVignette(ctx, true, true);
-    ctx.restore();
+    // desk in foreground
+    const dx = w * 0.32, dy = h * 0.74, dw = w * 0.36, dh = h * 0.1;
+    flecks(ctx, dx, dy, dw, dh, PAL.fatherBrown, PAL.fatherCloak, PAL.stoneLight, 59, 0.2);
+    ctx.fillStyle = PAL.bgDeep;
+    ctx.fillRect(dx, dy, dw, 2);
+    ctx.fillStyle = PAL.bgLight;
+    ctx.fillRect(dx + 30, dy - 8, 28, 8);
+    ctx.fillStyle = PAL.text;
+    ctx.fillRect(dx + dw - 50, dy - 5, 26, 5);
 }

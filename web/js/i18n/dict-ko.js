@@ -39,14 +39,26 @@ export const KO = {
     'title.continue': '이어하기',
     'title.dev_mode': 'Dev Mode',
 
-    // === Opening sequence ===
-    'opening.father_line': '먼저 지상으로 돌아가 있어. 금방 갈게.',
-    'opening.child_cry': '안돼요 가지마요!',
-    'opening.repli_morning': '마스터 일어나셨나요? 좋은 점심입니다.',
-    'opening.reta_quest': '모험가 길드의 의뢰에요.',
-    'opening.speaker.repli': '레플리',
-    'opening.speaker.reta': '레타',
-    'opening.hint.click': '클릭하여 진행',
+    // === Opening V2 — tutorial-as-opening (narrative locked 2026-06-02) ===
+    'opening.v2.p2': '아빠를 따라 재미 삼아 들어온 던전은, 생각했던 것과 달랐다…',
+    'opening.v2.p5_a': '식량이 얼마 남지 않았어.',
+    'opening.v2.p5_b': '너는 먼저 올라가. 곧 따라가마.',
+    'opening.v2.p5_c': '…하지만.',
+    'opening.v2.scroll': '아빠가 귀환 스크롤을 펼쳤다.',
+    'opening.v2.p7': '아빠는 돌아오지 않았다.',
+    'opening.v2.clear': 'Clear',
+    'opening.v2.food': '식량',
+    'opening.v2.food_low': '식량이 부족하다',
+    'opening.v2.warn': 'WARN',
+    'opening.v2.guild': '세르파 길드',
+    'opening.v2.skip': 'ESC 건너뛰기',
+    'opening.v2.move': '방향키로 이동',
+    'opening.v2.guide': '저 빛이 출구야. 따라와.',
+    'opening.v2.speaker_dad': '아빠',
+    'opening.v2.guide_a': '출구는 이쪽이야.',
+    'opening.v2.guide_b': '거의 다 왔어. 멈추지 마.',
+    'opening.v2.guide_c': '길을 잃으면 위험해. 빛을 따라와.',
+    'opening.v2.continue': '아무 키나 누르세요',
 
     // === Guild hall ===
     'guild.title': 'RL Dungeon',
@@ -72,7 +84,7 @@ export const KO = {
 
     // === Game area ===
     'game.minimap': '미니맵',
-    'game.step0_hint': '방향키 / WASD 로 세르파를 움직여 녹색 G 에 도달.',
+    'game.step0_hint': '방향키로 세르파를 움직여 녹색 G 에 도달.',
     'game.bump_toast': '벽! (-1)',
     'game.reset_log': '던전 진입! 식량: {food}. 녹색 G 에 도달하라.',
     'game.clear_repeat': '답파! +{reward}G (스텝: {steps}){treasure}',
@@ -589,7 +601,7 @@ export const KO = {
     'landing.screenshot.quest.alt': '챕터 진행 — 던전을 클리어할수록 다음 챕터가 열리는 구조.',
 
     'landing.quickstart.heading': '빠른 시작',
-    'landing.quickstart.move': '방향키 또는 WASD 로 이동.',
+    'landing.quickstart.move': '방향키로 이동.',
     'landing.quickstart.death': 'HP 0 = 사망. 누적 4 사망이면 캠페인 처음부터.',
     'landing.quickstart.modifier': '런 시작 시 상단 모디파이어 띠 확인 → 캐릭터 선택.',
     'landing.quickstart.qvalue': 'Q-value 히트맵 색 = 학습한 위치 가치 (밝을수록 높음).',

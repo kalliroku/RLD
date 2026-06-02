@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title data-i18n="document.title">RL Dungeon - 강화학습 던전</title>
-    <link rel="stylesheet" href="css/style.css?v=opening2">
+    <link rel="stylesheet" href="css/style.css?v=opening3">
 </head>
 <body>
     <!-- Title Screen -->
@@ -21,15 +21,41 @@
         </div>
     </div>
 
-    <!-- Opening Sequence Screen (one-time prologue per [[project-opening-scene]]) -->
+    <!-- Opening V2 — playable tutorial-as-opening (one-time, runs after first New Game) -->
     <div id="screen-opening" class="screen">
-        <div class="opening-stage">
-            <canvas id="opening-canvas" class="opening-canvas"></canvas>
-            <div class="opening-dialog">
-                <div id="opening-speaker" class="opening-speaker"></div>
-                <div id="opening-text" class="opening-text"></div>
+        <div class="op-stage">
+            <div class="op-frame">
+                <canvas id="opening-canvas" class="op-canvas"></canvas>
+                <div class="op-letterbox op-lb-top"></div>
+                <div class="op-letterbox op-lb-bottom"></div>
+                <div id="op-resource" class="op-resource">
+                    <div class="op-resource-label" data-i18n="opening.v2.food">식량</div>
+                    <div class="op-resource-bar"><div id="op-resource-fill" class="op-resource-fill"></div></div>
+                </div>
+                <div id="op-warn" class="op-warn"><span class="op-warn-dot"></span><span data-i18n="opening.v2.warn">WARN</span></div>
+                <div id="op-clear" class="op-clear">
+                    <div class="op-clear-title" data-i18n="opening.v2.clear">Clear</div>
+                    <div id="op-clear-progress" class="op-clear-progress">1 / 2</div>
+                </div>
+                <div id="op-ember" class="op-ember-light"></div>
+                <div id="op-narrative" class="op-narrative"></div>
+                <div id="op-dialogue" class="op-dialogue">
+                    <div id="op-dialogue-speaker" class="op-dialogue-speaker"></div>
+                    <div id="op-dialogue-text" class="op-dialogue-text"></div>
+                    <div class="op-dialogue-next">&#9660;</div>
+                </div>
+                <div id="op-dpad" class="op-dpad">
+                    <div class="dpad">
+                        <button class="dpad-btn dpad-up" data-op-dir="up">&#9650;</button>
+                        <button class="dpad-btn dpad-left" data-op-dir="left">&#9664;</button>
+                        <button class="dpad-btn dpad-center"></button>
+                        <button class="dpad-btn dpad-right" data-op-dir="right">&#9654;</button>
+                        <button class="dpad-btn dpad-down" data-op-dir="down">&#9660;</button>
+                    </div>
+                </div>
+                <div id="op-hint" class="op-hint"></div>
             </div>
-            <div id="opening-hint" class="opening-hint" data-i18n="opening.hint.click">클릭하여 진행</div>
+            <div id="op-skip" class="op-skip" data-i18n="opening.v2.skip">ESC 건너뛰기</div>
         </div>
     </div>
 
@@ -100,7 +126,7 @@
 
                 <!-- Step-0 inline hint (B-004): shown until first dungeon clear -->
                 <div class="step0-hint" id="step0-hint" style="display:none;" data-i18n="game.step0_hint">
-                    방향키 / WASD 로 세르파를 움직여 녹색 G 에 도달.
+                    방향키로 세르파를 움직여 녹색 G 에 도달.
                 </div>
 
                 <!-- Game Over Overlay -->
@@ -695,6 +721,6 @@
         </div>
     </div>
 
-    <script type="module" src="js/main.js?v=opening1"></script>
+    <script type="module" src="js/main.js?v=opening2"></script>
 </body>
 </html>

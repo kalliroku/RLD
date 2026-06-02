@@ -28,14 +28,26 @@ export const EN = {
     'title.continue': 'Continue',
     'title.dev_mode': 'Dev Mode',
 
-    // === Opening sequence ===
-    'opening.father_line': "Head back to the surface first. I'll be there soon.",
-    'opening.child_cry': "Please, don't go!",
-    'opening.repli_morning': 'Are you up, Master? Good afternoon.',
-    'opening.reta_quest': "A request from the Adventurers' Guild.",
-    'opening.speaker.repli': 'Repli',
-    'opening.speaker.reta': 'Reta',
-    'opening.hint.click': 'Click to continue',
+    // === Opening V2 — tutorial-as-opening (narrative locked 2026-06-02) ===
+    'opening.v2.p2': "The dungeon I followed my father into for fun was nothing like I'd imagined…",
+    'opening.v2.p5_a': "We're almost out of food.",
+    'opening.v2.p5_b': "You go up first. I'll be right behind you.",
+    'opening.v2.p5_c': '…But—',
+    'opening.v2.scroll': 'Father unfurls the return scroll.',
+    'opening.v2.p7': 'Dad never came back.',
+    'opening.v2.clear': 'Clear',
+    'opening.v2.food': 'Food',
+    'opening.v2.food_low': 'Food is running low',
+    'opening.v2.warn': 'WARN',
+    'opening.v2.guild': 'Serpa Guild',
+    'opening.v2.skip': 'ESC to skip',
+    'opening.v2.move': 'Use the arrow keys',
+    'opening.v2.guide': 'That light is the way out. Follow me.',
+    'opening.v2.speaker_dad': 'Dad',
+    'opening.v2.guide_a': "The exit's this way.",
+    'opening.v2.guide_b': "Almost out. Don't stop.",
+    'opening.v2.guide_c': 'Getting lost is dangerous — follow the light.',
+    'opening.v2.continue': 'Press any key',
 
     // === Guild hall ===
     'guild.title': 'RL Dungeon',
@@ -71,7 +83,7 @@ export const EN = {
 
     // === Game area ===
     'game.minimap': 'Minimap',
-    'game.step0_hint': 'Use arrow keys / WASD to move your Sherpa to the green G.',
+    'game.step0_hint': 'Use the arrow keys to move your Sherpa to the green G.',
     'game.bump_toast': 'Bump! (-1)',
     'game.reset_log': 'Game Reset! Food: {food}. Reach the green G.',
     'game.clear_repeat': 'Clear! +{reward}G (Steps: {steps}){treasure}',
@@ -562,7 +574,7 @@ export const EN = {
     'landing.screenshot.quest.alt': 'Chapter progression — clearing dungeons unlocks the next chapter.',
 
     'landing.quickstart.heading': 'Quick Start',
-    'landing.quickstart.move': 'Move with arrow keys or WASD.',
+    'landing.quickstart.move': 'Move with the arrow keys.',
     'landing.quickstart.death': 'HP 0 = death. 4 cumulative deaths restart the campaign.',
     'landing.quickstart.modifier': 'Check the modifier band at run start → pick your character.',
     'landing.quickstart.qvalue': 'Q-value heatmap color = learned value at that tile (brighter is higher).',
