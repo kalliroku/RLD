@@ -28,6 +28,23 @@ import { ModifierSet, MODIFIERS } from './game/modifiers.js';
 import { t, initI18n, setLang, getLang, onLangChange } from './i18n/index.js';
 import { renderTitleArt } from './game/title-art.js';
 import { OpeningManager } from './game/opening.js';
+import { drawGuildHall, drawCharacter, drawRepliPortrait, drawRetaPortrait } from './game/opening-art.js';
+
+// Guild onboarding (first guild entry only). NPC introduces the room one beat
+// at a time and reveals entry buttons progressively. Korean hardcoded for now —
+// i18n keys (guild.onboard.*) to follow. Narrative per STORY.md / D-2026-06-02-18.
+const GUILD_ONBOARD_KEY = 'rld_guild_onboarded';
+// who → 흉상(drawRepliPortrait/drawRetaPortrait), highlight → 자원 박스 강조,
+// reveal → 진입 버튼 공개. 대사는 시나리오 기반 (레플리=일상/안내, 레타=모험가 의뢰).
+const GUILD_ONBOARD_BEATS = [
+    { who: 'repli', speaker: '레플리', text: '마스터, 일어나셨나요? 좋은 점심입니다.' },
+    { who: 'repli', speaker: '레플리', text: '세르파 길드에 오신 걸 환영해요. 이제 이곳의 길드장은 당신이시죠.' },
+    { who: 'repli', speaker: '레플리', text: '이게 길드 자금(G)이에요. 세르파를 고용하고, 부활시키고, 운영하는 데 들어가죠.', highlight: 'gold' },
+    { who: 'repli', speaker: '레플리', text: '그 옆은 식량이고요. 세르파를 던전에 출정시킬 때 소모됩니다.', highlight: 'food' },
+    { who: 'repli', speaker: '레플리', text: '…아직 함께할 세르파가 한 명도 없네요. 곧 좋은 인재가 올 거예요.' },
+    { who: 'reta', speaker: '레타', text: '마스터, 모험가 길드의 의뢰에요.' },
+    { who: 'reta', speaker: '레타', text: '의뢰판을 확인해 보세요. 첫 던전이 기다리고 있어요.', reveal: 'quest' },
+];
 
 const PRESET_MULTI_DUNGEONS = {
     preset_beginner_tower: {
@@ -291,9 +308,10 @@ class Game {
             this._beginNewGame();
         });
 
-        // DEV/TEST: always replay the opening, then enter (bypasses the seen flag).
+        // DEV/TEST: always replay the opening + guild onboarding, then enter.
         document.getElementById('btn-new-game-opening').addEventListener('click', () => {
             OpeningManager.reset();
+            localStorage.removeItem(GUILD_ONBOARD_KEY);
             this._beginNewGame();
         });
 
@@ -313,14 +331,29 @@ class Game {
             this.updateGuildHall();
         });
 
-        // Guild tab switching
-        document.querySelectorAll('.guild-tab').forEach(btn => {
-            btn.addEventListener('click', () => {
-                document.querySelectorAll('.guild-tab').forEach(b => b.classList.remove('active'));
-                document.querySelectorAll('.guild-tab-panel').forEach(p => p.classList.remove('active'));
-                btn.classList.add('active');
-                document.getElementById('guild-tab-' + btn.dataset.gtab).classList.add('active');
+        // Guild entry buttons → open the matching panel in a popup modal
+        document.querySelectorAll('.guild-action').forEach(btn => {
+            btn.addEventListener('click', () => this._openGuildPopup(btn.dataset.popup, btn.textContent.trim()));
+        });
+        const guildPopup = document.getElementById('guild-popup');
+        if (guildPopup) {
+            guildPopup.querySelectorAll('[data-popup-close]').forEach(el => {
+                el.addEventListener('click', () => { guildPopup.hidden = true; });
             });
+            document.addEventListener('keydown', (e) => {
+                if (e.key === 'Escape' && !guildPopup.hidden) guildPopup.hidden = true;
+            });
+        }
+        // NPC onboarding dialogue — click OR arrow/Enter/Space to advance (오프닝과 동일)
+        const guildDlg = document.getElementById('guild-dialogue');
+        if (guildDlg) guildDlg.addEventListener('click', () => this._advanceGuildBeat());
+        document.addEventListener('keydown', (e) => {
+            if (!this._guildOnboarding) return;
+            if (this.screenManager && this.screenManager.current !== 'screen-guild') return;
+            if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter', ' '].includes(e.key)) {
+                e.preventDefault();
+                this._advanceGuildBeat();
+            }
         });
     }
 
@@ -388,6 +421,161 @@ class Game {
         this._updateGuildParty();
         this._updateGuildShop();
         this._updateGuildMap();
+        this._drawGuildScene();
+        this._maybeStartGuildOnboarding();
+    }
+
+    /** Open a guild entry panel (quest/party/shop/map) in the popup modal. */
+    _openGuildPopup(key, title) {
+        const popup = document.getElementById('guild-popup');
+        if (!popup) return;
+        // clear the "new" pulse on the button once it's been used
+        const btn = document.querySelector(`.guild-action[data-popup="${key}"]`);
+        if (btn) btn.classList.remove('is-new');
+        document.querySelectorAll('.guild-popup-body .guild-tab-panel')
+            .forEach(p => p.classList.remove('active'));
+        const panel = document.getElementById('guild-tab-' + key);
+        if (panel) panel.classList.add('active');
+        const titleEl = document.getElementById('guild-popup-title');
+        if (titleEl) titleEl.textContent = title || '';
+        popup.hidden = false;
+    }
+
+    // ── Guild onboarding (NPC dialogue + progressive button reveal) ──────────
+
+    /** Start the first-time guild onboarding, or reveal all buttons if done. */
+    _maybeStartGuildOnboarding() {
+        const buttons = document.querySelectorAll('.guild-action');
+        const done = localStorage.getItem(GUILD_ONBOARD_KEY) === '1';
+        if (done) {
+            buttons.forEach(b => b.classList.remove('is-hidden', 'is-new'));
+            return;
+        }
+        if (this._guildOnboarding) return;   // already running — don't restart
+        this._guildOnboarding = true;
+        buttons.forEach(b => b.classList.add('is-hidden'));
+        this._guildBeatIdx = 0;
+        this._renderGuildBeat();
+    }
+
+    _renderGuildBeat() {
+        const beat = GUILD_ONBOARD_BEATS[this._guildBeatIdx];
+        const dlg = document.getElementById('guild-dialogue');
+        if (!beat) { this._finishGuildOnboarding(); return; }
+        if (beat.reveal) {
+            const btn = document.querySelector(`.guild-action[data-popup="${beat.reveal}"]`);
+            if (btn) { btn.classList.remove('is-hidden'); btn.classList.add('is-new'); }
+        }
+        // 화자 흉상 (오프닝 방식 — dim + 스포트라이트 + bust) 갱신
+        this._guildSpeaker = beat.who || null;
+        this._drawGuildScene();
+        // 설명 중인 자원 박스 하이라이팅 (이전 비트 강조 해제 후 적용)
+        document.querySelectorAll('.guild-res.is-highlight').forEach(e => e.classList.remove('is-highlight'));
+        if (beat.highlight) {
+            const res = document.getElementById('guild-' + beat.highlight);
+            if (res) res.classList.add('is-highlight');
+        }
+        this._typeGuildDialogue(beat.speaker, beat.text);
+        if (dlg) dlg.classList.add('show');
+    }
+
+    /** Advance on click; first click finishes an in-progress typewriter. */
+    _advanceGuildBeat() {
+        if (!this._guildOnboarding) return;
+        if (this._guildTyping) { this._finishGuildTyping(); return; }
+        this._guildBeatIdx++;
+        this._renderGuildBeat();
+    }
+
+    _finishGuildOnboarding() {
+        this._guildOnboarding = false;
+        this._clearGuildTyping();
+        localStorage.setItem(GUILD_ONBOARD_KEY, '1');
+        const dlg = document.getElementById('guild-dialogue');
+        if (dlg) dlg.classList.remove('show');
+        document.querySelectorAll('.guild-res.is-highlight').forEach(e => e.classList.remove('is-highlight'));
+        this._guildSpeaker = null;
+        this._drawGuildScene();                    // back to the normal scene
+        // 의뢰 button stays revealed (pulsing) for the player to click next.
+    }
+
+    _typeGuildDialogue(speaker, text) {
+        const sp = document.getElementById('guild-dialogue-speaker');
+        const tx = document.getElementById('guild-dialogue-text');
+        if (sp) sp.textContent = speaker || '';
+        if (!tx) return;
+        this._clearGuildTyping();
+        tx.textContent = '';
+        this._guildTyping = true;
+        let i = 0;
+        const tick = () => {
+            i++;
+            tx.textContent = text.slice(0, i);
+            if (i < text.length) {
+                this._guildTypeTimer = setTimeout(tick, 28);
+            } else {
+                this._guildTyping = false;
+                this._guildTypeTimer = null;
+            }
+        };
+        tick();
+    }
+
+    _finishGuildTyping() {
+        this._clearGuildTyping();
+        const beat = GUILD_ONBOARD_BEATS[this._guildBeatIdx];
+        const tx = document.getElementById('guild-dialogue-text');
+        if (tx && beat) tx.textContent = beat.text;
+        this._guildTyping = false;
+    }
+
+    _clearGuildTyping() {
+        if (this._guildTypeTimer) { clearTimeout(this._guildTypeTimer); this._guildTypeTimer = null; }
+    }
+
+    /**
+     * Render the guild office scene (background canvas behind the translucent
+     * panels). drawGuildHall scales to any aspect; NPC + 길드장 placed
+     * proportionally. Placeholder character art (drawCharacter token) until the
+     * room-scale sprites land. Cosmetic only — no sim/run-state coupling.
+     */
+    _drawGuildScene() {
+        const canvas = document.getElementById('guild-scene-canvas');
+        if (!canvas) return;
+        // size the backing store to the displayed box (device px) for crispness
+        const rect = canvas.getBoundingClientRect();
+        const w = Math.max(1, Math.round(rect.width));
+        const h = Math.max(1, Math.round(rect.height));
+        if (!w || !h) return;
+        if (canvas.width !== w || canvas.height !== h) {
+            canvas.width = w;
+            canvas.height = h;
+        }
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        drawGuildHall(ctx, w, h);
+
+        // Onboarding: dim the room + spotlight the speaker bust (오프닝 방식).
+        if (this._guildOnboarding && this._guildSpeaker) {
+            ctx.fillStyle = 'rgba(5,4,3,0.62)';
+            ctx.fillRect(0, 0, w, h);
+            // bust ~30% of screen height (sc scales with viewport, not the old
+            // 270-base which blew up to ~20 on a tall canvas).
+            const cx = w * 0.5, baseY = h * 0.90, sc = Math.max(4, Math.round(h / 100));
+            const sp = ctx.createRadialGradient(cx, h * 0.5, 12, cx, h * 0.5, h * 0.62);
+            sp.addColorStop(0, 'rgba(192,138,58,0.20)');
+            sp.addColorStop(1, 'rgba(0,0,0,0)');
+            ctx.fillStyle = sp;
+            ctx.fillRect(0, 0, w, h);
+            if (this._guildSpeaker === 'reta') drawRetaPortrait(ctx, cx, baseY, sc);
+            else drawRepliPortrait(ctx, cx, baseY, sc);
+            return;
+        }
+
+        // 길드 직원 NPC (우측 바닥) + 길드장(좌측, 책상 앞). Sherpa 0명이라 둘만.
+        const tile = Math.round(Math.min(w, h) * 0.16);
+        drawCharacter(ctx, w * 0.82, h * 0.74, 'father', tile);
+        drawCharacter(ctx, w * 0.30, h * 0.80, 'player', Math.round(tile * 0.82));
     }
 
     _updateGuildResources() {
@@ -399,12 +587,7 @@ class Game {
         const maxHp = rs.getMaxHp(this.currentCharacter);
         const hp = this.agent ? this.agent.hp : maxHp;
         document.getElementById('guild-hp').textContent = t('guild.hp_format', { cur: hp, max: maxHp });
-        // B-203: cumulative death counter — tension when near limit.
-        const deathsEl = document.getElementById('guild-deaths');
-        if (deathsEl) {
-            deathsEl.textContent = t('guild.deaths_format', { cur: rs.deathCount, max: DEATH_LIMIT });
-            deathsEl.classList.toggle('guild-res-warn', rs.deathCount >= DEATH_LIMIT - 1);
-        }
+        // D-2026-06-02-18: 사망 4/4 표시 제거 (세르파 무한부활 — DEATH_LIMIT 재설계 대기).
     }
 
     _updateGuildQuests() {

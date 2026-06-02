@@ -63,33 +63,50 @@
 
     <!-- Guild Hall Screen -->
     <div id="screen-guild" class="screen">
-        <div class="guild-container">
-            <div class="guild-header">
-                <div class="guild-header-top">
-                    <span class="guild-title" data-i18n="guild.title">RL Dungeon</span>
-                    <!-- guild-run / guild-gold / guild-food / guild-hp / guild-deaths: JS 가 t('guild.*_format', {...}) 로 동적 갱신 (data-i18n 미적용 — applyTranslations 가 덮어쓰지 않도록) -->
-                    <span class="guild-run" id="guild-run">Run #1</span>
+        <!-- Guild office scene — full-viewport background behind the panels -->
+        <canvas id="guild-scene-canvas" class="guild-scene-canvas"></canvas>
+        <!-- Top bar: title (left) + resource boxes (right) -->
+        <div class="guild-topbar">
+            <span class="guild-title">RL Dungeon</span>
+            <div class="guild-resources">
+                <span class="guild-res guild-gold" id="guild-gold">800G</span>
+                <span class="guild-res guild-food" id="guild-food">50 Food</span>
+                <span class="guild-res guild-hp" id="guild-hp">HP 100/100</span>
+                <!-- D-2026-06-02-18: 사망 4/4 박스 제거 (세르파 무한부활 — 압박 지표는 G/식량) -->
+                <span class="guild-res guild-run" id="guild-run">Run #1</span>
+            </div>
+        </div>
+
+        <!-- Entry buttons over the scene; their content opens in the popup -->
+        <div class="guild-actions">
+            <button class="guild-action" data-popup="quest" data-i18n="guild.tab.quest">의뢰</button>
+            <button class="guild-action" data-popup="party" data-i18n="guild.tab.party">파티</button>
+            <button class="guild-action" data-popup="shop" data-i18n="guild.tab.shop">상점</button>
+            <button class="guild-action" data-popup="map" data-i18n="guild.tab.map">지도</button>
+        </div>
+
+        <!-- Popup modal — hidden until an entry button is clicked -->
+        <div id="guild-popup" class="guild-popup" hidden>
+            <div class="guild-popup-backdrop" data-popup-close></div>
+            <div class="guild-popup-window">
+                <div class="guild-popup-head">
+                    <h2 class="guild-popup-title" id="guild-popup-title"></h2>
+                    <button class="guild-popup-close" data-popup-close aria-label="닫기">✕</button>
                 </div>
-                <div class="guild-resources">
-                    <span class="guild-res guild-gold" id="guild-gold">800G</span>
-                    <span class="guild-res guild-food" id="guild-food">50 Food</span>
-                    <span class="guild-res guild-hp" id="guild-hp">HP 100/100</span>
-                    <!-- B-203: cumulative death counter (D-4 tension) -->
-                    <span class="guild-res guild-deaths" id="guild-deaths">사망 0/4</span>
+                <div class="guild-popup-body">
+                    <div id="guild-tab-quest" class="guild-tab-panel"></div>
+                    <div id="guild-tab-party" class="guild-tab-panel"></div>
+                    <div id="guild-tab-shop" class="guild-tab-panel"></div>
+                    <div id="guild-tab-map" class="guild-tab-panel"></div>
                 </div>
             </div>
-            <nav class="guild-tabs">
-                <button class="guild-tab active" data-gtab="quest" data-i18n="guild.tab.quest">Quest</button>
-                <button class="guild-tab" data-gtab="party" data-i18n="guild.tab.party">Party</button>
-                <button class="guild-tab" data-gtab="shop" data-i18n="guild.tab.shop">Shop</button>
-                <button class="guild-tab" data-gtab="map" data-i18n="guild.tab.map">Map</button>
-            </nav>
-            <div class="guild-content">
-                <div id="guild-tab-quest" class="guild-tab-panel active"></div>
-                <div id="guild-tab-party" class="guild-tab-panel"></div>
-                <div id="guild-tab-shop" class="guild-tab-panel"></div>
-                <div id="guild-tab-map" class="guild-tab-panel"></div>
-            </div>
+        </div>
+
+        <!-- NPC dialogue (onboarding) — borrows the opening's op-dialogue styling -->
+        <div id="guild-dialogue" class="op-dialogue guild-dialogue">
+            <div id="guild-dialogue-speaker" class="op-dialogue-speaker"></div>
+            <div id="guild-dialogue-text" class="op-dialogue-text"></div>
+            <div class="op-dialogue-next">&#9660;</div>
         </div>
     </div>
 

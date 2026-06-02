@@ -398,6 +398,112 @@ export function drawChildPortrait(ctx, cx, baseY, scale = 6) {
     ctx.restore();
 }
 
+/**
+ * 레플리 — 길드 직원. 금발 + 하늘색 눈동자, 20대 여성. PLACEHOLDER bust
+ * (시나리오 외형 기반, 정식 아트는 Claude Design 위임 예정).
+ */
+export function drawRepliPortrait(ctx, cx, baseY, scale = 6) {
+    ctx.save();
+    ctx.translate(Math.round(cx), Math.round(baseY));
+    ctx.scale(scale, scale);
+    const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+    const SKIN = '#e6b48e', SKIN_SH = '#c48f6c', HAIR = '#e8cf52', HAIR_SH = '#bd9f34';
+    const EYE = '#7ec8e3', LIP = '#c07266';
+    const JACKET = '#6c3a52', JACKET_SH = '#46243a', JACKET_HI = '#8a4d68';  // plum receptionist jacket
+    const INNER = '#f4ecda', GOLD = '#e6b450';                  // white collar + gold trim
+
+    // ── torso — tidy receptionist jacket (정장 + 흰 칼라 + 골드 단추, 모래시계) ──
+    R(-7, -19, 14, 9, JACKET);                 // shoulders + chest (wide)
+    R(-6, -10, 12, 10, JACKET);                // waist — tucked (hourglass)
+    R(-7, -19, 2, 9, JACKET_SH);               // shadow side (upper)
+    R(-6, -10, 2, 10, JACKET_SH);              // shadow side (lower)
+    R(5, -10, 1, 10, JACKET_SH);               // far-side shade
+    // crisp white collar + small V-neck peek
+    R(-4, -19, 8, 1.5, INNER);
+    R(-2, -19, 1, 3, INNER); R(1, -19, 1, 3, INNER);
+    R(-4, -19, 8, 0.6, GOLD);                  // gold collar trim
+    // bust volumes (jacket tone — rounded)
+    R(-5, -17, 3, 2, JACKET_HI); R(1, -17, 3, 2, JACKET_HI);
+    R(-1, -17, 2, 4, JACKET_SH);               // cleft
+    R(-6.5, -16, 1, 3, JACKET_SH); R(5.5, -16, 1, 3, JACKET_SH); // outer-side shadow
+    R(-6, -12, 5, 1, JACKET_SH); R(1, -12, 5, 1, JACKET_SH);     // under-curve
+    // gold buttons down the front
+    R(-0.5, -15, 1, 1, GOLD); R(-0.5, -12, 1, 1, GOLD);
+    R(-0.5, -8, 1, 1, GOLD); R(-0.5, -5, 1, 1, GOLD);
+    // ── neck ──
+    R(-2, -21, 4, 2, SKIN);
+    R(-2, -21, 1.5, 2, SKIN_SH);
+    // ── head ──
+    R(-5, -34, 10, 13, SKIN);
+    R(-5, -34, 2, 13, SKIN_SH);                // shadow side
+    R(4, -34, 1, 12, '#f2e4d4');               // lit edge (+x)
+    // ── blonde hair — full, falls past the cheeks; crown rounded (no hard corners) ──
+    R(-4, -38, 8, 1, HAIR);                    // crown top (narrow → rounded dome)
+    R(-5, -37, 10, 1, HAIR);                   // crown upper
+    R(-6, -36, 12, 4, HAIR);                   // crown body (wide)
+    R(-6, -34, 2, 21, HAIR);                   // left fall (long — past the shoulder)
+    R(4, -34, 2, 21, HAIR);                    // right fall (long)
+    R(4, -34, 1, 21, HAIR_SH);                 // strand shading on the fall
+    R(-6, -37, 1, 5, HAIR_SH);
+    R(-5, -34, 10, 2, HAIR);                   // bangs
+    // ── sky-blue eyes ──
+    R(-3.5, -30, 2.5, 2, '#f4f4f4'); R(1, -30, 2.5, 2, '#f4f4f4');
+    R(-3, -30, 1.5, 2, EYE);  R(1.5, -30, 1.5, 2, EYE);
+    R(-2.6, -30, 0.8, 1, '#23323a'); R(1.9, -30, 0.8, 1, '#23323a');
+    // ── nose + lips ──
+    R(-0.5, -27, 1, 1, SKIN_SH);
+    R(-1.5, -25, 3, 1, LIP);
+    ctx.restore();
+}
+
+/**
+ * 레타 — 모험가 길드 의뢰 전달. 갈색 모자 + 분홍 머리(모자 아래 단발로 보임),
+ * 멜빵 청바지 + 하얀 티, 작은 키 10대 중반. PLACEHOLDER bust (시나리오 외형 기반).
+ */
+export function drawRetaPortrait(ctx, cx, baseY, scale = 6) {
+    ctx.save();
+    ctx.translate(Math.round(cx), Math.round(baseY));
+    ctx.scale(scale, scale);
+    const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+    const SKIN = '#e6b48e', SKIN_SH = '#c48f6c', HAIR = '#e89ab0', HAIR_SH = '#c7798f';
+    const CAP = '#6b4e2e', CAP_SH = '#4c3720', TEE = '#eef0ec', TEE_SH = '#c9cdc7';
+    const DENIM = '#41618a', DENIM_SH = '#2e4866';
+
+    // ── torso — white tee under denim overalls (멜빵) ──
+    R(-6, -19, 12, 19, TEE);
+    R(-6, -19, 2, 19, TEE_SH);                 // shadow side
+    R(-6, -7, 12, 7, DENIM);                   // denim front panel (lower)
+    R(-6, -7, 2, 7, DENIM_SH);
+    R(-4.5, -19, 1.5, 13, DENIM);              // left strap (멜빵)
+    R(3, -19, 1.5, 13, DENIM);                 // right strap
+    // subtle bust on the tee (modest — 10대), between the straps
+    R(-3, -15, 2.5, 2, '#f8faf6');             // left highlight
+    R(0.5, -15, 2.5, 2, '#f8faf6');            // right highlight
+    R(-3, -13, 2.5, 1, TEE_SH);                // soft under-curve (L)
+    R(0.5, -13, 2.5, 1, TEE_SH);               // (R)
+    // ── neck ──
+    R(-2, -21, 4, 2, SKIN);
+    // ── head — round, young (10대) ──
+    R(-5, -33, 10, 12, SKIN);
+    R(-5, -33, 2, 12, SKIN_SH);
+    R(4, -33, 1, 11, '#f2e4d4');
+    // ── pink hair framing (단발로 보이지만…) under the cap ──
+    R(-6, -31, 1.5, 11, HAIR);                 // left side
+    R(4.5, -31, 1.5, 11, HAIR);                // right side
+    R(-5, -33, 10, 2, HAIR);                   // fringe under brim
+    R(4.5, -31, 1.5, 3, HAIR_SH);
+    // ── brown cap ──
+    R(-6, -38, 12, 5, CAP);                    // dome
+    R(-6, -38, 12, 1, CAP_SH);
+    R(-8, -34, 16, 1.5, CAP);                  // brim
+    R(-8, -34, 16, 0.5, CAP_SH);
+    // ── big young eyes + small mouth ──
+    R(-3.5, -29, 2.5, 2, '#3a2a30'); R(1, -29, 2.5, 2, '#3a2a30');
+    R(-3, -29, 1, 1, '#fff'); R(1.5, -29, 1, 1, '#fff');
+    R(-1, -25, 2, 1, '#b56a5e');
+    ctx.restore();
+}
+
 /** Small flickering torch glow at (x,y). intensity 0..1. */
 export function drawTorch(ctx, x, y, intensity = 1) {
     const g = ctx.createRadialGradient(x, y, 1, x, y, 60 * intensity);

@@ -67,7 +67,7 @@ export const KO = {
     'guild.food_format': '{n} Food',
     'guild.hp_format': 'HP {cur}/{max}',
     'guild.deaths_format': '사망 {cur}/{max}',
-    'guild.tab.quest': '퀘스트',
+    'guild.tab.quest': '의뢰',
     'guild.tab.party': '파티',
     'guild.tab.shop': '상점',
     'guild.tab.map': '지도',

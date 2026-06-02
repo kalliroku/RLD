@@ -2811,14 +2811,34 @@ body.editor-mode .dpad-container {
     margin: 0 auto;
     padding: 20px;
     min-height: 100vh;
+    position: relative;   /* stack panels above the fixed scene canvas */
+    z-index: 1;
 }
 
+/* Guild office scene — full-viewport background behind the panels.
+   Covers the whole screen; black shows only where the scene can't reach. */
+#screen-guild { background: #000; }
+.guild-scene-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    image-rendering: pixelated;
+}
+/* panels float above the scene */
+.guild-header,
+.guild-tabs,
+.guild-content { position: relative; z-index: 1; }
+
 .guild-header {
-    background: var(--bg-secondary);
+    background: rgba(12, 10, 8, 0.66);
+    backdrop-filter: blur(3px);
+    border: 1px solid rgba(240, 192, 64, 0.22);
     border-radius: 10px;
     padding: 16px 20px;
     margin-bottom: 16px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 .guild-header-top {
@@ -2876,7 +2896,8 @@ body.editor-mode .dpad-container {
     border: 2px solid transparent;
     border-bottom: none;
     border-radius: 8px 8px 0 0;
-    background: var(--bg-secondary);
+    background: rgba(12, 10, 8, 0.55);
+    backdrop-filter: blur(3px);
     color: var(--text-secondary);
     cursor: pointer;
     transition: all 0.2s;
@@ -2888,23 +2909,177 @@ body.editor-mode .dpad-container {
 }
 
 .guild-tab.active {
-    background: var(--bg-tertiary);
+    background: rgba(36, 30, 22, 0.82);
     color: var(--text-primary);
-    border-color: var(--bg-tertiary);
+    border-color: rgba(240, 192, 64, 0.3);
 }
 
 /* Guild Tab Panels */
 .guild-tab-panel {
     display: none;
-    background: var(--bg-secondary);
+    background: rgba(12, 10, 8, 0.70);
+    backdrop-filter: blur(3px);
+    border: 1px solid rgba(240, 192, 64, 0.18);
+    border-top: none;
     border-radius: 0 0 10px 10px;
     padding: 20px;
     min-height: 400px;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
 }
 
 .guild-tab-panel.active {
     display: block;
+}
+
+/* ── HUD-over-scene guild: top bar + entry buttons + popup modal ── */
+.guild-topbar {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 16px 20px;
+}
+.guild-title {
+    font-size: 1.45rem;
+    font-weight: 800;
+    letter-spacing: 0.5px;
+    color: #e6b450;                       /* warm gold — replaces the red accent */
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
+}
+.guild-topbar .guild-resources {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+}
+.guild-topbar .guild-res {
+    background: rgba(12, 10, 8, 0.74);
+    border: 1px solid rgba(240, 192, 64, 0.30);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
+}
+.guild-run { color: var(--text-secondary); }
+/* onboarding: pulse the resource box currently being explained */
+@keyframes guildResPulse {
+    0%, 100% { box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45); }
+    50% { box-shadow: 0 0 0 2px rgba(240, 192, 64, 0.7), 0 2px 8px rgba(0, 0, 0, 0.45); }
+}
+.guild-res.is-highlight {
+    border-color: #e6b450;
+    animation: guildResPulse 1.1s ease-in-out infinite;
+}
+
+/* entry buttons floating over the scene */
+.guild-actions {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    justify-content: center;
+    padding: 0 20px;
+    margin-top: 34vh;
+}
+.guild-action {
+    flex: 0 0 auto;
+    width: auto;                          /* override any global button width */
+    min-width: 112px;
+    padding: 14px 22px;
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #f0e0c0;
+    cursor: pointer;
+    background: rgba(20, 16, 12, 0.80);
+    border: 1px solid rgba(240, 192, 64, 0.4);
+    border-radius: 10px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5);
+    transition: transform 0.15s, background 0.15s, border-color 0.15s;
+}
+.guild-action:hover {
+    background: rgba(40, 32, 22, 0.92);
+    border-color: #e6b450;
+    transform: translateY(-2px);
+}
+/* onboarding hides entry buttons until they're introduced one at a time */
+.guild-action.is-hidden { display: none; }
+/* the freshly-revealed button gets a brief pulse to draw the eye */
+@keyframes guildActionPulse {
+    0%, 100% { box-shadow: 0 4px 14px rgba(0, 0, 0, 0.5); }
+    50% { box-shadow: 0 0 0 3px rgba(240, 192, 64, 0.55), 0 4px 14px rgba(0, 0, 0, 0.5); }
+}
+.guild-action.is-new { animation: guildActionPulse 1.1s ease-in-out infinite; }
+
+/* NPC onboarding dialogue — fixed to viewport bottom, click to advance */
+.guild-dialogue {
+    position: fixed;
+    left: 8%;
+    right: 8%;
+    bottom: 6%;
+    z-index: 12;
+    cursor: pointer;
+    pointer-events: auto;
+}
+.guild-dialogue:not(.show) { pointer-events: none; }
+
+/* popup modal */
+.guild-popup {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.guild-popup[hidden] { display: none; }
+.guild-popup-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(2px);
+}
+.guild-popup-window {
+    position: relative;
+    z-index: 1;
+    width: min(560px, 92vw);
+    max-height: 84vh;
+    overflow-y: auto;
+    background: rgba(18, 15, 11, 0.97);
+    border: 1px solid rgba(240, 192, 64, 0.3);
+    border-radius: 12px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.6);
+}
+.guild-popup-head {
+    position: sticky;
+    top: 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    background: rgba(18, 15, 11, 0.98);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+.guild-popup-title { margin: 0; font-size: 1.15rem; color: #e6b450; }
+.guild-popup-close {
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-size: 1.2rem;
+    cursor: pointer;
+    padding: 4px 10px;
+    border-radius: 6px;
+}
+.guild-popup-close:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
+.guild-popup-body { padding: 18px 20px; }
+/* panels inside the popup drop their own chrome — the window provides it */
+.guild-popup-body .guild-tab-panel {
+    background: none;
+    border: none;
+    backdrop-filter: none;
+    box-shadow: none;
+    min-height: 0;
+    padding: 0;
+    border-radius: 0;
 }
 
 /* Quest List */
