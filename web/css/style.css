@@ -2314,6 +2314,20 @@ body.editor-mode .dpad-container {
     display: block;
 }
 
+/* Dip-to-black bridge for the opening → guild hand-off (opening.js _finish). */
+.transition-fade {
+    position: fixed;
+    inset: 0;
+    background: #000;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 9999;
+    transition: opacity 500ms ease;
+}
+.transition-fade.show {
+    opacity: 1;
+}
+
 /* ========================================
    Title Screen — Palette A (Darkest Dungeon-ish)
    bg #1a1814 / bone #e8dcc4 / crimson #5a1a1a / rust #8b3a1f / stone #3a3530 / brass #b8860b

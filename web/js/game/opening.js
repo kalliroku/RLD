@@ -128,6 +128,7 @@ export class OpeningManager {
         // headless / unmounted guard — resolve immediately so the caller's flow
         // doesn't stall.
         if (!this.screen || !this.ctx) { onComplete?.(); return; }
+        if (this._finishTimer) { clearTimeout(this._finishTimer); this._finishTimer = null; }
         this.onComplete = onComplete;
         this.active = true;
         this.finished = false;
@@ -250,7 +251,25 @@ export class OpeningManager {
         this._resetOverlays();
         if (this.el.skip) this.el.skip.classList.remove('show');
         OpeningManager.markSeen();
-        this.onComplete?.();
+        // Dip to black, swap to the guild screen under cover, then reveal —
+        // softens the otherwise hard cut from the opening's guild title card.
+        const fade = document.getElementById('transition-fade');
+        if (fade) {
+            fade.classList.add('show');
+            // 500ms in sync with .transition-fade CSS transition (style.css).
+            this._finishTimer = setTimeout(() => {
+                this._finishTimer = null;
+                // finally guarantees the black veil lifts even if onComplete throws —
+                // a cosmetic layer must never leave the game blacked out.
+                try {
+                    this.onComplete?.();
+                } finally {
+                    requestAnimationFrame(() => fade.classList.remove('show'));
+                }
+            }, 500);
+        } else {
+            this.onComplete?.();
+        }
     }
 
     // ── scene model ──────────────────────────────────────────────────────────
@@ -778,8 +797,10 @@ export class OpeningManager {
             }
             return;
         }
-        if (this.beat === 'p7') { this._leave('p8', T.p7FadeOut, T.p8FadeIn); return; }
-        if (this.beat === 'p8') { this._finish(); return; }
+        // P7 (loss) and P8 (guild title card) are one perceived "ending" — a click
+        // anywhere in it should land on the guild in one go. P8 still auto-shows as
+        // a bridge for players who don't click through.
+        if (this.beat === 'p7' || this.beat === 'p8') { this._finish(); return; }
     }
 
     /** Father uses the return scroll — system message + chime, then the burst. */
