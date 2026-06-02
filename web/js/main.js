@@ -28,22 +28,22 @@ import { ModifierSet, MODIFIERS } from './game/modifiers.js';
 import { t, initI18n, setLang, getLang, onLangChange } from './i18n/index.js';
 import { renderTitleArt } from './game/title-art.js';
 import { OpeningManager } from './game/opening.js';
-import { drawGuildHall, drawCharacter, drawRepliPortrait, drawRetaPortrait } from './game/opening-art.js';
+import { drawGuildHall, drawCharacter, drawRepliPortrait, drawRikaPortrait, drawRepliBackground, drawWallMap, drawShopStall } from './game/opening-art.js';
 
 // Guild onboarding (first guild entry only). NPC introduces the room one beat
 // at a time and reveals entry buttons progressively. Korean hardcoded for now —
 // i18n keys (guild.onboard.*) to follow. Narrative per STORY.md / D-2026-06-02-18.
 const GUILD_ONBOARD_KEY = 'rld_guild_onboarded';
-// who → 흉상(drawRepliPortrait/drawRetaPortrait), highlight → 자원 박스 강조,
-// reveal → 진입 버튼 공개. 대사는 시나리오 기반 (레플리=일상/안내, 레타=모험가 의뢰).
+// who → 흉상(drawRepliPortrait/drawRikaPortrait), highlight → 자원 박스 강조,
+// reveal → 진입 버튼 공개. 대사는 시나리오 기반 (레플리=일상/안내, 리카=모험가 의뢰).
 const GUILD_ONBOARD_BEATS = [
     { who: 'repli', speaker: '레플리', text: '마스터, 일어나셨나요? 좋은 점심입니다.' },
     { who: 'repli', speaker: '레플리', text: '세르파 길드에 오신 걸 환영해요. 이제 이곳의 길드장은 당신이시죠.' },
     { who: 'repli', speaker: '레플리', text: '이게 길드 자금(G)이에요. 세르파를 고용하고, 부활시키고, 운영하는 데 들어가죠.', highlight: 'gold' },
     { who: 'repli', speaker: '레플리', text: '그 옆은 식량이고요. 세르파를 던전에 출정시킬 때 소모됩니다.', highlight: 'food' },
     { who: 'repli', speaker: '레플리', text: '…아직 함께할 세르파가 한 명도 없네요. 곧 좋은 인재가 올 거예요.' },
-    { who: 'reta', speaker: '레타', text: '마스터, 모험가 길드의 의뢰에요.' },
-    { who: 'reta', speaker: '레타', text: '의뢰판을 확인해 보세요. 첫 던전이 기다리고 있어요.', reveal: 'quest' },
+    { who: 'rika', speaker: '리카', text: '마스터, 모험가 길드의 의뢰에요.' },
+    { who: 'rika', speaker: '리카', text: '의뢰판을 확인해 보세요. 첫 던전이 기다리고 있어요.', reveal: 'quest' },
 ];
 
 const PRESET_MULTI_DUNGEONS = {
@@ -331,9 +331,14 @@ class Game {
             this.updateGuildHall();
         });
 
-        // Guild entry buttons → open the matching panel in a popup modal
-        document.querySelectorAll('.guild-action').forEach(btn => {
-            btn.addEventListener('click', () => this._openGuildPopup(btn.dataset.popup, btn.textContent.trim()));
+        // Scene objects ARE the entry points (HUD-over-scene): each transparent
+        // hotspot opens its panel. Held back until onboarding hands off the room.
+        document.querySelectorAll('.guild-hotspot').forEach(spot => {
+            spot.addEventListener('click', () => {
+                if (this._guildOnboarding) return;
+                const key = spot.dataset.popup;
+                this._openGuildPopup(key, t('guild.tab.' + key));
+            });
         });
         const guildPopup = document.getElementById('guild-popup');
         if (guildPopup) {
@@ -422,16 +427,41 @@ class Game {
         this._updateGuildShop();
         this._updateGuildMap();
         this._drawGuildScene();
+        this._updateGuildHotspots();
         this._maybeStartGuildOnboarding();
+    }
+
+    /**
+     * Which guild entry points are unlocked. The room starts minimal (의뢰 only) and
+     * fills in as the guild progresses, per the "보드만 먼저" reveal model.
+     * NOTE: party is a placeholder gate (clear-based) until the 세르파 roster lands.
+     */
+    _guildUnlocks() {
+        const rs = this.runState;
+        const firstClear = rs.clearedDungeons.size >= 1;
+        return {
+            quest: true,                          // core loop — always available
+            map: rs.unlockedDungeons.size > 1,    // a second destination exists
+            shop: firstClear,                     // earned gold → reason to shop
+            party: firstClear,                    // TODO: gate on 세르파 보유 when implemented
+        };
+    }
+
+    /** Show/hide each scene-object hotspot to match the unlock state. */
+    _updateGuildHotspots() {
+        const u = this._guildUnlocks();
+        for (const key of ['quest', 'map', 'shop', 'party']) {
+            const el = document.querySelector(`.guild-hotspot[data-popup="${key}"]`);
+            if (el) el.hidden = !u[key];
+        }
     }
 
     /** Open a guild entry panel (quest/party/shop/map) in the popup modal. */
     _openGuildPopup(key, title) {
         const popup = document.getElementById('guild-popup');
         if (!popup) return;
-        // clear the "new" pulse on the button once it's been used
-        const btn = document.querySelector(`.guild-action[data-popup="${key}"]`);
-        if (btn) btn.classList.remove('is-new');
+        // opening the quest panel retires the board marker (the cue is spent)
+        if (key === 'quest') { this._questRevealPending = false; this._setGuildQuestMarker(false); }
         document.querySelectorAll('.guild-popup-body .guild-tab-panel')
             .forEach(p => p.classList.remove('active'));
         const panel = document.getElementById('guild-tab-' + key);
@@ -445,15 +475,10 @@ class Game {
 
     /** Start the first-time guild onboarding, or reveal all buttons if done. */
     _maybeStartGuildOnboarding() {
-        const buttons = document.querySelectorAll('.guild-action');
         const done = localStorage.getItem(GUILD_ONBOARD_KEY) === '1';
-        if (done) {
-            buttons.forEach(b => b.classList.remove('is-hidden', 'is-new'));
-            return;
-        }
+        if (done) return;                    // already onboarded — scene hotspots are live
         if (this._guildOnboarding) return;   // already running — don't restart
         this._guildOnboarding = true;
-        buttons.forEach(b => b.classList.add('is-hidden'));
         this._guildBeatIdx = 0;
         this._renderGuildBeat();
     }
@@ -462,10 +487,9 @@ class Game {
         const beat = GUILD_ONBOARD_BEATS[this._guildBeatIdx];
         const dlg = document.getElementById('guild-dialogue');
         if (!beat) { this._finishGuildOnboarding(); return; }
-        if (beat.reveal) {
-            const btn = document.querySelector(`.guild-action[data-popup="${beat.reveal}"]`);
-            if (btn) { btn.classList.remove('is-hidden'); btn.classList.add('is-new'); }
-        }
+        // the quest reveal flags the board marker, shown once the dialogue ends and
+        // the room is visible again (during a beat the room is dimmed behind the bust).
+        if (beat.reveal === 'quest') this._questRevealPending = true;
         // 화자 흉상 (오프닝 방식 — dim + 스포트라이트 + bust) 갱신
         this._guildSpeaker = beat.who || null;
         this._drawGuildScene();
@@ -496,7 +520,17 @@ class Game {
         document.querySelectorAll('.guild-res.is-highlight').forEach(e => e.classList.remove('is-highlight'));
         this._guildSpeaker = null;
         this._drawGuildScene();                    // back to the normal scene
-        // 의뢰 button stays revealed (pulsing) for the player to click next.
+        // the board marker glows over the quest parchment so the player knows to
+        // click the bulletin board next (no buttons — scene objects are the cue).
+        // By design it stays lit until the quest panel is opened (_openGuildPopup);
+        // re-entry doesn't re-evaluate it, and a page refresh resets it (acceptable).
+        if (this._questRevealPending) this._setGuildQuestMarker(true);
+    }
+
+    /** Toggle the glowing quest-board marker over the bulletin board. */
+    _setGuildQuestMarker(show) {
+        const m = document.getElementById('guild-quest-marker');
+        if (m) m.hidden = !show;
     }
 
     _typeGuildDialogue(speaker, text) {
@@ -567,15 +601,23 @@ class Game {
             sp.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = sp;
             ctx.fillRect(0, 0, w, h);
-            if (this._guildSpeaker === 'reta') drawRetaPortrait(ctx, cx, baseY, sc);
+            if (this._guildSpeaker === 'rika') drawRikaPortrait(ctx, cx, baseY, sc);
             else drawRepliPortrait(ctx, cx, baseY, sc);
             return;
         }
 
-        // 길드 직원 NPC (우측 바닥) + 길드장(좌측, 책상 앞). Sherpa 0명이라 둘만.
-        const tile = Math.round(Math.min(w, h) * 0.16);
-        drawCharacter(ctx, w * 0.82, h * 0.74, 'father', tile);
-        drawCharacter(ctx, w * 0.30, h * 0.80, 'player', Math.round(tile * 0.82));
+        // Gated scene objects — the room fills in as the guild unlocks features.
+        // (Board+desk are room fixtures in drawGuildHall; these appear over them.)
+        const u = this._guildUnlocks();
+        if (u.map) drawWallMap(ctx, w * 0.45, h * 0.10, w * 0.15, h * 0.20);
+        if (u.shop) drawShopStall(ctx, w * 0.80, h * 0.44, w * 0.17, h * 0.30);
+
+        // 접수원 레플리(배경 단순 figure)가 책상 뒤에 서 있고(중앙), 길드장(플레이어)은
+        // 좌측 바닥에. baseY=책상 윗선이라 하반신이 책상 뒤로 가린다. (둘은 항상 표시 — NPC.)
+        const repliSc = Math.max(3, Math.round(h / 150));
+        drawRepliBackground(ctx, w * 0.50, h * 0.74, repliSc);
+        const tile = Math.round(Math.min(w, h) * 0.14);
+        drawCharacter(ctx, w * 0.20, h * 0.82, 'player', tile);
     }
 
     _updateGuildResources() {

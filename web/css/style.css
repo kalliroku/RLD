@@ -2970,7 +2970,8 @@ body.editor-mode .dpad-container {
     animation: guildResPulse 1.1s ease-in-out infinite;
 }
 
-/* entry buttons floating over the scene */
+/* PRESERVED (no JS refs): the old entry-button row. Kept intentionally to reuse as
+   the mobile button bar later — see handoff. Do not delete as dead code. */
 .guild-actions {
     position: relative;
     z-index: 1;
@@ -3009,6 +3010,69 @@ body.editor-mode .dpad-container {
     50% { box-shadow: 0 0 0 3px rgba(240, 192, 64, 0.55), 0 4px 14px rgba(0, 0, 0, 0.5); }
 }
 .guild-action.is-new { animation: guildActionPulse 1.1s ease-in-out infinite; }
+
+/* clickable scene objects — transparent hotspots over each prop; opens the matching
+   panel. Coords mirror drawGuildHall so each sits over its drawing. A hover/focus
+   ring is the only affordance (the scene art itself is the visible target). */
+.guild-hotspot {
+    position: fixed;
+    z-index: 1;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: 0;
+    border-radius: 6px;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+    transition: box-shadow 0.15s;
+}
+.guild-hotspot[hidden] { display: none; }   /* locked entry points — gated by unlock state */
+.guild-hotspot:hover,
+.guild-hotspot:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 2px rgba(240, 192, 64, 0.55), 0 0 16px 4px rgba(240, 192, 64, 0.20);
+}
+/* board (의뢰): drawGuildHall board rect 18vw/12vh + 22vw×32vh */
+#guild-board-hotspot { left: 18vw; top: 12vh; width: 22vw; height: 32vh; }
+/* reception desk + 레플리 (파티) */
+#guild-party-hotspot { left: 34vw; top: 54vh; width: 32vw; height: 30vh; }
+/* merchant stall (상점): stall rect 80vw/44vh + 17vw×30vh */
+#guild-shop-hotspot  { left: 80vw; top: 44vh; width: 17vw; height: 30vh; }
+/* wall map (지도): map rect 45vw/10vh + 15vw×20vh */
+#guild-map-hotspot   { left: 45vw; top: 10vh; width: 15vw; height: 20vh; }
+
+/* quest-board marker — glowing halo + bobbing arrow over the bulletin board.
+   Coords mirror drawGuildHall's board rect (18vw/12vh + 22vw×32vh) against the
+   full-viewport scene canvas, so it sits exactly over the quest parchment. */
+.guild-quest-marker {
+    position: fixed;
+    left: 18vw;
+    top: 12vh;
+    width: 22vw;
+    height: 32vh;
+    z-index: 1;
+    pointer-events: none;
+    border-radius: 6px;
+    animation: guildBoardGlow 1.2s ease-in-out infinite;
+}
+.guild-quest-marker[hidden] { display: none; }
+@keyframes guildBoardGlow {
+    0%, 100% { box-shadow: 0 0 0 2px rgba(240, 192, 64, 0.35), 0 0 18px 4px rgba(240, 192, 64, 0.18); }
+    50%      { box-shadow: 0 0 0 3px rgba(240, 192, 64, 0.85), 0 0 30px 10px rgba(240, 192, 64, 0.42); }
+}
+.guild-quest-marker-arrow {
+    position: absolute;
+    left: 50%;
+    top: -2.2rem;
+    color: #e6b450;
+    font-size: 1.6rem;
+    text-shadow: 0 2px 6px rgba(0, 0, 0, 0.75);
+    animation: guildArrowBob 1s ease-in-out infinite;
+}
+@keyframes guildArrowBob {
+    0%, 100% { transform: translateX(-50%) translateY(0); }
+    50%      { transform: translateX(-50%) translateY(4px); }
+}
 
 /* NPC onboarding dialogue — fixed to viewport bottom, click to advance */
 .guild-dialogue {

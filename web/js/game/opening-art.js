@@ -399,6 +399,35 @@ export function drawChildPortrait(ctx, cx, baseY, scale = 6) {
 }
 
 /**
+ * 레플리 (배경용 단순 figure) — 접수 데스크 뒤에 서 있는 실루엣. 얼굴 디테일
+ * 없이 머리·얼굴·자두색 정장 토르소만. 살짝 어둡게(dim) 깔아 전경 화자가 아닌
+ * 배경 소품으로 읽히게. baseY = 책상 윗선. (정식 아트는 Claude Design 위임.)
+ */
+export function drawRepliBackground(ctx, cx, baseY, scale = 4) {
+    ctx.save();
+    ctx.globalAlpha = 0.82;
+    ctx.translate(Math.round(cx), Math.round(baseY));
+    ctx.scale(scale, scale);
+    const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+    const SKIN = '#cda184', HAIR = '#cdb24a', JACKET = '#583046', JACKET_SH = '#3a1f2e';
+    // torso — simple plum jacket (shoulders a touch wider than waist)
+    R(-7, -11, 14, 2, JACKET);                 // shoulders
+    R(-6, -10, 12, 12, JACKET);                // body (runs below baseY → behind desk)
+    R(-6, -10, 2, 12, JACKET_SH);              // shade side
+    // neck
+    R(-1.5, -13, 3, 2, SKIN);
+    // head
+    R(-4, -22, 8, 10, SKIN);
+    R(-4, -22, 1.5, 10, '#b4886a');            // shade side
+    // hair — simple blonde cap + short side falls (no facial detail)
+    R(-5, -25, 10, 4, HAIR);                   // crown
+    R(-5, -23, 1.5, 10, HAIR);                 // left fall
+    R(3.5, -23, 1.5, 10, HAIR);                // right fall
+    R(-4, -22, 8, 1.5, HAIR);                  // bangs
+    ctx.restore();
+}
+
+/**
  * 레플리 — 길드 직원. 금발 + 하늘색 눈동자, 20대 여성. PLACEHOLDER bust
  * (시나리오 외형 기반, 정식 아트는 Claude Design 위임 예정).
  */
@@ -457,10 +486,10 @@ export function drawRepliPortrait(ctx, cx, baseY, scale = 6) {
 }
 
 /**
- * 레타 — 모험가 길드 의뢰 전달. 갈색 모자 + 분홍 머리(모자 아래 단발로 보임),
+ * 리카 — 모험가 길드 의뢰 전달. 갈색 모자 + 분홍 머리(모자 아래 단발로 보임),
  * 멜빵 청바지 + 하얀 티, 작은 키 10대 중반. PLACEHOLDER bust (시나리오 외형 기반).
  */
-export function drawRetaPortrait(ctx, cx, baseY, scale = 6) {
+export function drawRikaPortrait(ctx, cx, baseY, scale = 6) {
     ctx.save();
     ctx.translate(Math.round(cx), Math.round(baseY));
     ctx.scale(scale, scale);
@@ -517,6 +546,117 @@ export function drawTorch(ctx, x, y, intensity = 1) {
 }
 
 /** Guild hall — wider, warmer interior. Page 8. */
+/**
+ * A pinned paper notice on the guild bulletin board. With `isQuest` it gets a
+ * red header bar, more ink lines and a wax seal — the first-dungeon parchment.
+ * Cosmetic; all geometry derives from the rect so it scales to any board size.
+ */
+function drawNotice(ctx, x, y, w, h, alpha = 1, isQuest = false) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    // drop shadow under the sheet
+    ctx.fillStyle = 'rgba(0,0,0,0.28)';
+    ctx.fillRect(x + 2, y + h - 1, w, 3);
+    // aged cream paper with a faint fleck grain
+    flecks(ctx, x, y, w, h, '#cdb98a', '#b09a68', '#e4d6ad', isQuest ? 61 : 67, 0.14);
+    const pad = w * 0.14;
+    const lineX = x + pad, lineW = w - pad * 2;
+    if (isQuest) {
+        // red header band (a quest title bar)
+        ctx.fillStyle = PAL.rust;
+        ctx.fillRect(lineX, y + h * 0.14, lineW, Math.max(2, h * 0.07));
+    }
+    // ink "text" lines — last one runs short
+    ctx.fillStyle = '#5b4a30';
+    const n = isQuest ? 4 : 2;
+    for (let i = 0; i < n; i++) {
+        const ly = y + h * (isQuest ? 0.32 : 0.34) + i * h * 0.13;
+        const lw = lineW * (i === n - 1 ? 0.6 : 1);
+        ctx.fillRect(lineX, ly, lw, Math.max(1, h * 0.035));
+    }
+    if (isQuest) {
+        // red wax seal, bottom-right, with a warm highlight
+        const sx = x + w * 0.74, sy = y + h * 0.83, r = Math.max(3, w * 0.12);
+        ctx.fillStyle = PAL.rust;
+        ctx.beginPath(); ctx.arc(sx, sy, r, 0, Math.PI * 2); ctx.fill();
+        ctx.fillStyle = 'rgba(230,181,98,0.55)';
+        ctx.beginPath(); ctx.arc(sx - r * 0.3, sy - r * 0.3, r * 0.4, 0, Math.PI * 2); ctx.fill();
+    }
+    // pin/tack at top-center
+    const px = x + w * 0.5, py = y + h * 0.04;
+    ctx.fillStyle = PAL.black;
+    ctx.beginPath(); ctx.arc(px, py, Math.max(2, w * 0.07), 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = PAL.accentHi;
+    ctx.beginPath(); ctx.arc(px - w * 0.02, py - h * 0.012, Math.max(1, w * 0.03), 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+}
+
+/** A framed route map on the guild wall — the clickable 지도(map) object. Cosmetic.
+ * Drawn by _drawGuildScene only when unlocked (gated), not baked into the room. */
+export function drawWallMap(ctx, x, y, w, h) {
+    ctx.save();
+    // dark wooden frame
+    ctx.fillStyle = PAL.black;
+    ctx.fillRect(x - 2, y - 2, w + 4, h + 4);
+    // parchment map field
+    flecks(ctx, x, y, w, h, '#c9b489', '#a98f63', '#e0d0a6', 73, 0.12);
+    // faint landmass blobs
+    ctx.fillStyle = 'rgba(120,150,90,0.22)';
+    ctx.fillRect(x + w * 0.10, y + h * 0.12, w * 0.24, h * 0.20);
+    ctx.fillRect(x + w * 0.52, y + h * 0.52, w * 0.32, h * 0.26);
+    // winding red dashed route between two markers
+    ctx.strokeStyle = '#8b3a1f';
+    ctx.lineWidth = Math.max(1, h * 0.035);
+    ctx.setLineDash([Math.max(2, w * 0.06), Math.max(2, w * 0.05)]);
+    ctx.beginPath();
+    ctx.moveTo(x + w * 0.20, y + h * 0.78);
+    ctx.lineTo(x + w * 0.42, y + h * 0.55);
+    ctx.lineTo(x + w * 0.34, y + h * 0.34);
+    ctx.lineTo(x + w * 0.64, y + h * 0.22);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = '#3a6b3a';
+    ctx.beginPath(); ctx.arc(x + w * 0.20, y + h * 0.78, Math.max(2, w * 0.06), 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#c0392b';
+    ctx.beginPath(); ctx.arc(x + w * 0.64, y + h * 0.22, Math.max(2, w * 0.06), 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+}
+
+/** A merchant stall (striped awning + goods + counter) — the 상점(shop) object.
+ * Drawn by _drawGuildScene only when unlocked (gated), not baked into the room. */
+export function drawShopStall(ctx, x, y, w, h) {
+    ctx.save();
+    // striped awning across the top
+    const stripe = w / 6;
+    for (let i = 0; i < 6; i++) {
+        ctx.fillStyle = (i % 2 === 0) ? '#8b3a1f' : '#e0d0a6';
+        ctx.fillRect(x + i * stripe, y, stripe + 0.5, h * 0.16);
+    }
+    ctx.fillStyle = PAL.black;
+    ctx.fillRect(x, y + h * 0.16, w, Math.max(1, h * 0.02));
+    // back shelf
+    flecks(ctx, x + w * 0.08, y + h * 0.20, w * 0.84, h * 0.40, PAL.fatherBrown, PAL.fatherCloak, PAL.stoneLight, 79, 0.18);
+    // goods on the shelf — colored potions / sacks with a glint
+    const goods = ['#5a8f4e', '#4c6fae', '#b0863a', '#9a4ca8'];
+    for (let i = 0; i < goods.length; i++) {
+        const gx = x + w * (0.16 + i * 0.19);
+        ctx.fillStyle = goods[i];
+        ctx.fillRect(gx, y + h * 0.30, w * 0.10, h * 0.16);
+        ctx.fillStyle = 'rgba(255,255,255,0.25)';
+        ctx.fillRect(gx + w * 0.01, y + h * 0.31, w * 0.03, h * 0.06);
+    }
+    // counter
+    flecks(ctx, x, y + h * 0.62, w, h * 0.30, PAL.fatherBrown, PAL.fatherCloak, PAL.stoneLight, 83, 0.2);
+    ctx.fillStyle = PAL.bgDeep;
+    ctx.fillRect(x, y + h * 0.62, w, 2);
+    // a gold coin marker on the counter
+    ctx.fillStyle = PAL.accentHi;
+    ctx.beginPath(); ctx.arc(x + w * 0.5, y + h * 0.77, Math.max(2, w * 0.07), 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = PAL.accentDim;
+    ctx.beginPath(); ctx.arc(x + w * 0.5, y + h * 0.77, Math.max(1, w * 0.03), 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+}
+
 export function drawGuildHall(ctx, w, h) {
     // back wall — wooden plank pattern
     flecks(ctx, 0, 0, w, h * 0.62, PAL.bgLight, PAL.bgDeep, PAL.stoneLight, 41, 0.18);
@@ -527,16 +667,14 @@ export function drawGuildHall(ctx, w, h) {
     ctx.fillStyle = PAL.bgDeep;
     for (let x = 0; x <= w; x += 36) ctx.fillRect(x, h * 0.62, 1, h * 0.38);
 
-    // bulletin board
+    // bulletin board — pinned paper notices; the main one is the first-dungeon
+    // quest parchment the onboarding points the player to (rika reveal:'quest').
     const boardX = w * 0.18, boardY = h * 0.12, boardW = w * 0.22, boardH = h * 0.32;
     flecks(ctx, boardX, boardY, boardW, boardH, PAL.fatherBrown, PAL.fatherCloak, PAL.stoneLight, 47, 0.22);
-    ctx.fillStyle = PAL.text;
-    ctx.globalAlpha = 0.6;
-    ctx.fillRect(boardX + 12, boardY + 14, 28, 22);
-    ctx.fillRect(boardX + 50, boardY + 20, 22, 18);
-    ctx.fillRect(boardX + 14, boardY + 50, 32, 26);
-    ctx.fillRect(boardX + 60, boardY + 56, 26, 20);
-    ctx.globalAlpha = 1;
+    // a faded older notice tucked behind, top-right
+    drawNotice(ctx, boardX + boardW * 0.54, boardY + boardH * 0.10, boardW * 0.34, boardH * 0.30, 0.5, false);
+    // the main quest parchment, front and center
+    drawNotice(ctx, boardX + boardW * 0.13, boardY + boardH * 0.18, boardW * 0.54, boardH * 0.64, 1, true);
     ctx.strokeStyle = PAL.black;
     ctx.lineWidth = 2;
     ctx.strokeRect(boardX, boardY, boardW, boardH);
@@ -555,6 +693,9 @@ export function drawGuildHall(ctx, w, h) {
     g.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = g;
     ctx.fillRect(0, 0, w, h);
+
+    // (map/shop props are drawn by _drawGuildScene when unlocked — not baked here,
+    //  so the room starts minimal and fills in as the guild progresses.)
 
     // desk in foreground
     const dx = w * 0.32, dy = h * 0.74, dw = w * 0.36, dh = h * 0.1;

@@ -65,6 +65,12 @@
     <div id="screen-guild" class="screen">
         <!-- Guild office scene — full-viewport background behind the panels -->
         <canvas id="guild-scene-canvas" class="guild-scene-canvas"></canvas>
+        <!-- Scene objects ARE the interface (HUD-over-scene): each transparent hotspot
+             sits over its prop and opens the matching panel. Coords mirror drawGuildHall. -->
+        <button id="guild-board-hotspot" class="guild-hotspot" data-popup="quest" aria-label="의뢰판"></button>
+        <button id="guild-party-hotspot" class="guild-hotspot" data-popup="party" aria-label="접수 데스크 — 파티" hidden></button>
+        <button id="guild-shop-hotspot"  class="guild-hotspot" data-popup="shop"  aria-label="상점" hidden></button>
+        <button id="guild-map-hotspot"   class="guild-hotspot" data-popup="map"   aria-label="지도" hidden></button>
         <!-- Top bar: title (left) + resource boxes (right) -->
         <div class="guild-topbar">
             <span class="guild-title">RL Dungeon</span>
@@ -77,12 +83,11 @@
             </div>
         </div>
 
-        <!-- Entry buttons over the scene; their content opens in the popup -->
-        <div class="guild-actions">
-            <button class="guild-action" data-popup="quest" data-i18n="guild.tab.quest">의뢰</button>
-            <button class="guild-action" data-popup="party" data-i18n="guild.tab.party">파티</button>
-            <button class="guild-action" data-popup="shop" data-i18n="guild.tab.shop">상점</button>
-            <button class="guild-action" data-popup="map" data-i18n="guild.tab.map">지도</button>
+        <!-- (entry button row removed — the scene-object hotspots above are the entry points) -->
+
+        <!-- Quest-board marker — glow + arrow over the bulletin board, first-run only -->
+        <div id="guild-quest-marker" class="guild-quest-marker" hidden aria-hidden="true">
+            <span class="guild-quest-marker-arrow">&#9660;</span>
         </div>
 
         <!-- Popup modal — hidden until an entry button is clicked -->
