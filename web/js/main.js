@@ -288,14 +288,13 @@ class Game {
 
         // Title buttons
         document.getElementById('btn-new-game').addEventListener('click', () => {
-            this.runState = new RunState();
-            this.runState.saveRunState();
-            this._clearAllQTables();
-            this.loadDungeon('level_01_easy');
-            this.updateStatsUI();
-            this.updateFarmingUI();
-            this.updateCharacterGrid();
-            this._enterGameStart();
+            this._beginNewGame();
+        });
+
+        // DEV/TEST: always replay the opening, then enter (bypasses the seen flag).
+        document.getElementById('btn-new-game-opening').addEventListener('click', () => {
+            OpeningManager.reset();
+            this._beginNewGame();
         });
 
         document.getElementById('btn-continue').addEventListener('click', () => {
@@ -323,6 +322,18 @@ class Game {
                 document.getElementById('guild-tab-' + btn.dataset.gtab).classList.add('active');
             });
         });
+    }
+
+    /** Fresh run setup shared by the 시작 and 오프닝+시작 (dev) buttons. */
+    _beginNewGame() {
+        this.runState = new RunState();
+        this.runState.saveRunState();
+        this._clearAllQTables();
+        this.loadDungeon('level_01_easy');
+        this.updateStatsUI();
+        this.updateFarmingUI();
+        this.updateCharacterGrid();
+        this._enterGameStart();
     }
 
     /** New Game post-init flow: show opening prologue if not seen, else go straight to guild. */
@@ -1524,6 +1535,7 @@ class Game {
 
         this.renderer.setGrid(grid);
         this.renderer.setAgent(null);
+        this.renderer.setCameraFollow(false);   // composer preview = full-map
         this.renderer.fogOfWar = false;
         this.renderer.showQValues = false;
         this.renderer.showPolicy = false;
@@ -2395,11 +2407,13 @@ class Game {
         // Visualization toggles
         this.showQValuesCheck.addEventListener('change', (e) => {
             this.renderer.showQValues = e.target.checked;
+            this.syncCamera();   // overlays need the full-map view
             this.updateVisualization();
         });
 
         this.showPolicyCheck.addEventListener('change', (e) => {
             this.renderer.showPolicy = e.target.checked;
+            this.syncCamera();
             this.updateVisualization();
         });
 
@@ -2708,6 +2722,7 @@ class Game {
         if (this.grid.getTotalStages && this.grid.getTotalStages() > 1) {
             this.renderer.setViewportStage(0);
         }
+        this.syncCamera();
 
         // C-4: Treasure position
         this.carryingTreasure = false;
@@ -3278,6 +3293,7 @@ class Game {
 
         // Disable fog of war during training
         this.renderer.fogOfWar = false;
+        this.syncCamera();   // training shows the full-map policy/Q view
 
         // B-3: Apply agility multiplier to epsilon decay
         // Higher agility → faster convergence: decay^agilityMul (e.g. 0.995^1.5 ≈ 0.9925)
@@ -4305,6 +4321,23 @@ class Game {
                 this._newBadgeActive = Math.max(0, (this._newBadgeActive ?? 1) - 1);
             }, 15000);
         }, delay);
+    }
+
+    /**
+     * Decide whether the player-follow camera is active and sync the renderer.
+     * Follow only during manual single-stage play — training, the editor, and
+     * the Q-value/policy overlays all need the full-map view. Render-only: this
+     * never touches agent/grid coords, so sim/PPO determinism is unaffected.
+     */
+    syncCamera() {
+        if (!this.grid) return;
+        const multiStage = this.grid.getTotalStages && this.grid.getTotalStages() > 1;
+        const follow = !multiStage
+            && !this.isTraining
+            && this.currentMode !== 'editor'
+            && !this.renderer.showQValues
+            && !this.renderer.showPolicy;
+        this.renderer.setCameraFollow(follow);
     }
 
     render() {

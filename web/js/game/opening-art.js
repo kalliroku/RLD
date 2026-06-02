@@ -234,47 +234,168 @@ export function drawCharacter(ctx, cx, cy, kind = 'player', tile = TILE) {
 }
 
 /**
- * Standing father portrait (VN-style) — front-facing, eyes covered by a dark
- * band (memory motif), rust cape, faint hero glow. Ported from the V1 opening
- * art; drawn around feet-base (cx, baseY) and scaled up for dialogue beats.
+ * Standing father portrait — front-facing veteran hero (clear eyes, grizzled
+ * beard, broad rust cape over leather, two brass points). Drawn around feet-base
+ * (cx, baseY) and scaled up for the P5/P6 farewell; the caller owns the
+ * spotlight/glow, so this draws character pixels only. Authored by Claude Design
+ * from the locked reference (docs/PM/handoffs/assets/...father-ref-hero.png).
  */
-export function drawFatherPortrait(ctx, cx, baseY, scale = 5) {
-    const C = {
-        skin: '#d4a878', brass: '#b8860b', crimson: '#5a1a1a',
-        stoneDk: '#3a3530', bodyDk: '#1a1410',
-        capeMain: '#8b3a1f', capeShadow: '#3a1208', eyeBand: '#000000',
-    };
+export function drawFatherPortrait(ctx, cx, baseY, scale = 4) {
+    const P = PAL;
     ctx.save();
     ctx.translate(Math.round(cx), Math.round(baseY));
     ctx.scale(scale, scale);
-    // legs
-    ctx.fillStyle = C.bodyDk; ctx.fillRect(-3, -5, 2, 6); ctx.fillRect(1, -5, 2, 6);
-    ctx.fillStyle = C.stoneDk; ctx.fillRect(-3, 0, 2, 1); ctx.fillRect(1, 0, 2, 1);
-    // body
-    ctx.fillStyle = C.crimson; ctx.fillRect(-4, -12, 9, 7);
-    // belt
-    ctx.fillStyle = C.stoneDk; ctx.fillRect(-4, -6, 9, 1);
-    ctx.fillStyle = C.brass; ctx.fillRect(0, -6, 1, 1);
-    // cape
-    ctx.fillStyle = C.capeMain;
-    ctx.fillRect(-6, -12, 2, 8); ctx.fillRect(5, -12, 2, 8); ctx.fillRect(-5, -4, 11, 4);
-    ctx.fillStyle = C.capeShadow; ctx.fillRect(-6, -10, 1, 5); ctx.fillRect(6, -10, 1, 5);
-    // head
-    ctx.fillStyle = C.skin; ctx.fillRect(-2, -17, 5, 5);
-    // eye band (memory motif)
-    ctx.fillStyle = C.eyeBand; ctx.fillRect(-3, -15, 7, 2);
-    // hair
-    ctx.fillStyle = C.stoneDk;
-    ctx.fillRect(-2, -18, 5, 1); ctx.fillRect(-3, -17, 1, 1); ctx.fillRect(3, -17, 1, 1);
+
+    // local helpers — integer-unit rects keep the pixel grid crisp
+    const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+
+    // ── 1. CAPE — broad mass over shoulders+chest, drapes down the flanks ─
+    // The cape is the WIDEST shape; the body nests inside it. Clasped at the
+    // throat, it opens in a V to reveal leather. Solid tonal blocks (no
+    // scatter), STRAIGHT hems, one clean amber edge on the torch side (+x).
+    R(-11, -33, 22, 11, P.rust);             // shoulder + chest mass (broad)
+    R(-11, -33, 3, 11, P.fatherCloak);       // shadow side (−x)
+    R(-3, -33, 6, 1, P.fatherCloak);         // collar fold under the chin
+    R(-11, -22, 6, 16, P.rust);              // left flank drape
+    R(-11, -22, 3, 16, P.fatherCloak);       // shadow side falls away (away from torch)
+    R(-7, -21, 1, 15, P.fatherCloak);        // fold line
+    R(-11, -6, 6, 1, P.fatherCloak);         // straight hem (left)
+    R(5, -22, 6, 18, P.rust);                // right flank drape (longer)
+    R(8, -21, 1, 17, P.fatherCloak);         // fold line
+    R(5, -4, 6, 1, P.fatherCloak);           // straight hem (right)
+    R(10, -22, 1, 18, P.accent);             // clean warm lit edge
+    R(10, -18, 1, 9, P.accentHi);            // brightest glint
+
+    // ── 2. LEATHER chest/belly — exposed in the cape's V ────────────────
+    R(-2, -32, 4, 2, P.fatherBrown);         // throat (narrow top of V)
+    R(-3, -30, 6, 3, P.fatherBrown);
+    R(-4, -27, 8, 4, P.fatherBrown);
+    R(-5, -23, 10, 6, P.fatherBrown);        // belly (widest, down to belt)
+    R(-5, -23, 2, 6, P.fatherCloak);         // belly shadow (−x)
+    R(3, -26, 2, 9, P.stoneHi);              // lit ridge (+x torch side)
+    R(-4, -28, 8, 1, P.fatherCloak);         // chest seam
+
+    // round brass clasp at the throat (one of only two brass points)
+    R(-1, -33, 3, 2, P.accent);
+    R(0, -33, 1, 1, P.accentHi);
+    R(-1, -31, 3, 1, P.accentDim);
+
+    // ── 3. BELT + brass buckle (the other brass point) ──────────────────
+    R(-6, -19, 12, 2, P.fatherCloak);        // strap
+    R(-2, -19, 4, 2, P.accentDim);           // buckle plate
+    R(-1, -19, 2, 1, P.accent);              // buckle face
+    R(0, -19, 1, 1, P.accentHi);             // glint
+
+    // ── 4. SKIRT + LEGS + BOOTS ─────────────────────────────────────────
+    R(-6, -17, 12, 3, P.fatherBrown);        // leather skirt
+    R(-6, -17, 2, 3, P.fatherCloak);         // skirt shadow
+    R(4, -17, 2, 3, P.stoneHi);              // skirt lit
+    R(-5, -14, 4, 8, P.fatherCloak);         // left trouser
+    R(1, -14, 4, 8, P.fatherCloak);          // right trouser
+    R(3, -13, 1, 6, P.fatherBrown);          // lit shin (+x)
+    R(-6, -7, 5, 7, P.fatherBrown);          // left boot
+    R(1, -7, 5, 7, P.fatherBrown);           // right boot
+    R(-6, -7, 5, 1, P.stoneHi);              // cuff (lit)
+    R(1, -7, 5, 1, P.stoneHi);
+    R(-6, -3, 5, 2, P.fatherCloak);          // boot shadow
+    R(1, -3, 5, 2, P.fatherCloak);
+    R(-6, -1, 5, 1, P.black);                // soles
+    R(1, -1, 5, 1, P.black);
+
+    // ── 5. ARMS + fists (over the cape flanks) ──────────────────────────
+    R(-10, -30, 3, 9, P.fatherBrown);        // left upper arm (shadow side)
+    R(-10, -30, 1, 9, P.fatherCloak);
+    R(7, -30, 3, 9, P.fatherBrown);          // right upper arm (lit side)
+    R(9, -30, 1, 9, P.stoneHi);
+    R(-10, -21, 3, 3, P.fatherCloak);        // left bracer
+    R(7, -21, 3, 3, P.fatherCloak);          // right bracer
+    R(7, -21, 3, 1, P.stoneHi);              // bracer top (lit)
+    R(-10, -18, 3, 3, P.playerSkin);         // left fist
+    R(-10, -18, 1, 3, P.fatherBrown);        // knuckle shadow
+    R(7, -18, 3, 3, P.playerSkin);           // right fist
+    R(9, -18, 1, 3, P.text);                 // lit knuckle edge
+
+    // ── 6. NECK + HEAD — clean & simple (less is more at this resolution).
+    // A few confident shapes read far better than dense detail, which turns to
+    // noise. Lit on the torch side (+x), one shadow side (−x). NO blindfold.
+    R(-2, -34, 4, 1.5, P.playerSkin);          // neck
+    R(-2, -34, 1.5, 1.5, P.fatherBrown);       // neck shadow (−x)
+
+    // face — flat skin, one shadow side, one lit edge (gives form, no clutter)
+    R(-4, -42, 8, 8, P.playerSkin);            // face mass
+    R(-4, -42, 2, 8, P.fatherBrown);           // shadow side (−x)
+    R(3, -42, 1, 7, P.text);                   // lit edge (+x)
+
+    // hair — one clean mass + a single grizzled streak
+    R(-4, -43, 8, 2, P.fatherBrown);           // hair top
+    R(-4, -42, 1, 4, P.fatherBrown);           // left temple
+    R(3, -42, 1, 4, P.fatherBrown);            // right temple
+    R(-2, -43, 4, 1, P.textDim);               // gray streak
+
+    // brows — one clean stroke each
+    R(-3, -39, 2, 1, P.fatherBrown);
+    R(1, -39, 2, 1, P.fatherBrown);
+
+    // eyes — one clean dark mark each, a single lit glint
+    R(-3, -37, 2, 1, P.fatherCloak);           // left eye
+    R(1, -37, 2, 1, P.fatherCloak);            // right eye
+    R(2, -37, 1, 1, P.text);                   // glint (lit eye)
+
+    // nose — a single lit ridge
+    R(0, -37, 1, 2, P.text);
+
+    // beard — one clean shape with a shadow side + a touch of gray
+    R(-4, -35, 8, 2, P.fatherBrown);           // beard mass
+    R(-3, -33, 6, 1, P.fatherBrown);           // beard point
+    R(-4, -35, 2, 2, P.fatherCloak);           // shadow side (−x)
+    R(-2, -35, 4, 1, P.textDim);               // grizzled moustache hint
+
     ctx.restore();
-    // faint hero glow (world-space gradient, not scaled rects)
-    const gy = baseY - 9 * scale;
-    const glow = ctx.createRadialGradient(cx, gy, 1, cx, gy, 14 * scale);
-    glow.addColorStop(0, 'rgba(184,134,11,0.30)');
-    glow.addColorStop(0.5, 'rgba(139,58,31,0.12)');
-    glow.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = glow;
-    ctx.fillRect(cx - 14 * scale, baseY - 22 * scale, 28 * scale, 24 * scale);
+}
+
+/**
+ * Standing child portrait — the protagonist ("you" as a boy): round face, big
+ * hopeful eyes, blue tunic, no beard. Same clean idiom as drawFatherPortrait;
+ * feet-base at (cx, baseY). Lit on the torch side (+x), shadow on −x.
+ */
+export function drawChildPortrait(ctx, cx, baseY, scale = 6) {
+    const P = PAL;
+    ctx.save();
+    ctx.translate(Math.round(cx), Math.round(baseY));
+    ctx.scale(scale, scale);
+    const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+
+    // ── tunic — narrow young shoulders, simple blue ──
+    R(-6, -19, 12, 19, P.playerBlue);          // torso + shoulders
+    R(-6, -19, 2, 19, P.fatherCloak);          // shadow side (−x)
+    R(-3, -19, 6, 1, P.fatherCloak);           // collar
+
+    // ── neck ──
+    R(-2, -21, 4, 2, P.playerSkin);
+    R(-2, -21, 1.5, 2, P.fatherBrown);         // shadow
+
+    // ── head — round and large (child proportions) ──
+    R(-5, -33, 10, 12, P.playerSkin);          // face
+    R(-5, -33, 2, 12, P.fatherBrown);          // shadow side (−x)
+    R(4, -33, 1, 11, P.text);                  // lit edge (+x)
+
+    // hair — soft round cap, a small tuft
+    R(-5, -34, 10, 3, P.fatherBrown);          // hair mass
+    R(-5, -33, 1, 3, P.fatherBrown);           // left side
+    R(4, -33, 1, 3, P.fatherBrown);            // right side
+    R(-1, -35, 3, 1, P.fatherBrown);           // tuft
+
+    // big hopeful eyes — bright glints
+    R(-3.5, -29, 2.5, 2, P.fatherCloak);       // left eye
+    R(1, -29, 2.5, 2, P.fatherCloak);          // right eye
+    R(-3, -29, 1, 1, P.text);                  // left glint
+    R(1.5, -29, 1, 1, P.text);                 // right glint
+
+    // small nose + soft mouth
+    R(-0.5, -26, 1, 1, P.fatherBrown);         // nose
+    R(-1.5, -24, 3, 1, P.fatherBrown);         // mouth
+
+    ctx.restore();
 }
 
 /** Small flickering torch glow at (x,y). intensity 0..1. */

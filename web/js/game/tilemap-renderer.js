@@ -34,6 +34,29 @@ export class TilemapRenderer {
         this.viewportYOffset = 0;
         this.viewportHeight = null;
 
+        // Follow camera (render-only; sim/PPO coords unaffected).
+        // Mutually exclusive with the stage viewport: disabled whenever
+        // viewportHeight != null (multi-stage dungeons use the Y-crop above).
+        this.cameraEnabled = false;
+        this.cameraClamp = false; // false = center-lock (agent always centered);
+                                  // true = stop at map bounds (no void, but small
+                                  // maps freeze). Center-lock fits RLD's tiny maps.
+        this.camX = 0;            // current camera top-left, world px (lerped)
+        this.camY = 0;
+        this._camScale = 1;       // displayPx / (viewTiles*ts) — applied via setTransform
+        this._camSettled = true;  // true when cam reached its target (stops the RAF tick)
+        this._camInit = false;    // snap to target on the first frame after enabling
+        this._camRafPending = false;
+        // Dynamic zoom: viewTiles is the world width (in tiles) shown across the
+        // viewport. Starts narrow (5 = zoomed in); raise targetViewTiles later to
+        // zoom OUT. Lerped toward targetViewTiles so zoom changes are smooth.
+        this.viewTiles = 5;
+        this.targetViewTiles = 5;
+        // Fixed canvas render resolution (independent of zoom) so sharpness stays
+        // constant — zoom comes purely from scale = displayPx / (viewTiles*ts).
+        this.displayPx = 9 * tileSize;  // 576px square
+        this.camLerp = 0.18;
+
         // Tilemap system
         this._atlas = new TileAtlas();
         this._atlas.build(tileSize);
@@ -85,6 +108,121 @@ export class TilemapRenderer {
         this.policy = policy;
     }
 
+    // ─── Follow camera ──────────────────────────────────────────
+
+    /**
+     * Enable/disable the player-follow camera. Render-only — does not touch
+     * agent or grid coordinates, so sim/PPO determinism is unaffected.
+     * No-op into "off" when a stage viewport is active (multi-stage dungeons),
+     * since the two are mutually exclusive crop strategies.
+     */
+    setCameraFollow(enabled, viewTiles = 5) {
+        if (enabled && this.viewportHeight != null) enabled = false;
+
+        if (enabled) {
+            this.targetViewTiles = viewTiles;
+            if (!this.cameraEnabled) {
+                // Fresh enable: snap zoom + position to target on first frame.
+                this.viewTiles = viewTiles;
+                this._camInit = true;
+            }
+            // Canvas resolution is fixed (this.displayPx); zoom is pure scale.
+            if (this.canvas.width !== this.displayPx || this.canvas.height !== this.displayPx) {
+                this.canvas.width = this.displayPx;
+                this.canvas.height = this.displayPx;
+            }
+            this.cameraEnabled = true;
+        } else {
+            this.cameraEnabled = false;
+            // Restore full-map canvas sizing (single-stage only; multi-stage
+            // owns its own canvas dims via setViewportStage).
+            if (this.grid && this.viewportHeight == null) {
+                const w = this.grid.width * this.tileSize;
+                const h = this.grid.height * this.tileSize;
+                if (this.canvas.width !== w || this.canvas.height !== h) {
+                    this.canvas.width = w;
+                    this.canvas.height = h;
+                }
+            }
+        }
+    }
+
+    /**
+     * Dynamic zoom target: how many tiles wide the viewport shows. Lerped.
+     * displayPx (canvas resolution) stays fixed — zoom comes purely from the
+     * scale = displayPx / (viewTiles*ts) in _updateCamera, so a larger
+     * targetViewTiles zooms OUT (more tiles, smaller).
+     */
+    setViewTiles(tiles) {
+        this.targetViewTiles = tiles;
+        this._camSettled = false;
+        if (this.cameraEnabled) this._scheduleCameraFrame();
+    }
+
+    /**
+     * Recompute camera scale + clamped top-left for the current agent position.
+     * Lerps camX/camY/viewTiles toward their targets and sets _camSettled when
+     * they've converged. Pure render math — no sim state touched.
+     */
+    _updateCamera() {
+        const ts = this.tileSize;
+
+        // Lerp the zoom (tiles-across) first; it feeds the scale + view width.
+        this.viewTiles += (this.targetViewTiles - this.viewTiles) * this.camLerp;
+        const viewW = this.viewTiles * ts;          // world px visible across
+        this._camScale = this.displayPx / viewW;
+
+        // Target top-left so the agent sits centered, in world px.
+        const ax = (this.agent.x + 0.5) * ts;
+        const ay = (this.agent.y + 0.5) * ts;
+        const mapW = this.grid.width * ts;
+        const mapH = this.grid.height * ts;
+
+        // Center-lock: keep the agent dead-center. RLD dungeons (5×5–~20) are
+        // often smaller than the viewport, so clamping would freeze the camera;
+        // center-lock makes the follow read on every map size (void beyond the
+        // edges shows the dark clear color). Set cameraClamp=true to stop at map
+        // bounds instead (only meaningful on maps larger than the viewport).
+        let tx = ax - viewW / 2;
+        let ty = ay - viewW / 2;                     // square viewport (viewH = viewW)
+        if (this.cameraClamp) {
+            tx = mapW > viewW ? Math.max(0, Math.min(tx, mapW - viewW)) : -(viewW - mapW) / 2;
+            ty = mapH > viewW ? Math.max(0, Math.min(ty, mapH - viewW)) : -(viewW - mapH) / 2;
+        }
+
+        if (this._camInit) {
+            // Snap on first frame after enabling — no slide-in from (0,0).
+            this.camX = tx;
+            this.camY = ty;
+            this.viewTiles = this.targetViewTiles;
+            this._camScale = this.displayPx / (this.viewTiles * ts);
+            this._camInit = false;
+        } else {
+            this.camX += (tx - this.camX) * this.camLerp;
+            this.camY += (ty - this.camY) * this.camLerp;
+        }
+
+        const settled = Math.abs(tx - this.camX) < 0.5 &&
+                        Math.abs(ty - this.camY) < 0.5 &&
+                        Math.abs(this.targetViewTiles - this.viewTiles) < 0.01;
+        if (settled) {
+            this.camX = tx;
+            this.camY = ty;
+            this.viewTiles = this.targetViewTiles;
+        }
+        this._camSettled = settled;
+    }
+
+    /** Schedule one more render frame while the camera is still sliding. */
+    _scheduleCameraFrame() {
+        if (this._camRafPending || typeof requestAnimationFrame === 'undefined') return;
+        this._camRafPending = true;
+        requestAnimationFrame(() => {
+            this._camRafPending = false;
+            this.render();
+        });
+    }
+
     flash(color, duration = 100) {
         const overlay = document.createElement('div');
         overlay.style.cssText = `
@@ -104,11 +242,21 @@ export class TilemapRenderer {
     render() {
         const { ctx } = this;
 
-        // Clear
+        // Clear (untransformed — fills the whole canvas regardless of camera)
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
         ctx.fillStyle = '#000';
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         if (!this.grid) return;
+
+        // Follow camera: apply a single world→screen transform around the world
+        // layers. Mutually exclusive with the stage viewport (guarded below).
+        const camActive = this.cameraEnabled && this.viewportHeight == null && this.agent;
+        if (camActive) {
+            this._updateCamera();
+            ctx.setTransform(this._camScale, 0, 0, this._camScale,
+                             -this.camX * this._camScale, -this.camY * this._camScale);
+        }
 
         // 1. Static layers (floor + walls) from buffer
         this._blitStaticBuffer();
@@ -138,11 +286,17 @@ export class TilemapRenderer {
         // 8. Agent (entity layer)
         this._renderAgent();
 
+        // Reset transform so HUD/overlays draw in screen space.
+        if (camActive) ctx.setTransform(1, 0, 0, 1, 0, 0);
+
         // 9. HUD
         this._renderFloorIndicator();
 
         // B-201: optional minimap hook (mobile, large dungeons)
         if (this.onAfterRender) this.onAfterRender();
+
+        // Keep animating while the camera slides toward its target.
+        if (camActive && !this._camSettled) this._scheduleCameraFrame();
     }
 
     // ─── Static buffer (floor + walls) ──────────────────────────

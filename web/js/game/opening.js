@@ -26,7 +26,7 @@
 import {
     PAL, BASE_W, BASE_H, TILE,
     drawDungeon, drawFog, drawCaveArch, drawCharacter, drawTorch, drawGuildHall,
-    mulberry32,
+    drawFatherPortrait, drawChildPortrait, mulberry32,
 } from './opening-art.js';
 import { t } from '../i18n/index.js';
 import { sound } from './sound.js';
@@ -196,9 +196,14 @@ export class OpeningManager {
                 // art; a richer standing illustration is commissioned separately),
                 // NOT a grid follower (positions independent of the move grid).
                 this.inputEnabled = false;
+                // Chest-up two-shot: both feet baselines are pushed below the
+                // canvas with large scales, so only head→chest shows — matching
+                // dialogue portraits, not a figure that dwarfs the other. Father
+                // (left, larger) faces the child (right, smaller — a boy). Both
+                // front-facing busts in one spotlight.
                 this.stage = {
-                    fatherX: BASE_W * 0.40, fatherY: BASE_H * 0.46, fatherSize: TILE * 2.4,
-                    childX: BASE_W * 0.40 + 42, childY: BASE_H * 0.52,
+                    fatherX: BASE_W * 0.36, fatherY: BASE_H * 1.5, fatherScale: 8,
+                    childX: BASE_W * 0.70, childY: BASE_H * 1.18, childScale: 6,
                 };
                 // a short exchange, then the father uses the return scroll (P6)
                 this._p5Script = [
@@ -531,36 +536,51 @@ export class OpeningManager {
     _drawDungeonScene(ctx, w, h, now, opts = {}) {
         const s = this.scene;
         if (!s) return;
+
+        // Center-lock follow camera (matches in-game): translate the world so the
+        // player's tile is always at screen center; the camera follows as they
+        // move. Fog/torch/player stay screen-fixed at the center; the goal beacon
+        // is positioned in screen space so it slides in with the camera. Area
+        // beyond the room shows the deep-wall backdrop.
+        const p = this._tileCenter(s.player.c, s.player.r);
+        const camX = Math.round(w / 2 - p.x);
+        const camY = Math.round(h / 2 - p.y);
+
+        // backdrop to cover edges the camera exposes beyond the room
+        ctx.fillStyle = PAL.bgDeep;
+        ctx.fillRect(0, 0, w, h);
+
+        ctx.save();
+        ctx.translate(camX, camY);
         drawDungeon(ctx, w, h, {
             seed: s.seed, tile: TILE,
             floor: s.floor, floorLight: s.floorLight, floorHi: s.floorHi,
         });
-
         // corridor walls — solid-black interior, pixel-art rim along the edge
         if (s.open) this._drawWalls(ctx, s);
-
-        const p = this._tileCenter(s.player.c, s.player.r);
+        ctx.restore();
 
         const radius = opts.fogBoost ? s.fogRadius + 40 : s.fogRadius;
-        drawFog(ctx, w, h, p, radius);
+        drawFog(ctx, w, h, { x: w / 2, y: h / 2 }, radius);
 
         // the player carries the light — a warm torch glow punches through the
-        // fog so the player (and their immediate surroundings) is always visible.
+        // fog so the player (always screen-center under center-lock) is visible.
         const flick = 0.92 + 0.1 * Math.sin(now / 140);
-        drawTorch(ctx, p.x, p.y, flick);
-        drawCharacter(ctx, p.x, p.y, 'player', TILE);
+        drawTorch(ctx, w / 2, h / 2, flick);
+        drawCharacter(ctx, w / 2, h / 2, 'player', TILE);
 
         // goal beacon — drawn AFTER fog so it stays visible as a distant light,
-        // the "저기로 가자" landmark that tells the player where to head.
+        // the "저기로 가자" landmark. Positioned in screen space (world + camera).
         if (opts.showGoal && s.goal) {
             const g = this._tileCenter(s.goal.c, s.goal.r);
+            const gx = g.x + camX, gy = g.y + camY;
             const pulse = 0.5 + 0.3 * Math.sin(now / 320);
-            const beac = ctx.createRadialGradient(g.x, g.y, 1, g.x, g.y, 36);
+            const beac = ctx.createRadialGradient(gx, gy, 1, gx, gy, 36);
             beac.addColorStop(0, `rgba(230,200,120,${0.55 * pulse})`);
             beac.addColorStop(1, 'rgba(0,0,0,0)');
             ctx.fillStyle = beac;
-            ctx.fillRect(g.x - 44, g.y - 44, 88, 88);
-            drawCharacter(ctx, g.x, g.y, 'goal', TILE);
+            ctx.fillRect(gx - 44, gy - 44, 88, 88);
+            drawCharacter(ctx, gx, gy, 'goal', TILE);
         }
     }
 
@@ -578,15 +598,27 @@ export class OpeningManager {
         ctx.fillRect(0, 0, w, h);
         const st = this.stage;
         if (!st) return;
-        // soft spotlight pool behind father
-        const sp = ctx.createRadialGradient(st.fatherX, st.fatherY, 6, st.fatherX, st.fatherY, 130);
+        // one soft spotlight spanning both busts
+        const mid = (st.fatherX + st.childX) / 2;
+        const sp = ctx.createRadialGradient(mid, h * 0.44, 12, mid, h * 0.44, 220);
         sp.addColorStop(0, 'rgba(192,138,58,0.22)');
         sp.addColorStop(1, 'rgba(0,0,0,0)');
         ctx.fillStyle = sp;
         ctx.fillRect(0, 0, w, h);
-        drawTorch(ctx, st.fatherX, st.fatherY - st.fatherSize * 0.55, 0.9);
-        drawCharacter(ctx, st.fatherX, st.fatherY, 'father', st.fatherSize);
-        drawCharacter(ctx, st.childX, st.childY, 'player', TILE * 1.2);
+        // warm key light between them (the father's lit +x side faces the child)
+        drawTorch(ctx, mid, h * 0.20, 0.8);
+        drawFatherPortrait(ctx, st.fatherX, st.fatherY, st.fatherScale);
+        drawChildPortrait(ctx, st.childX, st.childY, st.childScale);
+        this._bustVignette(ctx, w, h);
+    }
+
+    /** Bottom-up darkness that fades the chest-up portrait's cropped lower body. */
+    _bustVignette(ctx, w, h) {
+        const vg = ctx.createLinearGradient(0, h * 0.68, 0, h);
+        vg.addColorStop(0, 'rgba(5,4,3,0)');
+        vg.addColorStop(1, 'rgba(5,4,3,0.96)');
+        ctx.fillStyle = vg;
+        ctx.fillRect(0, h * 0.68, w, h * 0.32);
     }
 
     /** P6 return — father remains, child dematerialises in a burst of light. */
@@ -602,23 +634,28 @@ export class OpeningManager {
         ctx.fillRect(0, 0, w, h);
         if (!st) return;
         const k = clamp(el / T.p6, 0, 1);
-        const cx = st.childX, cy = st.childY;
-
-        drawCharacter(ctx, st.fatherX, st.fatherY, 'father', st.fatherSize);
-
-        // child dematerialises
-        ctx.globalAlpha = clamp(1 - k * 1.1, 0, 1);
-        drawCharacter(ctx, cx, cy, 'player', TILE);
+        const cx = st.childX, cy = h * 0.58;   // child's visible chest — return-light origin
+        // father fades as the return light overtakes the scene
+        ctx.globalAlpha = clamp(1 - k * 1.6, 0, 1);
+        drawFatherPortrait(ctx, st.fatherX, st.fatherY, st.fatherScale);
         ctx.globalAlpha = 1;
+        // the child (you) dissolves into the light — the scroll carries you off
+        ctx.globalAlpha = clamp(1 - k * 1.2, 0, 1);
+        drawChildPortrait(ctx, st.childX, st.childY, st.childScale);
+        ctx.globalAlpha = 1;
+        this._bustVignette(ctx, w, h);
 
-        // vertical light column at the child's position
+        // vertical light column where the child stood — the "portal" of return
+        // light. Widened (was 36px) so the beam envelops the child bust instead
+        // of being a thin slit through it. Child bust ≈ 72px wide at scale 6.
         const colA = 0.6 * Math.sin(Math.PI * k);
+        const colW = 96;
         const col = ctx.createLinearGradient(cx, 0, cx, h);
         col.addColorStop(0, 'rgba(230,200,120,0)');
         col.addColorStop(0.5, `rgba(230,200,120,${colA})`);
         col.addColorStop(1, 'rgba(230,200,120,0)');
         ctx.fillStyle = col;
-        ctx.fillRect(cx - 18, 0, 36, h);
+        ctx.fillRect(cx - colW / 2, 0, colW, h);
 
         // radial burst
         const peak = Math.sin(Math.PI * k);
