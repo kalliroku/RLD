@@ -409,8 +409,8 @@ export function drawRepliBackground(ctx, cx, baseY, scale = 4) {
     ctx.translate(Math.round(cx), Math.round(baseY));
     ctx.scale(scale, scale);
     const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
-    const SKIN = '#cda184', HAIR = '#cdb24a', JACKET = '#583046', JACKET_SH = '#3a1f2e';
-    // torso — simple plum jacket (shoulders a touch wider than waist)
+    const SKIN = '#cda184', HAIR = '#cdb24a', JACKET = '#4a82b4', JACKET_SH = '#315a80';
+    // torso — simple sky-blue jacket (shoulders a touch wider than waist)
     R(-7, -11, 14, 2, JACKET);                 // shoulders
     R(-6, -10, 12, 12, JACKET);                // body (runs below baseY → behind desk)
     R(-6, -10, 2, 12, JACKET_SH);              // shade side
@@ -438,7 +438,7 @@ export function drawRepliPortrait(ctx, cx, baseY, scale = 6) {
     const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
     const SKIN = '#e6b48e', SKIN_SH = '#c48f6c', HAIR = '#e8cf52', HAIR_SH = '#bd9f34';
     const EYE = '#7ec8e3', LIP = '#c07266';
-    const JACKET = '#6c3a52', JACKET_SH = '#46243a', JACKET_HI = '#8a4d68';  // plum receptionist jacket
+    const JACKET = '#6aa9da', JACKET_SH = '#427aac', JACKET_HI = '#8fc6ee';  // sky-blue receptionist jacket
     const INNER = '#f4ecda', GOLD = '#e6b450';                  // white collar + gold trim
 
     // ── torso — tidy receptionist jacket (정장 + 흰 칼라 + 골드 단추, 모래시계) ──
@@ -674,7 +674,7 @@ export function drawShopStall(ctx, x, y, w, h) {
     ctx.restore();
 }
 
-export function drawGuildHall(ctx, w, h) {
+export function drawGuildHall(ctx, w, h, opts = {}) {
     // back wall — wooden plank pattern
     flecks(ctx, 0, 0, w, h * 0.62, PAL.bgLight, PAL.bgDeep, PAL.stoneLight, 41, 0.18);
     ctx.fillStyle = PAL.bgDeep;
@@ -689,10 +689,14 @@ export function drawGuildHall(ctx, w, h) {
     const qr = GUILD_OBJECTS.quest;  // SSOT — same rect as the hotspot + marker (W-2)
     const boardX = w * qr.x, boardY = h * qr.y, boardW = w * qr.w, boardH = h * qr.h;
     flecks(ctx, boardX, boardY, boardW, boardH, PAL.fatherBrown, PAL.fatherCloak, PAL.stoneLight, 47, 0.22);
-    // a faded older notice tucked behind, top-right
-    drawNotice(ctx, boardX + boardW * 0.54, boardY + boardH * 0.10, boardW * 0.34, boardH * 0.30, 0.5, false);
-    // the main quest parchment, front and center
-    drawNotice(ctx, boardX + boardW * 0.13, boardY + boardH * 0.18, boardW * 0.54, boardH * 0.64, 1, true);
+    // Notices appear only after 리카 posts the first quest (opts.questPosted) — the
+    // board starts as a bare cork panel, then the parchment shows up. (main.js gate)
+    if (opts.questPosted) {
+        // a faded older notice tucked behind, top-right
+        drawNotice(ctx, boardX + boardW * 0.54, boardY + boardH * 0.10, boardW * 0.34, boardH * 0.30, 0.5, false);
+        // the main quest parchment, front and center
+        drawNotice(ctx, boardX + boardW * 0.13, boardY + boardH * 0.18, boardW * 0.54, boardH * 0.64, 1, true);
+    }
     ctx.strokeStyle = PAL.black;
     ctx.lineWidth = 2;
     ctx.strokeRect(boardX, boardY, boardW, boardH);

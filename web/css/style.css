@@ -3077,6 +3077,17 @@ body.editor-mode .dpad-container {
 }
 .guild-dialogue:not(.show) { pointer-events: none; }
 
+/* Dialogue voice colors — 4 categories: (주인공 vs NPC) × (대사 vs 속마음).
+   캐릭터별이 아니라 진영별이라 캐릭터가 늘어도 색이 안 늘어난다. op-dialogue 공용
+   클래스라 오프닝(op-dialogue)도 voice-*/is-inner 를 붙이면 동일 규칙 적용 가능
+   (현재는 길드만 배선; 오프닝 배선은 후속). */
+.op-dialogue.voice-npc .op-dialogue-speaker    { color: #e6b450; }   /* NPC 이름 — 따뜻한 금색 */
+.op-dialogue.voice-npc .op-dialogue-text       { color: #f0e6d2; }   /* NPC 대사 */
+.op-dialogue.voice-master .op-dialogue-speaker { color: #8fc1e6; }   /* 주인공 이름 — 차가운 청색 */
+.op-dialogue.voice-master .op-dialogue-text    { color: #bcd8ee; }   /* 주인공 대사 */
+/* 속마음 — 이탤릭으로 구분 (이름은 NPC 박스처럼 노출) */
+.op-dialogue.is-inner .op-dialogue-text    { font-style: italic; opacity: 0.92; }
+
 /* popup modal */
 .guild-popup {
     position: fixed;

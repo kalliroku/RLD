@@ -73,13 +73,14 @@
         <button id="guild-map-hotspot"   class="guild-hotspot" data-popup="map"   aria-label="지도" hidden></button>
         <!-- Top bar: title (left) + resource boxes (right) -->
         <div class="guild-topbar">
-            <span class="guild-title">RL Dungeon</span>
+            <span class="guild-title">Serpa Guild</span>
             <div class="guild-resources">
                 <span class="guild-res guild-gold" id="guild-gold">800G</span>
-                <span class="guild-res guild-food" id="guild-food">50 Food</span>
-                <span class="guild-res guild-hp" id="guild-hp">HP 100/100</span>
-                <!-- D-2026-06-02-18: 사망 4/4 박스 제거 (세르파 무한부활 — 압박 지표는 G/식량) -->
-                <span class="guild-res guild-run" id="guild-run">Run #1</span>
+                <!-- 식량=라운드 자원(던전 출발 시 보충), HP=인-던전 상태, Run#=구조 미확정.
+                     길드 HUD엔 지속 메타 자원(G)만 노출. 값은 내부 유지, 표시만 off. -->
+                <span class="guild-res guild-food" id="guild-food" hidden>50 Food</span>
+                <span class="guild-res guild-hp" id="guild-hp" hidden>HP 100/100</span>
+                <span class="guild-res guild-run" id="guild-run" hidden>Run #1</span>
             </div>
         </div>
 

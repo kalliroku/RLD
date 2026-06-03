@@ -36,14 +36,26 @@ import { drawGuildHall, drawCharacter, drawRepliPortrait, drawRikaPortrait, draw
 const GUILD_ONBOARD_KEY = 'rld_guild_onboarded';
 // who → 흉상(drawRepliPortrait/drawRikaPortrait), highlight → 자원 박스 강조,
 // reveal → 진입 버튼 공개. 대사는 시나리오 기반 (레플리=일상/안내, 리카=모험가 의뢰).
+// 온보딩 비트. side='npc'|'master' (목소리 진영), mode='speak'(기본)|'inner'(속마음).
+// who=무대 전면에 세울 NPC. {master}=주인공 이름(현재 '마스터' 자리표시자).
+// ※ 카피는 자리표시자 — 톤/문구는 검수 후 조정. (CTA 클릭까지만이 이번 스코프)
 const GUILD_ONBOARD_BEATS = [
-    { who: 'repli', speaker: '레플리', text: '마스터, 일어나셨나요? 좋은 점심입니다.' },
-    { who: 'repli', speaker: '레플리', text: '세르파 길드에 오신 걸 환영해요. 이제 이곳의 길드장은 당신이시죠.' },
-    { who: 'repli', speaker: '레플리', text: '이게 길드 자금(G)이에요. 세르파를 고용하고, 부활시키고, 운영하는 데 들어가죠.', highlight: 'gold' },
-    { who: 'repli', speaker: '레플리', text: '그 옆은 식량이고요. 세르파를 던전에 출정시킬 때 소모됩니다.', highlight: 'food' },
-    { who: 'repli', speaker: '레플리', text: '…아직 함께할 세르파가 한 명도 없네요. 곧 좋은 인재가 올 거예요.' },
-    { who: 'rika', speaker: '리카', text: '마스터, 모험가 길드의 의뢰에요.' },
-    { who: 'rika', speaker: '리카', text: '의뢰판을 확인해 보세요. 첫 던전이 기다리고 있어요.', reveal: 'quest' },
+    // 레플리 등장 (무대 중앙·전면)
+    { side: 'npc', who: 'repli', speaker: '레플리', text: '{master}, 일어나셨군요. 좋은 점심입니다.' },
+    // 떡밥 — 주인공 속마음(불안/의문). 무대의 레플리는 딤+뒤로.
+    { side: 'master', mode: 'inner', text: '…왜 하필 나한테 이 자리가 떨어진 걸까.' },
+    // 레플리 G 설명 (전면) — 식량/HP는 길드에서 숨겼으니 G만 짚는다.
+    { side: 'npc', who: 'repli', speaker: '레플리', text: '첫 출근이시니 딱 하나만 일러둘게요. 이게 길드 자금, G예요.', highlight: 'gold' },
+    { side: 'npc', who: 'repli', speaker: '레플리', text: '던전에 들 땐 이 G로 식량을 채워 출발해요. 도중에 떨어지면… 상상도 하기 싫네요.', highlight: 'gold' },
+    { side: 'npc', who: 'repli', speaker: '레플리', text: '대신 던전을 답파하면 큰 돈이 들어와요. 넉넉해지면 좋은 것들도 들일 수 있고요.', highlight: 'gold' },
+    { side: 'npc', who: 'repli', speaker: '레플리', text: '그러니 바닥내지 말고… 우리 같이 이 길드를 키워봐요!', highlight: 'gold' },
+    // 주인공 속마음(시니컬) — 레플리 딤+뒤로.
+    { side: 'master', mode: 'inner', text: "'같이'라니. 떠맡은 건 난데 말이지." },
+    // 리카 등장 (무대 우측·전면) / 레플리 딤+뒤로.
+    { side: 'npc', who: 'rika', speaker: '리카', text: '{master}! 마침 잘 계셨어요. 모험가 길드에서 의뢰가 내려왔어요.' },
+    { side: 'npc', who: 'rika', speaker: '리카', text: '첫 의뢰예요. 방금 게시판에 붙여 뒀어요!', reveal: 'quest' },
+    // 레플리 마무리 CTA (전면) / 리카 딤+뒤로 → 끝나면 종이 클릭 가능.
+    { side: 'npc', who: 'repli', speaker: '레플리', text: '저기 의뢰서, 한번 확인해 보죠.', cta: 'quest' },
 ];
 
 const PRESET_MULTI_DUNGEONS = {
@@ -494,6 +506,11 @@ class Game {
         if (this._guildOnboarding) return;   // already running — don't restart
         this._guildOnboarding = true;
         this._guildBeatIdx = 0;
+        // Game 인스턴스는 페이지당 1회 — dev 리플레이(localStorage만 지움, reload 없음)에서
+        // 이전 플레이의 stale-true 가 남으면 첫 비트부터 종이가 그려진다. 무대도 함께 초기화.
+        this._questPosted = false;
+        this._guildStage = [];
+        this._guildActive = null;
         this._renderGuildBeat();
     }
 
@@ -503,17 +520,38 @@ class Game {
         if (!beat) { this._finishGuildOnboarding(); return; }
         // the quest reveal flags the board marker, shown once the dialogue ends and
         // the room is visible again (during a beat the room is dimmed behind the bust).
-        if (beat.reveal === 'quest') this._questRevealPending = true;
-        // 화자 흉상 (오프닝 방식 — dim + 스포트라이트 + bust) 갱신
-        this._guildSpeaker = beat.who || null;
+        // 리카가 의뢰를 가져오면(reveal) 비로소 게시판에 퀘스트 종이가 붙는다.
+        // 그 전까지 보드는 빈 코르크판. (_questPosted 는 drawGuildHall 이 소비)
+        if (beat.reveal === 'quest') { this._questRevealPending = true; this._questPosted = true; }
+
+        // 무대(stage): 흉상은 한 번 오르면 장면 끝까지 유지(영속). 말하는 NPC=전면(active),
+        // 나머지(주인공 차례 포함)=딤+뒤로. 줄마다 생성/제거 X → 깜빡임 없음(MVP 스냅).
+        if (!this._guildStage) this._guildStage = [];
+        if (beat.side === 'npc' && beat.who) {
+            if (!this._guildStage.includes(beat.who)) this._guildStage.push(beat.who);
+            this._guildActive = beat.who;
+        } else {
+            this._guildActive = null;   // 주인공 차례 — 무대의 NPC 전원 recede
+        }
         this._drawGuildScene();
+
         // 설명 중인 자원 박스 하이라이팅 (이전 비트 강조 해제 후 적용)
         document.querySelectorAll('.guild-res.is-highlight').forEach(e => e.classList.remove('is-highlight'));
         if (beat.highlight) {
             const res = document.getElementById('guild-' + beat.highlight);
             if (res) res.classList.add('is-highlight');
         }
-        this._typeGuildDialogue(beat.speaker, beat.text);
+
+        // 대사 색상 4분류 — 캐릭터별이 아니라 (주인공 vs NPC) × (대사 vs 속마음).
+        const inner = beat.mode === 'inner';
+        if (dlg) {
+            dlg.classList.toggle('voice-master', beat.side === 'master');
+            dlg.classList.toggle('voice-npc', beat.side !== 'master');
+            dlg.classList.toggle('is-inner', inner);
+        }
+        // 주인공 비트엔 주인공 이름('마스터')을 NPC처럼 표기(속마음도 노출 — 이탤릭으로 구분).
+        const speaker = beat.side === 'master' ? this._fmtGuildText('{master}') : (beat.speaker || '');
+        this._typeGuildDialogue(speaker, this._guildDisplayText(beat));
         if (dlg) dlg.classList.add('show');
     }
 
@@ -532,7 +570,8 @@ class Game {
         const dlg = document.getElementById('guild-dialogue');
         if (dlg) dlg.classList.remove('show');
         document.querySelectorAll('.guild-res.is-highlight').forEach(e => e.classList.remove('is-highlight'));
-        this._guildSpeaker = null;
+        this._guildStage = [];                     // 무대 비움 → 다음 진입 깨끗하게
+        this._guildActive = null;
         this._drawGuildScene();                    // back to the normal scene
         // the board marker glows over the quest parchment so the player knows to
         // click the bulletin board next (no buttons — scene objects are the cue).
@@ -545,6 +584,17 @@ class Game {
     _setGuildQuestMarker(show) {
         const m = document.getElementById('guild-quest-marker');
         if (m) m.hidden = !show;
+    }
+
+    /** {master} → 주인공 이름(현재 '마스터' 자리표시자, 나중에 인풋으로 교체 가능). */
+    _fmtGuildText(text) {
+        return (text || '').replace(/\{master\}/g, this._masterName || '마스터');
+    }
+
+    /** 비트의 최종 표시 텍스트: {master} 치환 + 속마음이면 괄호로 감싼다(보편 컨벤션). */
+    _guildDisplayText(beat) {
+        const s = this._fmtGuildText(beat.text);
+        return beat.mode === 'inner' ? `(${s})` : s;
     }
 
     _typeGuildDialogue(speaker, text) {
@@ -573,7 +623,7 @@ class Game {
         this._clearGuildTyping();
         const beat = GUILD_ONBOARD_BEATS[this._guildBeatIdx];
         const tx = document.getElementById('guild-dialogue-text');
-        if (tx && beat) tx.textContent = beat.text;
+        if (tx && beat) tx.textContent = this._guildDisplayText(beat);
         this._guildTyping = false;
     }
 
@@ -601,22 +651,40 @@ class Game {
         }
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = false;
-        drawGuildHall(ctx, w, h);
+        // 게시판 종이는 리카의 의뢰 reveal 이후(또는 온보딩 완료 후 재진입) 표시.
+        const questPosted = this._questPosted || localStorage.getItem(GUILD_ONBOARD_KEY) === '1';
+        drawGuildHall(ctx, w, h, { questPosted });
 
-        // Onboarding: dim the room + spotlight the speaker bust (오프닝 방식).
-        if (this._guildOnboarding && this._guildSpeaker) {
+        // Onboarding: 무대 흉상을 먼저 *불투명하게* 그리고, '구멍 뚫린 스포트라이트'(라디얼
+        // 딤)로 전면(active)만 밝게 남기고 나머지를 그림자에 잠근다. 투명도 조정(ghost) 대신
+        // 빛/그림자로 전·후면을 가른다. 주인공 차례(active 없음)엔 전체를 평평하게 딤. 흉상 영속.
+        const stage = this._guildStage || [];
+        if (this._guildOnboarding && stage.length) {
+            const baseY = h * 0.90, sc = Math.max(4, Math.round(h / 100));
+            // 슬롯: 1명=중앙, 2명=좌(0.34)·우(0.66). ※ 최대 2 NPC 가정 + stage 순서=등장순=좌→우.
+            // NPC 3명 이상이면 slots[i] 가 undefined → NaN 좌표. 확장 시 슬롯 테이블 보강 필요.
+            const slots = stage.length === 1 ? [0.5] : [0.34, 0.66];
+            const activeIdx = this._guildActive ? stage.indexOf(this._guildActive) : -1;
+
+            // 1) 후면(비활성) 흉상을 불투명하게 먼저 — 곧 딤에 잠긴다(축소 = 뒤로).
+            stage.forEach((who, i) => {
+                if (who === this._guildActive) return;
+                this._drawGuildBust(ctx, who, w * slots[i], baseY, sc, false);
+            });
+            // 2) 평평한 딤 — 방 + 후면 흉상을 통째로 그림자에. (투명도 X → ghost 아님)
             ctx.fillStyle = 'rgba(5,4,3,0.62)';
             ctx.fillRect(0, 0, w, h);
-            // bust ~30% of screen height (sc scales with viewport, not the old
-            // 270-base which blew up to ~20 on a tall canvas).
-            const cx = w * 0.5, baseY = h * 0.90, sc = Math.max(4, Math.round(h / 100));
-            const sp = ctx.createRadialGradient(cx, h * 0.5, 12, cx, h * 0.5, h * 0.62);
-            sp.addColorStop(0, 'rgba(192,138,58,0.20)');
-            sp.addColorStop(1, 'rgba(0,0,0,0)');
-            ctx.fillStyle = sp;
-            ctx.fillRect(0, 0, w, h);
-            if (this._guildSpeaker === 'rika') drawRikaPortrait(ctx, cx, baseY, sc);
-            else drawRepliPortrait(ctx, cx, baseY, sc);
+            // 3) 전면(active) 흉상만 딤 *위에* 또렷하게 다시 그린다 (+ 은은한 온기).
+            //    주인공 차례(active 없음)엔 redraw 없음 → 무대 전원 그림자(속마음 집중).
+            if (activeIdx >= 0) {
+                const spotX = w * slots[activeIdx];
+                const glow = ctx.createRadialGradient(spotX, h * 0.6, 12, spotX, h * 0.6, h * 0.5);
+                glow.addColorStop(0, 'rgba(192,138,58,0.16)');
+                glow.addColorStop(1, 'rgba(0,0,0,0)');
+                ctx.fillStyle = glow;
+                ctx.fillRect(0, 0, w, h);
+                this._drawGuildBust(ctx, this._guildActive, spotX, baseY, sc, true);
+            }
             return;
         }
 
@@ -633,6 +701,14 @@ class Game {
         drawRepliBackground(ctx, w * 0.50, h * 0.74, repliSc);
         const tile = Math.round(Math.min(w, h) * 0.14);
         drawCharacter(ctx, w * 0.20, h * 0.82, 'player', tile);
+    }
+
+    /** Draw one stage bust. active=전면(풀 크기), else recede(85% 축소). 밝기 차는 위의
+     *  스포트라이트(그림자)가 처리 — 투명도 조정 안 함(ghost 방지). MVP 스냅(트윈 X). */
+    _drawGuildBust(ctx, who, cx, baseY, sc, active) {
+        const draw = who === 'rika' ? drawRikaPortrait : drawRepliPortrait;
+        const useSc = active ? sc : Math.max(3, Math.round(sc * 0.85));
+        draw(ctx, cx, baseY, useSc);
     }
 
     _updateGuildResources() {
