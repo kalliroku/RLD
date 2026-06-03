@@ -28,7 +28,7 @@ import { ModifierSet, MODIFIERS } from './game/modifiers.js';
 import { t, initI18n, setLang, getLang, onLangChange } from './i18n/index.js';
 import { renderTitleArt } from './game/title-art.js';
 import { OpeningManager } from './game/opening.js';
-import { drawGuildHall, drawCharacter, drawRepliPortrait, drawRikaPortrait, drawRepliBackground, drawWallMap, drawShopStall } from './game/opening-art.js';
+import { drawGuildHall, drawCharacter, drawRepliPortrait, drawRikaPortrait, drawRepliBackground, drawWallMap, drawShopStall, GUILD_OBJECTS } from './game/opening-art.js';
 
 // Guild onboarding (first guild entry only). NPC introduces the room one beat
 // at a time and reveals entry buttons progressively. Korean hardcoded for now —
@@ -447,13 +447,27 @@ class Game {
         };
     }
 
-    /** Show/hide each scene-object hotspot to match the unlock state. */
+    /** Position an element over a GUILD_OBJECTS rect (vw/vh, full-viewport canvas). */
+    _placeGuildRect(el, rect) {
+        if (!el || !rect) return;
+        el.style.left = `${rect.x * 100}vw`;
+        el.style.top = `${rect.y * 100}vh`;
+        el.style.width = `${rect.w * 100}vw`;
+        el.style.height = `${rect.h * 100}vh`;
+    }
+
+    /** Show/hide each scene-object hotspot to match the unlock state, and place
+     * each hotspot + the quest marker from the GUILD_OBJECTS SSOT so the clickzone
+     * always sits over its drawing (W-2 — coords no longer live in CSS). */
     _updateGuildHotspots() {
         const u = this._guildUnlocks();
         for (const key of ['quest', 'map', 'shop', 'party']) {
             const el = document.querySelector(`.guild-hotspot[data-popup="${key}"]`);
-            if (el) el.hidden = !u[key];
+            if (!el) continue;
+            this._placeGuildRect(el, GUILD_OBJECTS[key]);
+            el.hidden = !u[key];
         }
+        this._placeGuildRect(document.getElementById('guild-quest-marker'), GUILD_OBJECTS.quest);
     }
 
     /** Open a guild entry panel (quest/party/shop/map) in the popup modal. */
@@ -609,8 +623,9 @@ class Game {
         // Gated scene objects — the room fills in as the guild unlocks features.
         // (Board+desk are room fixtures in drawGuildHall; these appear over them.)
         const u = this._guildUnlocks();
-        if (u.map) drawWallMap(ctx, w * 0.45, h * 0.10, w * 0.15, h * 0.20);
-        if (u.shop) drawShopStall(ctx, w * 0.80, h * 0.44, w * 0.17, h * 0.30);
+        const mr = GUILD_OBJECTS.map, sr = GUILD_OBJECTS.shop;  // SSOT — match hotspots (W-2)
+        if (u.map) drawWallMap(ctx, w * mr.x, h * mr.y, w * mr.w, h * mr.h);
+        if (u.shop) drawShopStall(ctx, w * sr.x, h * sr.y, w * sr.w, h * sr.h);
 
         // 접수원 레플리(배경 단순 figure)가 책상 뒤에 서 있고(중앙), 길드장(플레이어)은
         // 좌측 바닥에. baseY=책상 윗선이라 하반신이 책상 뒤로 가린다. (둘은 항상 표시 — NPC.)

@@ -591,6 +591,23 @@ function drawNotice(ctx, x, y, w, h, alpha = 1, isQuest = false) {
     ctx.restore();
 }
 
+/**
+ * SSOT for guild scene-object rects, as fractions of the full-viewport scene
+ * canvas. ONE source consumed by both sides so the clickzone always sits over
+ * the drawing (W-2):
+ *   - canvas draws here (drawGuildHall board; drawWallMap/drawShopStall callers)
+ *   - main.js _updateGuildHotspots → hotspot DOM inline pos + quest marker pos
+ * `party` is the 접수 데스크 clickzone, intentionally broader than the desk
+ * furniture art (it also covers 레플리 standing behind), so the desk's own draw
+ * rect in drawGuildHall stays separate — it is furniture, not a duplicated coord.
+ */
+export const GUILD_OBJECTS = {
+    quest: { x: 0.18, y: 0.12, w: 0.22, h: 0.32 },  // bulletin board (+ quest marker)
+    party: { x: 0.34, y: 0.54, w: 0.32, h: 0.30 },  // reception desk + 레플리
+    map:   { x: 0.45, y: 0.10, w: 0.15, h: 0.20 },  // wall map
+    shop:  { x: 0.80, y: 0.44, w: 0.17, h: 0.30 },  // merchant stall
+};
+
 /** A framed route map on the guild wall — the clickable 지도(map) object. Cosmetic.
  * Drawn by _drawGuildScene only when unlocked (gated), not baked into the room. */
 export function drawWallMap(ctx, x, y, w, h) {
@@ -669,7 +686,8 @@ export function drawGuildHall(ctx, w, h) {
 
     // bulletin board — pinned paper notices; the main one is the first-dungeon
     // quest parchment the onboarding points the player to (rika reveal:'quest').
-    const boardX = w * 0.18, boardY = h * 0.12, boardW = w * 0.22, boardH = h * 0.32;
+    const qr = GUILD_OBJECTS.quest;  // SSOT — same rect as the hotspot + marker (W-2)
+    const boardX = w * qr.x, boardY = h * qr.y, boardW = w * qr.w, boardH = h * qr.h;
     flecks(ctx, boardX, boardY, boardW, boardH, PAL.fatherBrown, PAL.fatherCloak, PAL.stoneLight, 47, 0.22);
     // a faded older notice tucked behind, top-right
     drawNotice(ctx, boardX + boardW * 0.54, boardY + boardH * 0.10, boardW * 0.34, boardH * 0.30, 0.5, false);
