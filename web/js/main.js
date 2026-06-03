@@ -568,7 +568,7 @@ class Game {
         this._clearGuildTyping();
         localStorage.setItem(GUILD_ONBOARD_KEY, '1');
         const dlg = document.getElementById('guild-dialogue');
-        if (dlg) dlg.classList.remove('show');
+        if (dlg) dlg.classList.remove('show', 'ready');
         document.querySelectorAll('.guild-res.is-highlight').forEach(e => e.classList.remove('is-highlight'));
         this._guildStage = [];                     // 무대 비움 → 다음 진입 깨끗하게
         this._guildActive = null;
@@ -600,9 +600,11 @@ class Game {
     _typeGuildDialogue(speaker, text) {
         const sp = document.getElementById('guild-dialogue-speaker');
         const tx = document.getElementById('guild-dialogue-text');
+        const dlg = document.getElementById('guild-dialogue');
         if (sp) sp.textContent = speaker || '';
         if (!tx) return;
         this._clearGuildTyping();
+        if (dlg) dlg.classList.remove('ready');   // 타이핑 중엔 ▼(next) 숨김 (오프닝과 동일)
         tx.textContent = '';
         this._guildTyping = true;
         let i = 0;
@@ -614,6 +616,7 @@ class Game {
             } else {
                 this._guildTyping = false;
                 this._guildTypeTimer = null;
+                if (dlg) dlg.classList.add('ready');   // 완료 → ▼ 노출(클릭/키로 다음)
             }
         };
         tick();
@@ -625,6 +628,7 @@ class Game {
         const tx = document.getElementById('guild-dialogue-text');
         if (tx && beat) tx.textContent = this._guildDisplayText(beat);
         this._guildTyping = false;
+        document.getElementById('guild-dialogue')?.classList.add('ready');   // 스킵 완료도 ▼ 노출
     }
 
     _clearGuildTyping() {
