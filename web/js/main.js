@@ -487,13 +487,20 @@ class Game {
         const popup = document.getElementById('guild-popup');
         if (!popup) return;
         // opening the quest panel retires the board marker (the cue is spent)
-        if (key === 'quest') { this._questRevealPending = false; this._setGuildQuestMarker(false); }
+        // + 항상 보드 뷰부터(직전 준비실 잔상 방지), 현재 챕터로 리셋.
+        if (key === 'quest') {
+            this._questRevealPending = false; this._setGuildQuestMarker(false);
+            this._questChapterView = this.runState.getCurrentChapter();
+            this._updateGuildQuests();
+        }
         document.querySelectorAll('.guild-popup-body .guild-tab-panel')
             .forEach(p => p.classList.remove('active'));
         const panel = document.getElementById('guild-tab-' + key);
         if (panel) panel.classList.add('active');
         const titleEl = document.getElementById('guild-popup-title');
         if (titleEl) titleEl.textContent = title || '';
+        // 의뢰 보드/준비실은 풀-페이지(전체 덮기), 나머지 탭은 기존 중앙 모달.
+        popup.classList.toggle('is-fullpage', key === 'quest');
         popup.hidden = false;
     }
 
@@ -717,6 +724,12 @@ class Game {
 
     _updateGuildResources() {
         const rs = this.runState;
+        // 간판 진행도 — 챕터 + 누적 답파 수 (Run#은 HUD에서 뺌, 도전/사망/스텝은 엔딩 기록으로).
+        const chEl = document.getElementById('guild-chapter');
+        if (chEl) {
+            const ch = rs.getCurrentChapter();
+            chEl.textContent = `Ch.${ch} ${t('chapter.' + ch)} · ${rs.clearedDungeons.size} 답파`;
+        }
         document.getElementById('guild-run').textContent = t('guild.run_format', { n: rs.runNumber });
         document.getElementById('guild-gold').textContent = t('guild.gold_format', { n: rs.gold });
         document.getElementById('guild-food').textContent = t('guild.food_format', { n: rs.food });
@@ -727,59 +740,118 @@ class Game {
         // D-2026-06-02-18: 사망 4/4 표시 제거 (세르파 무한부활 — DEATH_LIMIT 재설계 대기).
     }
 
+    // ── 미션 보드 (의뢰 게시판) — 의뢰판 클릭 시 길드 팝업에 렌더 ──────────────
+    // 챕터 네비(도달 챕터만) + 미션 카드(상태) + 보스 슬롯(챕터 일반 의뢰 모두 답파 시 해금).
+    // 챕터 내 자율 분기/세르파 점유(도전중·파밍중)는 후속 시스템 — 상태 틀은 잡되 Ch.1 현실만 배선.
     _updateGuildQuests() {
         const panel = document.getElementById('guild-tab-quest');
         const rs = this.runState;
-        let html = '';
+        const cur = rs.getCurrentChapter();
+        if (!this._questChapterView || this._questChapterView > cur) this._questChapterView = cur;
+        const view = this._questChapterView;
+        const chCfg = rs.getChapterConfig(view) || { dungeons: [] };
+        const dungeons = chCfg.dungeons;
+        const bossId = dungeons[dungeons.length - 1];        // 챕터 캡스톤 = 보스
+        const normals = dungeons.slice(0, -1);
 
-        // Group by chapter — Task #6: collapsible (was 30+ LOCKED gray fill)
-        const currentCh = this.runState.getCurrentChapter();
-        for (const ch of CHAPTER_CONFIG) {
-            // Open if: current chapter, or has cleared dungeons (player has reached)
-            const isOpen = ch.chapter === currentCh || ch.dungeons.some(d => rs.clearedDungeons.has(d));
-            html += `<details class="quest-section" ${isOpen ? 'open' : ''}>`;
-            html += `<summary class="quest-section-title">Ch.${ch.chapter} ${t(`chapter.${ch.chapter}`)}</summary>`;
-            for (const did of ch.dungeons) {
-                const config = DUNGEON_CONFIG[did];
-                const cleared = rs.clearedDungeons.has(did);
-                const unlocked = rs.unlockedDungeons.has(did);
-                const level = this.getDungeonLevel(did);
-                const name = this.getDungeonDisplayName(did);
+        // 챕터 네비 — 도달한 챕터(1..cur)만 이동
+        const prev = view > 1
+            ? `<button class="mboard-nav" data-chnav="${view - 1}">‹</button>`
+            : `<span class="mboard-nav disabled">‹</span>`;
+        const next = view < cur
+            ? `<button class="mboard-nav" data-chnav="${view + 1}">›</button>`
+            : `<span class="mboard-nav disabled">›</span>`;
+        let html = `<div class="mboard-head">${prev}<span class="mboard-chtitle">Ch.${view} ${t('chapter.' + view)}</span>${next}</div>`;
 
-                let badge = '';
-                if (cleared) badge = '<span class="quest-card-badge cleared">CLEAR</span>';
-                else if (unlocked) badge = '<span class="quest-card-badge new">NEW</span>';
-                else badge = '<span class="quest-card-badge locked">LOCKED</span>';
+        // 일반 의뢰 — 해금/답파된 것만 (잠긴 미래는 숨김)
+        html += `<div class="mboard-cards">`;
+        const shown = normals.filter(d => rs.unlockedDungeons.has(d) || rs.clearedDungeons.has(d));
+        for (const did of shown) html += this._renderMissionCard(did, false);
+        if (normals.some(d => !rs.unlockedDungeons.has(d) && !rs.clearedDungeons.has(d))) {
+            html += `<div class="mboard-more">다음 의뢰는 답파 후 열립니다</div>`;
+        }
+        html += `</div>`;
 
-                const reward = cleared
-                    ? t('quest.reward_farming', { reward: config.repeatReward })
-                    : t('quest.reward_first', { reward: config.firstReward });
-
-                const cardClass = cleared ? 'quest-card cleared' : (unlocked ? 'quest-card' : 'quest-card locked');
-
-                html += `<div class="${cardClass}" data-dungeon="${did}" ${unlocked || cleared ? '' : 'style="opacity:0.4;pointer-events:none"'}>
-                    <div class="quest-card-header">
-                        <span class="quest-card-name">Lv.${level} ${name}</span>
-                        ${badge}
-                    </div>
-                    <div class="quest-card-info">${t('quest.cost_label', { cost: config.cost, size: this._getDungeonSize(did) })}</div>
-                    <div class="quest-card-reward">${reward}</div>
-                </div>`;
-            }
-            html += `</details>`;
+        // 보스 슬롯 — 일반 의뢰 모두 답파 시 해금
+        html += `<div class="mboard-boss-sep">보스</div>`;
+        const bossOpen = normals.every(d => rs.clearedDungeons.has(d));
+        if (rs.clearedDungeons.has(bossId) || (bossOpen && rs.unlockedDungeons.has(bossId))) {
+            html += this._renderMissionCard(bossId, true);
+        } else {
+            const lv = this.getDungeonLevel(bossId), bn = this.getDungeonDisplayName(bossId);
+            html += `<div class="mission-card boss locked">
+                <div class="mission-card-head"><span class="mission-card-name">🔒 Lv.${lv} ${bn}</span><span class="mission-badge boss">보스</span></div>
+                <div class="mission-card-sub">이 챕터 의뢰를 모두 답파하면 열립니다</div>
+            </div>`;
         }
 
         panel.innerHTML = html;
 
-        // Click handlers for quest cards
-        panel.querySelectorAll('.quest-card:not(.locked)').forEach(card => {
-            card.addEventListener('click', () => {
-                const did = card.dataset.dungeon;
-                if (did && (rs.unlockedDungeons.has(did) || rs.clearedDungeons.has(did))) {
-                    this._showGuildBriefing(did);
-                }
-            });
+        panel.querySelectorAll('[data-chnav]').forEach(b => b.addEventListener('click', () => {
+            this._questChapterView = parseInt(b.dataset.chnav, 10);
+            this._updateGuildQuests();
+        }));
+        panel.querySelectorAll('.mission-card[data-dungeon]').forEach(card => {
+            if (card.classList.contains('locked')) return;   // 잠김/파밍중은 클릭 불가
+            card.addEventListener('click', () => this._renderPrepRoom(card.dataset.dungeon));
         });
+    }
+
+    /** 미션 카드 1장 — NEW / CLEAR / 파밍중(잠김) 상태. isBoss=보스 태그. */
+    _renderMissionCard(did, isBoss) {
+        const rs = this.runState;
+        const config = DUNGEON_CONFIG[did] || {};
+        const lv = this.getDungeonLevel(did), name = this.getDungeonDisplayName(did);
+        const cleared = rs.clearedDungeons.has(did);
+        const farmer = this._dungeonFarmer(did);
+        const stars = this._dungeonStars(did);
+        const bossTag = isBoss ? '<span class="mission-badge boss">보스</span>' : '';
+        let cls = 'mission-card' + (isBoss ? ' boss' : ''), badge, meta, flavor = true;
+        if (farmer) {                                   // 세르파 파밍 점유 → 잠김
+            cls += ' cleared locked';
+            badge = '<span class="mission-badge farming">파밍중</span>';
+            meta = `🔒 ${this._charName(farmer)} · 답파율 100%`;
+            flavor = false;
+        } else if (cleared) {
+            cls += ' cleared';
+            badge = '<span class="mission-badge clear">CLEAR</span>';
+            meta = `파밍 보상 +${config.repeatReward}G`;
+        } else {
+            badge = '<span class="mission-badge new">NEW</span>';
+            meta = `보상 +${config.firstReward}G`;
+        }
+        return `<div class="${cls}" data-dungeon="${did}">
+            <div class="mission-card-head"><span class="mission-card-name">Lv.${lv} ${name}</span>${bossTag}${badge}</div>
+            <div class="mission-card-meta"><span class="mission-stars">${stars}</span><span>${meta}</span></div>
+            ${flavor ? `<div class="mission-card-flavor">"${this._dungeonFlavor(did)}"</div>` : ''}
+        </div>`;
+    }
+
+    /** 난이도 ★ 티어 (챕터 기반): ch≤2 ★☆☆ / ch≤4 ★★☆ / else ★★★. */
+    _dungeonStars(did) {
+        const ch = this.runState.getChapterForDungeon(did);
+        const n = ch <= 2 ? 1 : (ch <= 4 ? 2 : 3);
+        return '★'.repeat(n) + '☆'.repeat(3 - n);
+    }
+
+    /** 비유적·단편적 한 줄 힌트(무료 플레이버). 카피는 자리표시자 — config 플래그 기반. */
+    _dungeonFlavor(did) {
+        const c = DUNGEON_CONFIG[did] || {};
+        if (DUNGEON_TREASURES[did]) return '무언가 반짝이는 기운이 있다.';
+        if (c.useHpState) return '위험한 녀석이 도사린다.';
+        if (c.slippery) return '발밑이 미끄럽다.';
+        return '특별할 것 없어 보인다.';
+    }
+
+    /** 이 던전을 파밍 중인 세르파 키(없으면 null). */
+    _dungeonFarmer(did) {
+        const fa = this.runState.farmingAssignments || {};
+        for (const [char, d] of Object.entries(fa)) if (d === did) return char;
+        return null;
+    }
+
+    _charName(key) {
+        return (CHARACTERS[key] && CHARACTERS[key].name) || key;
     }
 
     _getDungeonSize(dungeonId) {
@@ -791,11 +863,100 @@ class Game {
         }
     }
 
-    _showGuildBriefing(dungeonId) {
-        // For now, load dungeon and switch to dev mode to play
-        // TODO: Full briefing screen in future phase
-        this.selectDungeon(dungeonId);
-        this.screenManager.show('screen-dev');
+    // ── 준비실 — 미션 카드 선택 시 같은 팝업 면에 렌더(모달/dev 화면 안 거침). ──────
+    // 정보줄(적응형) + 힌트(2단) + 출정 방식 + 식량/입장료 + 출발. 세르파·아이템 탭은 잠김.
+    // 출발 시에만 플레이 화면(screen-dev)으로 전환 → tryEnterDungeon. (briefing.onDeploy 선례)
+    _renderPrepRoom(dungeonId) {
+        const rs = this.runState;
+        const panel = document.getElementById('guild-tab-quest');
+        const titleEl = document.getElementById('guild-popup-title');
+        const config = DUNGEON_CONFIG[dungeonId] || { cost: 0, firstReward: 0, repeatReward: 0 };
+        const lv = this.getDungeonLevel(dungeonId), name = this.getDungeonDisplayName(dungeonId);
+        const cleared = rs.clearedDungeons.has(dungeonId);
+        const best = rs.answerPaths && rs.answerPaths[dungeonId] && rs.answerPaths[dungeonId].steps;
+        if (titleEl) titleEl.textContent = `준비실 — Lv.${lv} ${name}`;
+
+        // 정보줄(적응형): 미답파면 난이도만, 답파 후 최단보 채움. (지도%/도전횟수는 후속 데이터)
+        let info = `난이도 ${this._dungeonStars(dungeonId)}`;
+        info += cleared ? ` · 답파 완료${best ? ` · 최단 ${best}보` : ''}` : ` · 미답파`;
+        const reward = cleared ? `반복 +${config.repeatReward}G` : `첫 답파 +${config.firstReward}G`;
+
+        // 튜토리얼 최소형 — 탭/출정방식 토글/배낭/세르파 명단/상점은 숨김(해금 시 등장).
+        // 세르파 파견 시 이 면이 진행 모니터링 UI로, 답파 후엔 파밍 UI로 '변신' (후속). docs/MISSION_BOARD.md
+        panel.innerHTML = `
+            <div class="prep-room">
+                <canvas id="prep-minimap" class="prep-minimap"></canvas>
+                <div class="prep-info">${info}</div>
+                <div class="prep-flavor">"${this._dungeonFlavor(dungeonId)}"</div>
+                <div class="prep-rows">
+                    <div class="prep-row"><span>식량</span><span class="food-stepper">
+                        <button data-food="-10">−</button><b id="prep-food">${rs.food}</b><button data-food="10">+</button>
+                        <small>(1G/개)</small></span></div>
+                    <div class="prep-row"><span>입장료</span><span class="prep-gold">${config.cost}G</span></div>
+                    <div class="prep-row"><span>보유 골드</span><span class="prep-gold" id="prep-hold">${rs.gold}G</span></div>
+                    <div class="prep-row"><span>보상</span><span class="prep-reward">${reward}</span></div>
+                </div>
+                <div class="prep-actions">
+                    <button class="btn-prep-back">취소</button>
+                    <button class="btn-prep-deploy" ${rs.gold < (config.cost || 0) ? 'disabled' : ''}>출발 ▶</button>
+                </div>
+            </div>`;
+        this._renderPrepMinimap(document.getElementById('prep-minimap'), dungeonId);
+
+        const refresh = () => {
+            const f = document.getElementById('prep-food'), g = document.getElementById('prep-hold');
+            if (f) f.textContent = rs.food;
+            if (g) g.textContent = `${rs.gold}G`;
+            this._updateGuildResources();
+        };
+        panel.querySelectorAll('[data-food]').forEach(b => b.addEventListener('click', () => {
+            const d = parseInt(b.dataset.food, 10);
+            if (d > 0 && rs.gold >= d) { rs.gold -= d; rs.food += d; }          // 구매 (1G/개)
+            else if (d < 0 && rs.food >= -d) { rs.food += d; rs.gold -= d; }     // 환불 (출발 전)
+            refresh();
+        }));
+        panel.querySelector('.btn-prep-back').addEventListener('click', () => {
+            if (titleEl) titleEl.textContent = t('guild.tab.quest');
+            this._updateGuildQuests();                                          // 보드로 복귀
+        });
+        panel.querySelector('.btn-prep-deploy').addEventListener('click', () => {
+            const popup = document.getElementById('guild-popup');
+            if (popup) popup.hidden = true;
+            if (titleEl) titleEl.textContent = t('guild.tab.quest');
+            this.loadDungeon(dungeonId);
+            this.screenManager.show('screen-dev');                              // 출발 시에만 플레이 화면
+            this.tryEnterDungeon();
+            this.saveProgress();
+        });
+    }
+
+    /** 대기실 미니맵 — 단순 플랫셀(인게임 텍스처 필드와 다름). 첫 던전은 제공.
+     *  (밝혀진 만큼만/안개 반영은 후속 — 지금은 전체 렌더.) */
+    _renderPrepMinimap(canvas, dungeonId) {
+        if (!canvas) return;
+        let g;
+        try { g = loadDungeon(dungeonId); } catch { return; }
+        const maxDim = 168;
+        const cell = Math.max(2, Math.floor(maxDim / Math.max(g.width, g.height)));
+        const w = g.width * cell, h = g.height * cell;
+        canvas.width = w; canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+        ctx.fillStyle = '#0c0a08'; ctx.fillRect(0, 0, w, h);
+        for (let y = 0; y < g.height; y++) {
+            for (let x = 0; x < g.width; x++) {
+                const tile = g.getTile(x, y);
+                let color = '#1d1813';                                  // floor/empty
+                if (tile === TileType.WALL) color = '#3a352d';
+                else if (tile === TileType.GOAL) color = '#5a8f4e';
+                else if (tile === TileType.GOLD) color = '#e6b450';
+                else if (tile === TileType.MONSTER || tile === TileType.TRAP) color = '#a83a2f';
+                else if (tile === TileType.HEAL) color = '#3a8f7a';
+                else if (tile === TileType.START) color = '#5b8fc2';
+                ctx.fillStyle = color;
+                ctx.fillRect(x * cell, y * cell, cell, cell);
+            }
+        }
     }
 
     _showOpeningCard(onClose) {

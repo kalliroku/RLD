@@ -2948,6 +2948,14 @@ body.editor-mode .dpad-container {
     color: #e6b450;                       /* warm gold — replaces the red accent */
     text-shadow: 0 2px 6px rgba(0, 0, 0, 0.65);
 }
+/* signboard = 장소 정체성(간판) + 진행도(챕터·답파 수) 한 묶음 (HUD 안 A) */
+.guild-signboard { display: flex; flex-direction: column; gap: 2px; }
+.guild-chapter {
+    font-size: 0.82rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.3px;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+}
 .guild-topbar .guild-resources {
     display: flex;
     gap: 8px;
@@ -3125,7 +3133,7 @@ body.editor-mode .dpad-container {
     background: rgba(18, 15, 11, 0.98);
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
-.guild-popup-title { margin: 0; font-size: 1.15rem; color: #e6b450; }
+.guild-popup-title { margin: 0; font-size: 1.15rem; color: #e6b450; white-space: nowrap; }
 .guild-popup-close {
     background: none;
     border: none;
@@ -3137,6 +3145,22 @@ body.editor-mode .dpad-container {
 }
 .guild-popup-close:hover { color: #fff; background: rgba(255, 255, 255, 0.08); }
 .guild-popup-body { padding: 18px 20px; }
+
+/* 풀-페이지 변형 — 의뢰 보드/준비실은 중앙 모달이 아니라 화면 전체를 덮는 페이지.
+   콘텐츠는 가독성 위해 가운데 컬럼(max 640)으로 제한, 상단 바(제목+닫기)는 풀폭. */
+.guild-popup.is-fullpage { align-items: stretch; justify-content: stretch; }
+.guild-popup.is-fullpage .guild-popup-backdrop { background: rgba(8, 6, 4, 0.93); backdrop-filter: blur(5px); }
+.guild-popup.is-fullpage .guild-popup-window {
+    width: 100vw; height: 100vh; max-height: 100vh;
+    border: none; border-radius: 0; box-shadow: none; overflow: hidden;
+    background: rgba(14, 11, 8, 0.96);
+    display: flex; flex-direction: column;
+}
+.guild-popup.is-fullpage .guild-popup-body {
+    flex: 1; overflow-y: auto;
+    width: 100%; max-width: 640px; margin: 0 auto;
+    padding: 28px 20px 48px;
+}
 /* panels inside the popup drop their own chrome — the window provides it */
 .guild-popup-body .guild-tab-panel {
     background: none;
@@ -3160,6 +3184,97 @@ body.editor-mode .dpad-container {
 .quest-section-title:first-child {
     margin-top: 0;
 }
+
+/* 의뢰 패널 헤더 — 현재 챕터만 띄움(전 챕터 카탈로그 X) */
+.quest-chapter-head {
+    font-size: 1.0rem;
+    font-weight: 700;
+    color: #e6b450;
+    margin: 0 0 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid rgba(240, 192, 64, 0.25);
+}
+.quest-empty { color: var(--text-secondary); font-size: 0.9rem; padding: 8px 0; }
+
+/* ── 미션 보드 (의뢰 게시판) ─────────────────────────────────────────────── */
+.mboard-head {
+    display: flex; align-items: center; justify-content: space-between;
+    gap: 8px; margin-bottom: 12px;
+    padding-bottom: 8px; border-bottom: 1px solid rgba(240, 192, 64, 0.25);
+}
+.mboard-chtitle { font-size: 1.0rem; font-weight: 700; color: #e6b450; }
+.mboard-nav {
+    background: rgba(240, 192, 64, 0.12); border: 1px solid rgba(240, 192, 64, 0.4);
+    color: #e6b450; border-radius: 6px; width: 30px; height: 28px; cursor: pointer;
+    font-size: 1.1rem; line-height: 1;
+}
+.mboard-nav.disabled { opacity: 0.25; border-color: rgba(255,255,255,0.12); color: var(--text-secondary); cursor: default; }
+.mboard-cards { display: flex; flex-direction: column; gap: 10px; }
+.mboard-more { color: var(--text-secondary); font-size: 0.82rem; padding: 4px 2px; font-style: italic; }
+.mboard-boss-sep {
+    text-align: center; color: #c0392b; font-size: 0.8rem; letter-spacing: 2px;
+    margin: 14px 0 10px; position: relative;
+}
+.mboard-boss-sep::before, .mboard-boss-sep::after {
+    content: ''; position: absolute; top: 50%; width: 32%;
+    border-top: 1px solid rgba(192, 57, 43, 0.4);
+}
+.mboard-boss-sep::before { left: 0; } .mboard-boss-sep::after { right: 0; }
+
+.mission-card {
+    background: rgba(20, 16, 11, 0.85); border: 1px solid rgba(240, 192, 64, 0.28);
+    border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: border-color 0.15s, transform 0.1s;
+}
+.mission-card:hover:not(.locked) { border-color: #e6b450; transform: translateY(-1px); }
+.mission-card.cleared { opacity: 0.92; }
+.mission-card.locked { cursor: default; opacity: 0.55; border-style: dashed; }
+.mission-card.boss { border-color: rgba(192, 57, 43, 0.55); background: rgba(28, 14, 11, 0.85); }
+.mission-card-head { display: flex; align-items: center; gap: 8px; }
+.mission-card-name { font-weight: 700; color: var(--text-primary); flex: 1; }
+.mission-card-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 0.85rem; color: var(--text-secondary); }
+.mission-stars { color: #e6b450; letter-spacing: 1px; }
+.mission-card-flavor { margin-top: 6px; font-size: 0.82rem; color: var(--text-secondary); font-style: italic; }
+.mission-card-sub { margin-top: 6px; font-size: 0.8rem; color: var(--text-secondary); }
+.mission-badge { font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
+.mission-badge.new { background: #c0392b; color: #fff; }
+.mission-badge.clear { background: rgba(90, 143, 78, 0.85); color: #fff; }
+.mission-badge.farming { background: rgba(120, 120, 120, 0.5); color: #ddd; }
+.mission-badge.boss { background: #6b1f17; color: #f0c0a0; }
+
+/* ── 준비실 ───────────────────────────────────────────────────────────────── */
+.prep-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
+.prep-tab {
+    font-size: 0.85rem; padding: 6px 14px; border-radius: 6px 6px 0 0;
+    border: 1px solid rgba(240, 192, 64, 0.3); border-bottom: none; background: rgba(20, 16, 11, 0.6);
+    color: var(--text-secondary);
+}
+.prep-tab.active { background: rgba(240, 192, 64, 0.15); color: #e6b450; font-weight: 700; cursor: pointer; }
+.prep-tab.locked { opacity: 0.4; }
+.prep-minimap {
+    display: block; margin: 0 auto 14px; image-rendering: pixelated;
+    border: 1px solid rgba(240, 192, 64, 0.3); border-radius: 6px; background: #0c0a08;
+    max-width: 100%;
+}
+.prep-info { font-size: 0.85rem; color: var(--text-secondary); padding: 4px 0; }
+.prep-flavor { font-size: 0.85rem; font-style: italic; color: var(--text-primary); margin: 4px 0 12px; }
+.prep-hint-buy { font-style: normal; font-size: 0.75rem; color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
+.prep-mode-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.prep-mode { font-size: 0.82rem; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); color: var(--text-secondary); }
+.prep-mode.active { border-color: #e6b450; color: #e6b450; background: rgba(240, 192, 64, 0.1); }
+.prep-mode.locked { opacity: 0.4; }
+.prep-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.prep-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
+.prep-gold { color: #e6b450; font-weight: 700; }
+.prep-reward { color: #5a8f4e; font-weight: 700; }
+.food-stepper { display: flex; align-items: center; gap: 8px; }
+.food-stepper button { width: 26px; height: 26px; border-radius: 5px; border: 1px solid rgba(240,192,64,0.4); background: rgba(240,192,64,0.12); color: #e6b450; cursor: pointer; font-size: 1rem; line-height: 1; }
+.food-stepper b { min-width: 36px; text-align: center; color: var(--text-primary); }
+.food-stepper small { color: var(--text-secondary); }
+.prep-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.btn-prep-back, .btn-prep-deploy { padding: 9px 20px; border-radius: 7px; font-weight: 700; cursor: pointer; border: none; }
+.btn-prep-back { background: rgba(40, 50, 70, 0.9); color: #cdd6e6; }
+.btn-prep-deploy { background: #5a8f4e; color: #fff; }
+.btn-prep-deploy:disabled { opacity: 0.4; cursor: default; }
 
 .quest-card {
     background: rgba(255, 255, 255, 0.03);

@@ -73,7 +73,10 @@
         <button id="guild-map-hotspot"   class="guild-hotspot" data-popup="map"   aria-label="지도" hidden></button>
         <!-- Top bar: title (left) + resource boxes (right) -->
         <div class="guild-topbar">
-            <span class="guild-title">Serpa Guild</span>
+            <div class="guild-signboard">
+                <span class="guild-title">Serpa Guild</span>
+                <span class="guild-chapter" id="guild-chapter"></span>
+            </div>
             <div class="guild-resources">
                 <span class="guild-res guild-gold" id="guild-gold">800G</span>
                 <!-- 식량=라운드 자원(던전 출발 시 보충), HP=인-던전 상태, Run#=구조 미확정.
