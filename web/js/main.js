@@ -873,6 +873,8 @@ class Game {
         const config = DUNGEON_CONFIG[dungeonId] || { cost: 0, firstReward: 0, repeatReward: 0 };
         const lv = this.getDungeonLevel(dungeonId), name = this.getDungeonDisplayName(dungeonId);
         const cleared = rs.clearedDungeons.has(dungeonId);
+        // 입장료 차단은 tryEnterDungeon(라인 ~3140)과 동일 조건으로 — builtin 던전만 골드 가드(daily 등 면제 던전 오잠금 방지).
+        const cantAfford = () => this.isBuiltInDungeon(dungeonId) && rs.gold < (config.cost || 0);
         const best = rs.answerPaths && rs.answerPaths[dungeonId] && rs.answerPaths[dungeonId].steps;
         if (titleEl) titleEl.textContent = `준비실 — Lv.${lv} ${name}`;
 
@@ -898,7 +900,7 @@ class Game {
                 </div>
                 <div class="prep-actions">
                     <button class="btn-prep-back">취소</button>
-                    <button class="btn-prep-deploy" ${rs.gold < (config.cost || 0) ? 'disabled' : ''}>출발 ▶</button>
+                    <button class="btn-prep-deploy" ${cantAfford() ? 'disabled' : ''}>출발 ▶</button>
                 </div>
             </div>`;
         this._renderPrepMinimap(document.getElementById('prep-minimap'), dungeonId);
@@ -907,6 +909,8 @@ class Game {
             const f = document.getElementById('prep-food'), g = document.getElementById('prep-hold');
             if (f) f.textContent = rs.food;
             if (g) g.textContent = `${rs.gold}G`;
+            const deploy = panel.querySelector('.btn-prep-deploy');
+            if (deploy) deploy.disabled = cantAfford();   // 식량 구매로 골드<입장료 되면 출발 잠금(깨진 진입 방지)
             this._updateGuildResources();
         };
         panel.querySelectorAll('[data-food]').forEach(b => b.addEventListener('click', () => {
