@@ -737,7 +737,7 @@ class Game {
         const maxHp = rs.getMaxHp(this.currentCharacter);
         const hp = this.agent ? this.agent.hp : maxHp;
         document.getElementById('guild-hp').textContent = t('guild.hp_format', { cur: hp, max: maxHp });
-        // D-2026-06-02-18 / D-2026-06-04: 사망 4/4 표시 제거 (세르파 무한부활 — 사망 한도 폐기).
+        // D-2026-06-02-18: 사망 4/4 표시 제거 (세르파 무한부활 — 하드 사망 한도 폐기).
     }
 
     // ── 미션 보드 (의뢰 게시판) — 의뢰판 클릭 시 길드 팝업에 렌더 ──────────────
@@ -3666,7 +3666,8 @@ class Game {
             return;
         }
 
-        // D-2026-06-04: 세르파 무한부활 — 사망은 기록만, 캠페인 리스타트 없음.
+        // D-2026-06-02-18: 세르파 무한부활 1단계 — 사망은 기록만, 하드 한도 리스타트 없음
+        // (부활 G소모 / G=0 파산은 경제루프 재설계 후속).
         this.runState.recordDeath();
         // C-4: Treasure fail on game over
         if (this.carryingTreasure) {
@@ -3695,7 +3696,8 @@ class Game {
 
     startNewRun() {
         // Entry from game-over overlay AND from the guild menu "새 런" button.
-        // D-2026-06-04: 세르파 무한부활 — 사망 한도 리스타트 분기 폐기. 항상 일반 새 런.
+        // D-2026-06-02-18: 사망 한도 리스타트 분기 폐기 → 항상 일반 새 런. (현재는 새 런이
+        // 진행도 리셋 — "세르파 부활 시 진행 보존 / G=0 에서만 파산 리셋"은 G-경제 재설계 후속.)
         this.isGameOver = false;
         this.gameOverOverlay.style.display = 'none';
 

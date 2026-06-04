@@ -31,9 +31,9 @@ const STARTING_GOLD = 800;
 // HybridPlayer 의 buyFood 자동 구매 흐름 (캠페인 25.5/27 ± 2, D-2026-05-14-14) 보존.
 const STARTING_FOOD = 100;
 
-// D-2026-06-04: 세르파 무한부활 — 사망 누적 한도/캠페인 리스타트 폐기.
-// 오프닝 P5 "사망한 세르파를 부활시키는 아이템" 로어 정합. deathCount 는 엔딩 기록용
-// 누적 카운터로만 유지(NG+ 시 0). (구 B-203 cumulative death limit verdict supersede.)
+// D-2026-06-02-18: 세르파 무한부활 (구 B-203 누적 사망 4회 한도 supersede).
+// 1단계 — 하드 한도/리스타트 분기만 제거. deathCount 는 엔딩 기록용 카운터로만 유지(NG+ 시 0).
+// 후속(미구현): 부활 G 소모 / G=0 파산 엔딩 / 길드장 직접실패 리셋 — 경제루프 재설계 시 발란스 재측정.
 
 // B-3: Character base stats and upgrade costs
 const CHARACTER_STATS = {
