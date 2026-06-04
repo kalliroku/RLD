@@ -66,7 +66,6 @@ export const KO = {
     'guild.gold_format': '{n}G',
     'guild.food_format': '{n} Food',
     'guild.hp_format': 'HP {cur}/{max}',
-    'guild.deaths_format': '사망 {cur}/{max}',
     'guild.tab.quest': '의뢰',
     'guild.tab.party': '파티',
     'guild.tab.shop': '상점',
@@ -292,9 +291,7 @@ export const KO = {
     'hire.confirm': '{name} ({personality}) 를 {cost}G 에 고용할까요?',
     'hire.success': '{name} 고용 완료! -{cost}G',
 
-    // === Game-over / death-limit ===
-    'death_limit.toast': '누적 사망 {cur}/{max} — 다음 게임오버에서 캠페인 처음부터.',
-    'game_over.death_limit_suffix': ' — 누적 사망 한도 도달 ({cur}/{max}). 다음 런으로.',
+    // === Game-over ===
     'game_over.starvation': '식량이 다 떨어졌습니다. 던전에 갇혔습니다.',
 
     // === Food warning (F2 임계 경고) ===
@@ -602,7 +599,7 @@ export const KO = {
 
     'landing.quickstart.heading': '빠른 시작',
     'landing.quickstart.move': '방향키로 이동.',
-    'landing.quickstart.death': 'HP 0 = 사망. 누적 4 사망이면 캠페인 처음부터.',
+    'landing.quickstart.death': 'HP 0 = 사망. 쓰러진 세르파는 유산의 힘으로 다시 일어선다.',
     'landing.quickstart.modifier': '런 시작 시 상단 모디파이어 띠 확인 → 캐릭터 선택.',
     'landing.quickstart.qvalue': 'Q-value 히트맵 색 = 학습한 위치 가치 (밝을수록 높음).',
     'landing.quickstart.daily': 'Daily 탭 = 모든 플레이어 동일 시드. 어제 기록과 자기 비교.',

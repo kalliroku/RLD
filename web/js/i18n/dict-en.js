@@ -55,7 +55,6 @@ export const EN = {
     'guild.gold_format': '{n}G',
     'guild.food_format': '{n} Food',
     'guild.hp_format': 'HP {cur}/{max}',
-    'guild.deaths_format': 'Deaths {cur}/{max}',
     'guild.tab.quest': 'Quest',
     'guild.tab.party': 'Party',
     'guild.tab.shop': 'Shop',
@@ -281,9 +280,7 @@ export const EN = {
     'hire.confirm': 'Hire {name} ({personality}) for {cost}G?',
     'hire.success': 'Hired {name}! -{cost}G',
 
-    // === Game-over / death-limit ===
-    'death_limit.toast': 'Deaths {cur}/{max} — next death resets the campaign.',
-    'game_over.death_limit_suffix': ' — Death limit reached ({cur}/{max}). Next run.',
+    // === Game-over ===
     'game_over.starvation': 'Food depleted. Stranded in the dungeon.',
 
     // === Food warning (F2 threshold alert) ===
@@ -575,7 +572,7 @@ export const EN = {
 
     'landing.quickstart.heading': 'Quick Start',
     'landing.quickstart.move': 'Move with the arrow keys.',
-    'landing.quickstart.death': 'HP 0 = death. 4 cumulative deaths restart the campaign.',
+    'landing.quickstart.death': 'HP 0 = death. Fallen Sherpas are revived by the legacy.',
     'landing.quickstart.modifier': 'Check the modifier band at run start → pick your character.',
     'landing.quickstart.qvalue': 'Q-value heatmap color = learned value at that tile (brighter is higher).',
     'landing.quickstart.daily': 'The Daily tab uses one shared seed for all players. Compare against your own previous run.',

@@ -12,7 +12,7 @@ import { sound } from './game/sound.js';
 import { music, MusicManager } from './game/music.js';
 import { DungeonEditor } from './game/editor.js';
 import { MultiStageGrid } from './game/multi-stage-grid.js';
-import { RunState, CHARACTER_STATS, CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS, HIRE_COSTS, DEATH_LIMIT } from './game/run-state.js';
+import { RunState, CHARACTER_STATS, CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS, HIRE_COSTS } from './game/run-state.js';
 import { CHARACTERS, DUNGEON_CONFIG, DUNGEON_ORDER, BASE_OP_COST, DUNGEON_HINTS,
          MAX_EPISODES, CONVERGENCE_WINDOW, CONVERGENCE_THRESHOLD,
          createAlgorithm as createAlgorithmFromConfig } from './game/game-config.js';
@@ -737,7 +737,7 @@ class Game {
         const maxHp = rs.getMaxHp(this.currentCharacter);
         const hp = this.agent ? this.agent.hp : maxHp;
         document.getElementById('guild-hp').textContent = t('guild.hp_format', { cur: hp, max: maxHp });
-        // D-2026-06-02-18: 사망 4/4 표시 제거 (세르파 무한부활 — DEATH_LIMIT 재설계 대기).
+        // D-2026-06-02-18 / D-2026-06-04: 사망 4/4 표시 제거 (세르파 무한부활 — 사망 한도 폐기).
     }
 
     // ── 미션 보드 (의뢰 게시판) — 의뢰판 클릭 시 길드 팝업에 렌더 ──────────────
@@ -2645,17 +2645,6 @@ class Game {
             btn.setAttribute('title', `${def.algo} — ${def.desc}`);
         });
 
-        // B-206: one-shot toast if existing save already has deathCount >= LIMIT
-        // (B-203 introduced the limit retroactively — surface it once on first load).
-        const DEATH_NOTIFIED_KEY = 'rld_death_limit_notified';
-        try {
-            if (this.runState.deathCount >= DEATH_LIMIT && localStorage.getItem(DEATH_NOTIFIED_KEY) !== '1') {
-                if (this.toast) {
-                    this.toast.show(t('death_limit.toast', { cur: this.runState.deathCount, max: DEATH_LIMIT }), 'warning');
-                }
-                localStorage.setItem(DEATH_NOTIFIED_KEY, '1');
-            }
-        } catch (e) { /* localStorage unavailable */ }
 
         // M5 i18n: 언어 토글 — ko ↔ en. label 은 *다음 언어* 표시.
         const langToggle = document.getElementById('lang-toggle');
@@ -3677,9 +3666,8 @@ class Game {
             return;
         }
 
-        // B-203: cumulative death limit (D-4 verdict — tension mechanism).
-        // recordDeath returns true once deathCount ≥ DEATH_LIMIT.
-        const reachedDeathLimit = this.runState.recordDeath();
+        // D-2026-06-04: 세르파 무한부활 — 사망은 기록만, 캠페인 리스타트 없음.
+        this.runState.recordDeath();
         // C-4: Treasure fail on game over
         if (this.carryingTreasure) {
             this.runState.failTreasure(this.currentDungeon);
@@ -3687,21 +3675,17 @@ class Game {
         }
         this.isGameOver = true;
         this.done = true;
-        this.deathLimitReached = reachedDeathLimit;
 
         // Save meta (totalSteps) before showing overlay
         this.runState.saveMeta();
 
         // Show overlay
-        const deathLine = reachedDeathLimit
-            ? t('game_over.death_limit_suffix', { cur: this.runState.deathCount, max: DEATH_LIMIT })
-            : '';
-        this.gameOverCause.textContent = cause + deathLine;
+        this.gameOverCause.textContent = cause;
         this.gameOverStats.innerHTML = [
             `Run #${this.runState.runNumber}`,
             `Gold: ${this.runState.gold}G`,
             `Cleared: ${this.runState.clearedDungeons.size} dungeons`,
-            `Deaths: ${this.runState.deathCount}/${DEATH_LIMIT}`,
+            `Deaths: ${this.runState.deathCount}`,
             `Steps this run: ${this.steps}`
         ].join('<br>');
 
@@ -3711,18 +3695,11 @@ class Game {
 
     startNewRun() {
         // Entry from game-over overlay AND from the guild menu "새 런" button.
-        // deathLimitReached is only true when triggered by game-over after limit hit;
-        // manual guild "새 런" always takes the normal startNewRun branch below.
+        // D-2026-06-04: 세르파 무한부활 — 사망 한도 리스타트 분기 폐기. 항상 일반 새 런.
         this.isGameOver = false;
         this.gameOverOverlay.style.display = 'none';
 
-        // B-203: death-limit branch — fresh playthrough instead of incremented run.
-        if (this.deathLimitReached) {
-            this.runState.resetForDeathLimit();
-            this.deathLimitReached = false;
-        } else {
-            this.runState.startNewRun();
-        }
+        this.runState.startNewRun();
         this.updateCharacterGrid();
         this.updateDungeonSelect();
         this.loadCustomDungeonOptions();

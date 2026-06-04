@@ -31,9 +31,9 @@ const STARTING_GOLD = 800;
 // HybridPlayer 의 buyFood 자동 구매 흐름 (캠페인 25.5/27 ± 2, D-2026-05-14-14) 보존.
 const STARTING_FOOD = 100;
 
-// B-203: cumulative death limit per playthrough (D-4 verdict — Q-table noise
-// rejected, this is the chosen tension mechanism). NG+ resets to 0.
-export const DEATH_LIMIT = 4;
+// D-2026-06-04: 세르파 무한부활 — 사망 누적 한도/캠페인 리스타트 폐기.
+// 오프닝 P5 "사망한 세르파를 부활시키는 아이템" 로어 정합. deathCount 는 엔딩 기록용
+// 누적 카운터로만 유지(NG+ 시 0). (구 B-203 cumulative death limit verdict supersede.)
 
 // B-3: Character base stats and upgrade costs
 const CHARACTER_STATS = {
@@ -546,9 +546,8 @@ export class RunState {
     // ========== Record tracking (§10.1) ==========
 
     recordDeath() {
-        this.deathCount++;
+        this.deathCount++;   // 엔딩 기록용 누적 카운터 (무한부활 — 캠페인 리스타트 트리거 아님)
         this.saveMeta();
-        return this.deathCount >= DEATH_LIMIT;  // B-203: caller branches on this
     }
 
     recordSerpaClear(charName) {
@@ -636,32 +635,6 @@ export class RunState {
         this.unlockedDungeons = new Set(['level_01_easy']);
 
         // Reset per-run economy state
-        this.answerPaths = {};
-        this.characterLevels = {};
-        this.farmingAssignments = {};
-        this.mapStatus = {};
-        this.purchasedHints = {};
-        this.treasureStatus = {};
-        this.inventory = {};
-
-        this.saveMeta();
-        this.saveRunState();
-    }
-
-    // B-203: cumulative death limit reached — fresh playthrough.
-    // Distinct from startNewGamePlus (no best-record update, no ngPlusCount++).
-    resetForDeathLimit() {
-        this.runNumber = 1;
-        this.totalSteps = 0;
-        this.deathCount = 0;
-        this.serpaClearCounts = {};
-        this.totalFarmingSteps = 0;
-
-        this.gold = STARTING_GOLD;
-        this.food = STARTING_FOOD;
-        this.hiredCharacters = new Set();
-        this.clearedDungeons = new Set();
-        this.unlockedDungeons = new Set(['level_01_easy']);
         this.answerPaths = {};
         this.characterLevels = {};
         this.farmingAssignments = {};
