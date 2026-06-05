@@ -25,7 +25,7 @@ import { generateDungeon } from './game/dungeon-generator.js';
 import { DailyHistory, getDailyChallenge, yesterdayKey } from './game/daily-mode.js';
 import { utcDateKey } from './game/rng.js';
 import { ModifierSet, MODIFIERS } from './game/modifiers.js';
-import { t, initI18n, setLang, getLang, onLangChange } from './i18n/index.js';
+import { t, tHtml, initI18n, setLang, getLang, onLangChange } from './i18n/index.js';
 import { renderTitleArt } from './game/title-art.js';
 import { OpeningManager } from './game/opening.js';
 import { drawGuildHall, drawCharacter, drawRepliPortrait, drawRikaPortrait, drawRepliBackground, drawWallMap, drawShopStall, GUILD_OBJECTS } from './game/opening-art.js';
@@ -39,23 +39,25 @@ const GUILD_ONBOARD_KEY = 'rld_guild_onboarded';
 // 온보딩 비트. side='npc'|'master' (목소리 진영), mode='speak'(기본)|'inner'(속마음).
 // who=무대 전면에 세울 NPC. {master}=주인공 이름(현재 '마스터' 자리표시자).
 // ※ 카피는 자리표시자 — 톤/문구는 검수 후 조정. (CTA 클릭까지만이 이번 스코프)
+// 카피는 i18n dict 로 이관(onboard.*) — speakerKey/textKey 는 _renderGuildBeat 에서 t() 평가.
+// {master} 토큰은 t() 결과에 남아 _fmtGuildText 가 '마스터'(guild.master_name)로 치환.
 const GUILD_ONBOARD_BEATS = [
     // 레플리 등장 (무대 중앙·전면)
-    { side: 'npc', who: 'repli', speaker: '레플리', text: '{master}, 일어나셨군요. 좋은 점심입니다.' },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'onboard.b1' },
     // 떡밥 — 주인공 속마음(불안/의문). 무대의 레플리는 딤+뒤로.
-    { side: 'master', mode: 'inner', text: '…왜 하필 나한테 이 자리가 떨어진 걸까.' },
+    { side: 'master', mode: 'inner', textKey: 'onboard.b2' },
     // 레플리 G 설명 (전면) — 식량/HP는 길드에서 숨겼으니 G만 짚는다.
-    { side: 'npc', who: 'repli', speaker: '레플리', text: '첫 출근이시니 딱 하나만 일러둘게요. 이게 길드 자금, G예요.', highlight: 'gold' },
-    { side: 'npc', who: 'repli', speaker: '레플리', text: '던전에 들 땐 이 G로 식량을 채워 출발해요. 도중에 떨어지면… 상상도 하기 싫네요.', highlight: 'gold' },
-    { side: 'npc', who: 'repli', speaker: '레플리', text: '대신 던전을 답파하면 큰 돈이 들어와요. 넉넉해지면 좋은 것들도 들일 수 있고요.', highlight: 'gold' },
-    { side: 'npc', who: 'repli', speaker: '레플리', text: '그러니 바닥내지 말고… 우리 같이 이 길드를 키워봐요!', highlight: 'gold' },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'onboard.b3', highlight: 'gold' },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'onboard.b4', highlight: 'gold' },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'onboard.b5', highlight: 'gold' },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'onboard.b6', highlight: 'gold' },
     // 주인공 속마음(시니컬) — 레플리 딤+뒤로.
-    { side: 'master', mode: 'inner', text: "'같이'라니. 떠맡은 건 난데 말이지." },
+    { side: 'master', mode: 'inner', textKey: 'onboard.b7' },
     // 리카 등장 (무대 우측·전면) / 레플리 딤+뒤로.
-    { side: 'npc', who: 'rika', speaker: '리카', text: '{master}! 마침 잘 계셨어요. 모험가 길드에서 의뢰가 내려왔어요.' },
-    { side: 'npc', who: 'rika', speaker: '리카', text: '첫 의뢰예요. 방금 게시판에 붙여 뒀어요!', reveal: 'quest' },
+    { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'onboard.b8' },
+    { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'onboard.b9', reveal: 'quest' },
     // 레플리 마무리 CTA (전면) / 리카 딤+뒤로 → 끝나면 종이 클릭 가능.
-    { side: 'npc', who: 'repli', speaker: '레플리', text: '저기 의뢰서, 한번 확인해 보죠.', cta: 'quest' },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'onboard.b10', cta: 'quest' },
 ];
 
 const PRESET_MULTI_DUNGEONS = {
@@ -557,7 +559,7 @@ class Game {
             dlg.classList.toggle('is-inner', inner);
         }
         // 주인공 비트엔 주인공 이름('마스터')을 NPC처럼 표기(속마음도 노출 — 이탤릭으로 구분).
-        const speaker = beat.side === 'master' ? this._fmtGuildText('{master}') : (beat.speaker || '');
+        const speaker = beat.side === 'master' ? this._fmtGuildText('{master}') : (beat.speakerKey ? t(beat.speakerKey) : '');
         this._typeGuildDialogue(speaker, this._guildDisplayText(beat));
         if (dlg) dlg.classList.add('show');
     }
@@ -593,14 +595,14 @@ class Game {
         if (m) m.hidden = !show;
     }
 
-    /** {master} → 주인공 이름(현재 '마스터' 자리표시자, 나중에 인풋으로 교체 가능). */
+    /** {master} → 주인공 이름(현재 guild.master_name='마스터', 나중에 인풋으로 교체 가능). */
     _fmtGuildText(text) {
-        return (text || '').replace(/\{master\}/g, this._masterName || '마스터');
+        return (text || '').replace(/\{master\}/g, this._masterName || t('guild.master_name'));
     }
 
-    /** 비트의 최종 표시 텍스트: {master} 치환 + 속마음이면 괄호로 감싼다(보편 컨벤션). */
+    /** 비트의 최종 표시 텍스트: 키→t() + {master} 치환 + 속마음이면 괄호로 감싼다(보편 컨벤션). */
     _guildDisplayText(beat) {
-        const s = this._fmtGuildText(beat.text);
+        const s = this._fmtGuildText(t(beat.textKey));
         return beat.mode === 'inner' ? `(${s})` : s;
     }
 
@@ -728,7 +730,7 @@ class Game {
         const chEl = document.getElementById('guild-chapter');
         if (chEl) {
             const ch = rs.getCurrentChapter();
-            chEl.textContent = `Ch.${ch} ${t('chapter.' + ch)} · ${rs.clearedDungeons.size} 답파`;
+            chEl.textContent = t('guild.signboard', { ch, name: t('chapter.' + ch), k: rs.clearedDungeons.size });
         }
         document.getElementById('guild-run').textContent = t('guild.run_format', { n: rs.runNumber });
         document.getElementById('guild-gold').textContent = t('guild.gold_format', { n: rs.gold });
@@ -768,20 +770,20 @@ class Game {
         const shown = normals.filter(d => rs.unlockedDungeons.has(d) || rs.clearedDungeons.has(d));
         for (const did of shown) html += this._renderMissionCard(did, false);
         if (normals.some(d => !rs.unlockedDungeons.has(d) && !rs.clearedDungeons.has(d))) {
-            html += `<div class="mboard-more">다음 의뢰는 답파 후 열립니다</div>`;
+            html += `<div class="mboard-more">${t('mission.board.more')}</div>`;
         }
         html += `</div>`;
 
         // 보스 슬롯 — 일반 의뢰 모두 답파 시 해금
-        html += `<div class="mboard-boss-sep">보스</div>`;
+        html += `<div class="mboard-boss-sep">${t('mission.boss_sep')}</div>`;
         const bossOpen = normals.every(d => rs.clearedDungeons.has(d));
         if (rs.clearedDungeons.has(bossId) || (bossOpen && rs.unlockedDungeons.has(bossId))) {
             html += this._renderMissionCard(bossId, true);
         } else {
             const lv = this.getDungeonLevel(bossId), bn = this.getDungeonDisplayName(bossId);
             html += `<div class="mission-card boss locked">
-                <div class="mission-card-head"><span class="mission-card-name">🔒 Lv.${lv} ${bn}</span><span class="mission-badge boss">보스</span></div>
-                <div class="mission-card-sub">이 챕터 의뢰를 모두 답파하면 열립니다</div>
+                <div class="mission-card-head"><span class="mission-card-name">🔒 Lv.${lv} ${bn}</span><span class="mission-badge boss">${t('mission.badge.boss')}</span></div>
+                <div class="mission-card-sub">${t('mission.board.boss_locked')}</div>
             </div>`;
         }
 
@@ -805,20 +807,20 @@ class Game {
         const cleared = rs.clearedDungeons.has(did);
         const farmer = this._dungeonFarmer(did);
         const stars = this._dungeonStars(did);
-        const bossTag = isBoss ? '<span class="mission-badge boss">보스</span>' : '';
+        const bossTag = isBoss ? `<span class="mission-badge boss">${t('mission.badge.boss')}</span>` : '';
         let cls = 'mission-card' + (isBoss ? ' boss' : ''), badge, meta, flavor = true;
         if (farmer) {                                   // 세르파 파밍 점유 → 잠김
             cls += ' cleared locked';
-            badge = '<span class="mission-badge farming">파밍중</span>';
-            meta = `🔒 ${this._charName(farmer)} · 답파율 100%`;
+            badge = `<span class="mission-badge farming">${t('mission.badge.farming')}</span>`;
+            meta = tHtml('mission.farming_lock', { name: this._charName(farmer) });   // innerHTML 경로 — 값 escape
             flavor = false;
         } else if (cleared) {
             cls += ' cleared';
-            badge = '<span class="mission-badge clear">CLEAR</span>';
-            meta = `파밍 보상 +${config.repeatReward}G`;
+            badge = `<span class="mission-badge clear">${t('mission.badge.clear')}</span>`;
+            meta = t('mission.reward.farm', { n: config.repeatReward });
         } else {
-            badge = '<span class="mission-badge new">NEW</span>';
-            meta = `보상 +${config.firstReward}G`;
+            badge = `<span class="mission-badge new">${t('mission.badge.new')}</span>`;
+            meta = t('mission.reward.first', { n: config.firstReward });
         }
         return `<div class="${cls}" data-dungeon="${did}">
             <div class="mission-card-head"><span class="mission-card-name">Lv.${lv} ${name}</span>${bossTag}${badge}</div>
@@ -834,13 +836,33 @@ class Game {
         return '★'.repeat(n) + '☆'.repeat(3 - n);
     }
 
-    /** 비유적·단편적 한 줄 힌트(무료 플레이버). 카피는 자리표시자 — config 플래그 기반. */
+    /** 비유적·단편적 한 줄 힌트(무료 플레이버). 카피는 자리표시자(flavor.*) — 톤 검수 후 조정.
+     *  우선순위: 게임플레이 플래그(보물/적/빙판) → 테마(ID 키워드) → 기본.
+     *  플래그가 테마보다 우선 — 보물/적/빙판은 실제 메커닉 경고라 더 유용. */
     _dungeonFlavor(did) {
+        return t(this._dungeonFlavorKey(did));
+    }
+
+    _dungeonFlavorKey(did) {
         const c = DUNGEON_CONFIG[did] || {};
-        if (DUNGEON_TREASURES[did]) return '무언가 반짝이는 기운이 있다.';
-        if (c.useHpState) return '위험한 녀석이 도사린다.';
-        if (c.slippery) return '발밑이 미끄럽다.';
-        return '특별할 것 없어 보인다.';
+        // 1) 위험 플래그 우선 (이동/생존 메커닉 경고 — 보물 힌트보다 유용. 예: 빙판+보물이면 빙판 경고)
+        if (c.useHpState) return 'flavor.enemy';
+        if (c.slippery) return 'flavor.ice';
+        if (DUNGEON_TREASURES[did]) return 'flavor.treasure';
+        // 2) 테마 (던전 ID 키워드) — 플래그 없는 던전의 분위기
+        if (did.includes('trap')) return 'flavor.trap';
+        if (did.includes('pit')) return 'flavor.pit';
+        if (did.includes('cliff')) return 'flavor.cliff';
+        if (did.includes('bridge')) return 'flavor.bridge';
+        if (did.includes('cave')) return 'flavor.cave';
+        if (did.includes('dead_end')) return 'flavor.dead_end';
+        if (did.includes('paths')) return 'flavor.paths';
+        if (did.includes('field')) return 'flavor.field';
+        if (did.includes('hall')) return 'flavor.hall';
+        if (did.includes('gauntlet')) return 'flavor.gauntlet';
+        if (did.includes('maze')) return 'flavor.maze';
+        if (did.includes('risk') || did.includes('deadly')) return 'flavor.danger';
+        return 'flavor.default';
     }
 
     /** 이 던전을 파밍 중인 세르파 키(없으면 null). */
@@ -876,12 +898,14 @@ class Game {
         // 입장료 차단은 tryEnterDungeon(라인 ~3140)과 동일 조건으로 — builtin 던전만 골드 가드(daily 등 면제 던전 오잠금 방지).
         const cantAfford = () => this.isBuiltInDungeon(dungeonId) && rs.gold < (config.cost || 0);
         const best = rs.answerPaths && rs.answerPaths[dungeonId] && rs.answerPaths[dungeonId].steps;
-        if (titleEl) titleEl.textContent = `준비실 — Lv.${lv} ${name}`;
+        if (titleEl) titleEl.textContent = t('prep.title', { lv, name });
 
         // 정보줄(적응형): 미답파면 난이도만, 답파 후 최단보 채움. (지도%/도전횟수는 후속 데이터)
-        let info = `난이도 ${this._dungeonStars(dungeonId)}`;
-        info += cleared ? ` · 답파 완료${best ? ` · 최단 ${best}보` : ''}` : ` · 미답파`;
-        const reward = cleared ? `반복 +${config.repeatReward}G` : `첫 답파 +${config.firstReward}G`;
+        const parts = [t('prep.difficulty', { stars: this._dungeonStars(dungeonId) })];
+        if (cleared) { parts.push(t('prep.cleared')); if (best) parts.push(t('prep.best', { n: best })); }
+        else parts.push(t('prep.uncleared'));
+        const info = parts.join(' · ');
+        const reward = cleared ? t('prep.reward.repeat', { n: config.repeatReward }) : t('prep.reward.first', { n: config.firstReward });
 
         // 튜토리얼 최소형 — 탭/출정방식 토글/배낭/세르파 명단/상점은 숨김(해금 시 등장).
         // 세르파 파견 시 이 면이 진행 모니터링 UI로, 답파 후엔 파밍 UI로 '변신' (후속). docs/MISSION_BOARD.md
@@ -891,16 +915,16 @@ class Game {
                 <div class="prep-info">${info}</div>
                 <div class="prep-flavor">"${this._dungeonFlavor(dungeonId)}"</div>
                 <div class="prep-rows">
-                    <div class="prep-row"><span>식량</span><span class="food-stepper">
+                    <div class="prep-row"><span>${t('prep.label.food')}</span><span class="food-stepper">
                         <button data-food="-10">−</button><b id="prep-food">${rs.food}</b><button data-food="10">+</button>
-                        <small>(1G/개)</small></span></div>
-                    <div class="prep-row"><span>입장료</span><span class="prep-gold">${config.cost}G</span></div>
-                    <div class="prep-row"><span>보유 골드</span><span class="prep-gold" id="prep-hold">${rs.gold}G</span></div>
-                    <div class="prep-row"><span>보상</span><span class="prep-reward">${reward}</span></div>
+                        <small>${t('prep.food_unit')}</small></span></div>
+                    <div class="prep-row"><span>${t('prep.label.cost')}</span><span class="prep-gold">${config.cost}G</span></div>
+                    <div class="prep-row"><span>${t('prep.label.gold')}</span><span class="prep-gold" id="prep-hold">${rs.gold}G</span></div>
+                    <div class="prep-row"><span>${t('prep.label.reward')}</span><span class="prep-reward">${reward}</span></div>
                 </div>
                 <div class="prep-actions">
-                    <button class="btn-prep-back">취소</button>
-                    <button class="btn-prep-deploy" ${cantAfford() ? 'disabled' : ''}>출발 ▶</button>
+                    <button class="btn-prep-back">${t('prep.cancel')}</button>
+                    <button class="btn-prep-deploy" ${cantAfford() ? 'disabled' : ''}>${t('prep.deploy')}</button>
                 </div>
             </div>`;
         this._renderPrepMinimap(document.getElementById('prep-minimap'), dungeonId);
