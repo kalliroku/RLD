@@ -119,6 +119,9 @@ export const EN = {
     'farm.collect_empty': 'Nothing yet',
     'farm.unassign': 'Recall',
 
+    // === Clean play screen ===
+    'play.exit': 'Exit',
+
     // === Dungeon flavor (by theme — placeholder, pending tone review) ===
     'flavor.treasure': 'Something glimmers within.',
     'flavor.enemy': 'Something dangerous lurks here.',

@@ -261,6 +261,16 @@ class Game {
         this.screenManager = new ScreenManager();
         this.setupScreens();
 
+        // 클린 플레이 화면 ↔ dev 워크벤치는 game-area(캔버스+오버레이+HUD) 단일 서브트리를 공유.
+        // 화면 진입 시 active 화면 slot 으로 노드째 이동 → 캔버스 객체·ctx·렌더러·오버레이 참조 보존(재바인딩 0).
+        this._gameArea = document.querySelector('.game-area');
+        this._devGameSlot = document.getElementById('dev-game-slot');
+        this._playSlot = document.getElementById('play-slot');
+        this.screenManager.onTransition((screenId) => {
+            if (screenId === 'screen-play') this._relocateGameArea('play');
+            else if (screenId === 'screen-dev') this._relocateGameArea('dev');
+        });
+
         this.setupEventListeners();
         this.setupModeTabs();
         this.setupEditor();
@@ -289,6 +299,14 @@ class Game {
     }
 
     // ========== Screen System ==========
+
+    /** game-area 서브트리를 target('play'|'dev') slot 으로 이동. 같은 노드 이동이라 멱등 + 재바인딩 0. */
+    _relocateGameArea(target) {
+        const slot = target === 'play' ? this._playSlot : this._devGameSlot;
+        if (!slot || !this._gameArea) return;
+        if (this._gameArea.parentElement === slot) return;   // 이미 제자리 — no-op
+        slot.appendChild(this._gameArea);
+    }
 
     setupScreens() {
         // Title art (procedural pixel illustration, palette A)
@@ -341,6 +359,18 @@ class Game {
 
         // Dev mode back button
         document.getElementById('btn-back-to-game').addEventListener('click', () => {
+            this.screenManager.show('screen-guild');
+            this.updateGuildHall();
+        });
+
+        // 클린 플레이 화면 나가기 → 길드 복귀 (dev 워크벤치 거치지 않음)
+        const playExitBtn = document.getElementById('btn-play-exit');
+        if (playExitBtn) playExitBtn.addEventListener('click', () => {
+            // 게임오버 오버레이가 뜬 채 나가면 재출발 시 stale 잔존 → 여기서 정리
+            if (this.isGameOver) {
+                this.isGameOver = false;
+                if (this.gameOverOverlay) this.gameOverOverlay.style.display = 'none';
+            }
             this.screenManager.show('screen-guild');
             this.updateGuildHall();
         });
@@ -888,7 +918,7 @@ class Game {
 
     // ── 준비실 — 미션 카드 선택 시 같은 팝업 면에 렌더(모달/dev 화면 안 거침). ──────
     // 정보줄(적응형) + 힌트(2단) + 출정 방식 + 식량/입장료 + 출발. 세르파·아이템 탭은 잠김.
-    // 출발 시에만 플레이 화면(screen-dev)으로 전환 → tryEnterDungeon. (briefing.onDeploy 선례)
+    // 출발 시에만 클린 플레이 화면(screen-play)으로 전환 → tryEnterDungeon. (briefing.onDeploy 선례)
     _renderPrepRoom(dungeonId) {
         const rs = this.runState;
         this._clearFarmTick();                          // 면 전환 시 이전 파밍 틱 정지
@@ -956,7 +986,7 @@ class Game {
             if (popup) popup.hidden = true;
             if (titleEl) titleEl.textContent = t('guild.tab.quest');
             this.loadDungeon(dungeonId);
-            this.screenManager.show('screen-dev');                              // 출발 시에만 플레이 화면
+            this.screenManager.show('screen-play');                             // 출발 → 클린 플레이 화면(dev 워크벤치 X)
             this.tryEnterDungeon();
             this.saveProgress();
         });
@@ -2944,11 +2974,19 @@ class Game {
         this.startTrainBtn.addEventListener('click', () => this.startTraining());
         this.stopTrainBtn.addEventListener('click', () => this.stopTraining());
 
-        // New Run button
-        document.getElementById('btn-new-run').addEventListener('click', () => this.startNewRun());
+        // New Run button — 게임오버(식량 소진) 후 길드로 복귀해 새 런 시작 (온보딩은 게이트로 재생 X)
+        document.getElementById('btn-new-run').addEventListener('click', () => {
+            this.startNewRun();
+            this.screenManager.show('screen-guild');
+            this.updateGuildHall();
+        });
 
-        // C-3: New Game+ button
-        document.getElementById('btn-new-game-plus').addEventListener('click', () => this.startNewGamePlus());
+        // C-3: New Game+ button — 엔딩 후 길드로 복귀
+        document.getElementById('btn-new-game-plus').addEventListener('click', () => {
+            this.startNewGamePlus();
+            this.screenManager.show('screen-guild');
+            this.updateGuildHall();
+        });
 
         // C-5: Item shop buttons
         document.querySelectorAll('.btn-buy-item').forEach(btn => {

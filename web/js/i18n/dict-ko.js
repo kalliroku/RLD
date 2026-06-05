@@ -130,6 +130,9 @@ export const KO = {
     'farm.collect_empty': '아직 쌓이지 않음',
     'farm.unassign': '배치 해제',
 
+    // === 클린 플레이 화면 ===
+    'play.exit': '나가기',
+
     // === 던전 플레이버 (테마별 — 자리표시자, 톤 검수 후 조정) ===
     'flavor.treasure': '무언가 반짝이는 기운이 있다.',
     'flavor.enemy': '위험한 녀석이 도사린다.',

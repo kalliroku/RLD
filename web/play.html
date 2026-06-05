@@ -138,6 +138,7 @@
         </nav>
 
         <main>
+            <div id="dev-game-slot"><!-- game-area 의 dev 거주지 — screen-play 와 공유, JS 가 이동 -->
             <div class="game-area">
                 <div class="toast-container" id="toast-container"></div>
 
@@ -165,7 +166,7 @@
                             <!-- game-over-cause / game-over-stats: JS 가 t() 로 동적 채움 -->
                             <div class="game-over-cause" id="game-over-cause"></div>
                             <div class="game-over-stats" id="game-over-stats"></div>
-                            <div class="game-over-note" data-i18n="overlay.game_over.note">Q-table is preserved. Your serpas remember everything.</div>
+                            <div class="game-over-note" data-i18n="overlay.game_over.note">The Sherpa's memory persists. The next attempt will reach further.</div>
                         </div>
                         <button class="btn-new-run" id="btn-new-run" data-i18n="overlay.game_over.new_run">New Run</button>
                     </div>
@@ -176,7 +177,7 @@
                     <div class="ending-box">
                         <div class="ending-title" data-i18n="overlay.ending.title">ALL DUNGEONS CLEARED!</div>
                         <div class="ending-stats" id="ending-stats"></div>
-                        <div class="ending-note" data-i18n="overlay.ending.note">Q-tables preserved. Can you beat your record?</div>
+                        <div class="ending-note" data-i18n="overlay.ending.note">The Sherpa's memory persists. Can you beat your record?</div>
                         <button class="btn-new-game-plus" id="btn-new-game-plus" data-i18n="overlay.ending.new_game_plus">New Game+</button>
                     </div>
                 </div>
@@ -275,6 +276,7 @@
                     </div>
                 </div>
             </div>
+            </div><!-- /dev-game-slot -->
 
             <div class="controls">
                 <!-- M5: 언어 토글 (한/EN). label 은 *다음 언어* 를 표시 (ko 일 때 'EN', en 일 때 '한국어') — JS 가 갱신 -->
@@ -726,6 +728,14 @@
         </footer>
         </div>
     </div><!-- /screen-dev -->
+
+    <!-- 클린 플레이 화면 — 출발 시 진입. game-area(캔버스+오버레이+HUD)를 JS 가 #play-slot 으로 이동. -->
+    <div id="screen-play" class="screen">
+        <div class="play-shell">
+            <button id="btn-play-exit" class="btn-back btn-play-exit" data-i18n="play.exit">나가기</button>
+            <div id="play-slot" class="play-slot"></div>
+        </div>
+    </div>
 
     <!-- W7.1 Opening Card — 첫 새 게임 1회 (D-2026-05-19-1) -->
     <div class="opening-overlay" id="opening-overlay" style="display:none;">
