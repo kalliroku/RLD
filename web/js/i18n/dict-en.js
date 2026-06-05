@@ -105,6 +105,20 @@ export const EN = {
     'prep.cancel': 'Cancel',
     'prep.deploy': 'Depart ▶',
 
+    // === Farming control panel (cleared-dungeon prep room — idle accrual) ===
+    'farm.assign_title': 'Assign a Sherpa',
+    'farm.assign_hint': 'Pick a Sherpa to farm here. Agile ones work faster; sturdy ones last longer.',
+    'farm.assign_btn': 'Assign',
+    'farm.no_serpa': "No Sherpa can take this on yet — you need one strong enough for this dungeon's shortest path.",
+    'farm.assigned': '{name} is farming',
+    'farm.rate': '+{n}G every {sec}s',
+    'farm.cap_note': 'Accrues up to {h}h',
+    'farm.exclusive': 'Exclusive map ×3 ({n} left)',
+    'farm.accrued': 'Accrued +{n}G ({runs} runs)',
+    'farm.collect': 'Collect +{n}G',
+    'farm.collect_empty': 'Nothing yet',
+    'farm.unassign': 'Recall',
+
     // === Dungeon flavor (by theme — placeholder, pending tone review) ===
     'flavor.treasure': 'Something glimmers within.',
     'flavor.enemy': 'Something dangerous lurks here.',

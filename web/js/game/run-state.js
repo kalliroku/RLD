@@ -98,6 +98,11 @@ const RUN_STATE_KEY = 'rld_run_state';
 const RUN_META_KEY = 'rld_run_meta';
 const OLD_SAVE_KEY = 'rld_save_data';
 
+// 방치형 파밍 — 배치된 세르파가 시간 경과에 따라 가상 회차를 누적(실제 답파 X).
+// 속도(회차 간격) = 민첩, 상한(오프라인 누적 한도) = 체력. 경제 후속 단계라 잠정 튜닝값.
+const FARM_BASE_INTERVAL_MS = 30 * 1000;          // 민첩 1.0 기준 회차 간격 (30초/회)
+const FARM_BASE_CAP_MS = 2 * 60 * 60 * 1000;      // 체력(maxHp) 100 기준 오프라인 누적 상한 (2시간)
+
 export class RunState {
     constructor() {
         // Meta — playthrough-level (persists across runs within a playthrough)
@@ -126,6 +131,7 @@ export class RunState {
 
         // B-4: Farming assignments
         this.farmingAssignments = {};  // { charName: dungeonId }
+        this.farmingSince = {};        // { charName: lastCollectMs } — 방치형 누적 기준 시각
 
         // B-5: Map status per dungeon
         this.mapStatus = {};  // { dungeonId: { status: 'exclusive'|'normal', exclusiveRunsLeft: N } }
@@ -308,10 +314,11 @@ export class RunState {
 
     // ========== B-4: Farming ==========
 
-    assignFarming(charName, dungeonId, dungeonConfig) {
+    assignFarming(charName, dungeonId, dungeonConfig, nowMs = null) {
         if (!this.isCharacterAvailable(charName)) return false;
         if (!this.canFarm(charName, dungeonId, dungeonConfig)) return false;
         this.farmingAssignments[charName] = dungeonId;
+        if (nowMs != null) this.farmingSince[charName] = nowMs;   // 방치 누적 기준 시각(호출부 주입)
         this.saveRunState();
         return true;
     }
@@ -319,8 +326,59 @@ export class RunState {
     removeFarming(charName) {
         if (!this.farmingAssignments[charName]) return false;
         delete this.farmingAssignments[charName];
+        delete this.farmingSince[charName];
         this.saveRunState();
         return true;
+    }
+
+    // ===== 방치형 누적 파밍 (실제 답파 X) — nowMs 는 호출부(main.js)에서 Date.now() 주입 =====
+    // RunState 코어에 시계를 두지 않아 sim 결정론 보존([[RunState ↔ sim 결합]]).
+
+    /** 회차 간격(ms) — 민첩 높을수록 짧다(빨리 캠). */
+    getFarmIntervalMs(charName) {
+        return FARM_BASE_INTERVAL_MS / this.getAgilityMultiplier(charName);
+    }
+
+    /** 오프라인 누적 상한(ms) — 체력(maxHp) 높을수록 길다(더 오래 쌓임). */
+    getFarmCapMs(charName) {
+        return FARM_BASE_CAP_MS * (this.getMaxHp(charName) / 100);
+    }
+
+    /** 미수금 누적 계산(적립 없음). 반환 {dungeonId, runs, gold, intervalMs, capMs, elapsed, exclusiveRunsLeft} 또는 null. */
+    getFarmAccrual(charName, dungeonConfig, nowMs) {
+        const dungeonId = this.farmingAssignments[charName];
+        if (!dungeonId) return null;
+        const config = dungeonConfig[dungeonId];
+        if (!config) return null;
+        const since = this.farmingSince[charName] ?? nowMs;   // 누락 시 지금부터(하위호환)
+        const intervalMs = this.getFarmIntervalMs(charName);
+        const capMs = this.getFarmCapMs(charName);
+        const elapsed = Math.max(0, Math.min(nowMs - since, capMs));
+        const runs = Math.floor(elapsed / intervalMs);
+        const mapInfo = this.mapStatus[dungeonId];
+        const exLeft = (mapInfo && mapInfo.status === 'exclusive') ? (mapInfo.exclusiveRunsLeft || 0) : 0;
+        const exRuns = Math.min(runs, exLeft);
+        const gold = exRuns * 3 * config.repeatReward + (runs - exRuns) * config.repeatReward;
+        return { dungeonId, runs, gold, intervalMs, capMs, elapsed, exclusiveRunsLeft: exLeft };
+    }
+
+    /** 누적분 수금 — 골드 적립 + exclusive 소진 + since 마커 전진(상한 초과분 폐기). */
+    collectFarmAccrual(charName, dungeonConfig, nowMs) {
+        const acc = this.getFarmAccrual(charName, dungeonConfig, nowMs);
+        if (!acc || acc.runs <= 0) return { gold: 0, runs: 0, message: '' };
+        this.gold += acc.gold;
+        let message = '';
+        const mapInfo = this.mapStatus[acc.dungeonId];
+        if (mapInfo && mapInfo.status === 'exclusive' && mapInfo.exclusiveRunsLeft > 0) {
+            const exRuns = Math.min(acc.runs, mapInfo.exclusiveRunsLeft);
+            mapInfo.exclusiveRunsLeft -= exRuns;
+            if (mapInfo.exclusiveRunsLeft <= 0) { mapInfo.status = 'normal'; message = 'exclusive_expired'; }
+        }
+        // 소비한 회차 시간만큼만 마커 전진 → 상한 초과분은 폐기, 미만 잔여(remainder)는 다음으로 이월.
+        const remainder = acc.elapsed - acc.runs * acc.intervalMs;
+        this.farmingSince[charName] = nowMs - remainder;
+        this.saveRunState();
+        return { gold: acc.gold, runs: acc.runs, message };
     }
 
     isFarming(charName) {
@@ -615,6 +673,7 @@ export class RunState {
         this.answerPaths = {};
         this.characterLevels = {};
         this.farmingAssignments = {};
+        this.farmingSince = {};
         this.mapStatus = {};
         this.purchasedHints = {};
         this.treasureStatus = {};
@@ -638,6 +697,7 @@ export class RunState {
         this.answerPaths = {};
         this.characterLevels = {};
         this.farmingAssignments = {};
+        this.farmingSince = {};
         this.mapStatus = {};
         this.purchasedHints = {};
         this.treasureStatus = {};
@@ -660,6 +720,7 @@ export class RunState {
                 answerPaths: this.answerPaths,
                 characterLevels: this.characterLevels,
                 farmingAssignments: this.farmingAssignments,
+                farmingSince: this.farmingSince,
                 mapStatus: this.mapStatus,
                 purchasedHints: this.purchasedHints,
                 treasureStatus: this.treasureStatus,
@@ -684,6 +745,7 @@ export class RunState {
                 this.answerPaths = data.answerPaths ?? {};
                 this.characterLevels = data.characterLevels ?? {};
                 this.farmingAssignments = data.farmingAssignments ?? {};
+                this.farmingSince = data.farmingSince ?? {};
                 this.mapStatus = data.mapStatus ?? {};
                 this.purchasedHints = data.purchasedHints ?? {};
                 this.treasureStatus = data.treasureStatus ?? {};

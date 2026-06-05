@@ -116,6 +116,20 @@ export const KO = {
     'prep.cancel': '취소',
     'prep.deploy': '출발 ▶',
 
+    // === 파밍 통제판 (답파 던전 대기실 변신 — 방치형 누적) ===
+    'farm.assign_title': '세르파 배치',
+    'farm.assign_hint': '맡길 세르파를 고르세요. 민첩할수록 빠르게, 튼튼할수록 오래 캡니다.',
+    'farm.assign_btn': '배치',
+    'farm.no_serpa': '아직 맡길 수 있는 세르파가 없어요. 이 던전 최단 경로를 감당할 만큼 강한 세르파가 필요해요.',
+    'farm.assigned': '{name} 파밍 중',
+    'farm.rate': '{sec}초마다 +{n}G',
+    'farm.cap_note': '최대 {h}시간까지 누적',
+    'farm.exclusive': '독점 지도 ×3 ({n}회 남음)',
+    'farm.accrued': '쌓인 보상 +{n}G ({runs}회)',
+    'farm.collect': '수금 +{n}G',
+    'farm.collect_empty': '아직 쌓이지 않음',
+    'farm.unassign': '배치 해제',
+
     // === 던전 플레이버 (테마별 — 자리표시자, 톤 검수 후 조정) ===
     'flavor.treasure': '무언가 반짝이는 기운이 있다.',
     'flavor.enemy': '위험한 녀석이 도사린다.',

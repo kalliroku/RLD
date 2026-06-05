@@ -3276,6 +3276,19 @@ body.editor-mode .dpad-container {
 .btn-prep-deploy { background: #5a8f4e; color: #fff; }
 .btn-prep-deploy:disabled { opacity: 0.4; cursor: default; }
 
+/* 파밍 통제판 (답파 던전 대기실 변신 — 방치형 누적) */
+.farm-assigned, .farm-assign { display: flex; flex-direction: column; gap: 6px; padding: 4px 0 12px; }
+.farm-who { font-weight: 700; color: var(--text-primary); }
+.farm-rate, .farm-cap { font-size: 0.85rem; color: var(--text-secondary); }
+.farm-exclusive { font-size: 0.85rem; color: #e6b450; font-weight: 700; }
+.farm-accrued { margin-top: 6px; font-size: 1.05rem; font-weight: 700; color: #e6b450; }
+.farm-assign-title { font-weight: 700; color: var(--text-primary); }
+.farm-assign-hint { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4; }
+.farm-serpa-select { margin-top: 4px; padding: 8px; border-radius: 6px; background: rgba(40,50,70,0.9); color: #cdd6e6; border: 1px solid rgba(255,255,255,0.12); }
+.farm-empty { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; padding: 8px 0 16px; }
+.btn-farm-unassign { padding: 9px 16px; border-radius: 7px; font-weight: 700; cursor: pointer; border: none; background: rgba(120, 60, 50, 0.9); color: #f0cabf; }
+.btn-farm-collect:disabled { opacity: 0.4; cursor: default; }
+
 .quest-card {
     background: rgba(255, 255, 255, 0.03);
     border: 1px solid rgba(255, 255, 255, 0.08);

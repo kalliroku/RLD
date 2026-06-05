@@ -357,10 +357,10 @@ class Game {
         const guildPopup = document.getElementById('guild-popup');
         if (guildPopup) {
             guildPopup.querySelectorAll('[data-popup-close]').forEach(el => {
-                el.addEventListener('click', () => { guildPopup.hidden = true; });
+                el.addEventListener('click', () => { this._clearFarmTick(); guildPopup.hidden = true; });
             });
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && !guildPopup.hidden) guildPopup.hidden = true;
+                if (e.key === 'Escape' && !guildPopup.hidden) { this._clearFarmTick(); guildPopup.hidden = true; }
             });
         }
         // NPC onboarding dialogue — click OR arrow/Enter/Space to advance (오프닝과 동일)
@@ -746,6 +746,7 @@ class Game {
     // 챕터 네비(도달 챕터만) + 미션 카드(상태) + 보스 슬롯(챕터 일반 의뢰 모두 답파 시 해금).
     // 챕터 내 자율 분기/세르파 점유(도전중·파밍중)는 후속 시스템 — 상태 틀은 잡되 Ch.1 현실만 배선.
     _updateGuildQuests() {
+        this._clearFarmTick();                          // 보드로 돌아오면 파밍 라이브 틱 정지
         const panel = document.getElementById('guild-tab-quest');
         const rs = this.runState;
         const cur = rs.getCurrentChapter();
@@ -809,8 +810,8 @@ class Game {
         const stars = this._dungeonStars(did);
         const bossTag = isBoss ? `<span class="mission-badge boss">${t('mission.badge.boss')}</span>` : '';
         let cls = 'mission-card' + (isBoss ? ' boss' : ''), badge, meta, flavor = true;
-        if (farmer) {                                   // 세르파 파밍 점유 → 잠김
-            cls += ' cleared locked';
+        if (farmer) {                                   // 세르파 파밍 중 → 클릭 시 파밍 통제판 재진입
+            cls += ' cleared farming';
             badge = `<span class="mission-badge farming">${t('mission.badge.farming')}</span>`;
             meta = tHtml('mission.farming_lock', { name: this._charName(farmer) });   // innerHTML 경로 — 값 escape
             flavor = false;
@@ -890,6 +891,9 @@ class Game {
     // 출발 시에만 플레이 화면(screen-dev)으로 전환 → tryEnterDungeon. (briefing.onDeploy 선례)
     _renderPrepRoom(dungeonId) {
         const rs = this.runState;
+        this._clearFarmTick();                          // 면 전환 시 이전 파밍 틱 정지
+        // 답파 완료 던전 = 파밍 통제판으로 변신 (방치형 누적 — 직접 재도전 없음, D-대기실변신).
+        if (rs.clearedDungeons.has(dungeonId)) { this._renderFarmRoom(dungeonId); return; }
         const panel = document.getElementById('guild-tab-quest');
         const titleEl = document.getElementById('guild-popup-title');
         const config = DUNGEON_CONFIG[dungeonId] || { cost: 0, firstReward: 0, repeatReward: 0 };
@@ -956,6 +960,127 @@ class Game {
             this.tryEnterDungeon();
             this.saveProgress();
         });
+    }
+
+    // ── 파밍 통제판 — 답파 던전 대기실의 변신형. 방치형 누적(실제 답파 X). ───────────
+    // 미배치 → 세르파 선택(canFarm 필터) / 배치됨 → 누적 수금·해제(라이브 틱). 속도=민첩, 상한=체력.
+    _renderFarmRoom(dungeonId) {
+        const rs = this.runState;
+        this._clearFarmTick();                          // 재진입/재렌더 시 이전 틱 정지(틱 누수 방지)
+        const panel = document.getElementById('guild-tab-quest');
+        const titleEl = document.getElementById('guild-popup-title');
+        const lv = this.getDungeonLevel(dungeonId), name = this.getDungeonDisplayName(dungeonId);
+        const config = DUNGEON_CONFIG[dungeonId] || { repeatReward: 0 };
+        if (titleEl) titleEl.textContent = t('prep.title', { lv, name });
+
+        const best = rs.answerPaths && rs.answerPaths[dungeonId] && rs.answerPaths[dungeonId].steps;
+        const infoParts = [t('prep.difficulty', { stars: this._dungeonStars(dungeonId) }), t('prep.cleared')];
+        if (best) infoParts.push(t('prep.best', { n: best }));
+        const info = infoParts.join(' · ');
+
+        const farmer = this._dungeonFarmer(dungeonId);
+        const mapInfo = rs.mapStatus && rs.mapStatus[dungeonId];
+        const exLeft = (mapInfo && mapInfo.status === 'exclusive') ? (mapInfo.exclusiveRunsLeft || 0) : 0;
+        const exclusiveRow = exLeft > 0 ? `<div class="farm-exclusive">${t('farm.exclusive', { n: exLeft })}</div>` : '';
+
+        let body;
+        if (farmer) {
+            const intervalSec = Math.max(1, Math.round(rs.getFarmIntervalMs(farmer) / 1000));
+            const capH = +(rs.getFarmCapMs(farmer) / 3600000).toFixed(1);
+            body = `
+                <div class="farm-assigned">
+                    <div class="farm-who">${tHtml('farm.assigned', { name: this._charName(farmer) })}</div>
+                    <div class="farm-rate">${t('farm.rate', { sec: intervalSec, n: config.repeatReward })}</div>
+                    <div class="farm-cap">${t('farm.cap_note', { h: capH })}</div>
+                    ${exclusiveRow}
+                    <div class="farm-accrued" id="farm-accrued"></div>
+                </div>
+                <div class="prep-actions">
+                    <button class="btn-prep-back">${t('prep.cancel')}</button>
+                    <button class="btn-farm-unassign">${t('farm.unassign')}</button>
+                    <button class="btn-farm-collect btn-prep-deploy" disabled>${t('farm.collect_empty')}</button>
+                </div>`;
+        } else {
+            const pickable = Object.keys(CHARACTERS).filter(nm =>
+                !rs.isCharacterHidden(nm) && rs.isCharacterAvailable(nm) &&
+                rs.canFarm(nm, dungeonId, DUNGEON_CONFIG) &&
+                !(rs.isFarming(nm) && rs.getFarmingDungeon(nm) !== dungeonId));
+            if (pickable.length === 0) {
+                body = `
+                    <div class="farm-empty">${t('farm.no_serpa')}</div>
+                    <div class="prep-actions"><button class="btn-prep-back">${t('prep.cancel')}</button></div>`;
+            } else {
+                let opts = '';
+                for (const nm of pickable) {
+                    const sec = Math.max(1, Math.round(rs.getFarmIntervalMs(nm) / 1000));
+                    const capH = +(rs.getFarmCapMs(nm) / 3600000).toFixed(1);
+                    opts += `<option value="${nm}">${this._charName(nm)} · ${sec}s/회 · ${capH}h</option>`;
+                }
+                body = `
+                    <div class="farm-assign">
+                        <div class="farm-assign-title">${t('farm.assign_title')}</div>
+                        <div class="farm-assign-hint">${t('farm.assign_hint')}</div>
+                        <select class="farm-serpa-select">${opts}</select>
+                        ${exclusiveRow}
+                    </div>
+                    <div class="prep-actions">
+                        <button class="btn-prep-back">${t('prep.cancel')}</button>
+                        <button class="btn-farm-assign btn-prep-deploy">${t('farm.assign_btn')}</button>
+                    </div>`;
+            }
+        }
+
+        panel.innerHTML = `
+            <div class="prep-room farm-room">
+                <canvas id="prep-minimap" class="prep-minimap"></canvas>
+                <div class="prep-info">${info}</div>
+                <div class="prep-flavor">"${this._dungeonFlavor(dungeonId)}"</div>
+                ${body}
+            </div>`;
+        this._renderPrepMinimap(document.getElementById('prep-minimap'), dungeonId);
+
+        panel.querySelector('.btn-prep-back').addEventListener('click', () => {
+            if (titleEl) titleEl.textContent = t('guild.tab.quest');
+            this._updateGuildQuests();                  // 보드로 복귀(_clearFarmTick 포함)
+        });
+
+        if (farmer) {
+            const accruedEl = document.getElementById('farm-accrued');
+            const collectBtn = panel.querySelector('.btn-farm-collect');
+            const tick = () => {
+                const acc = rs.getFarmAccrual(farmer, DUNGEON_CONFIG, Date.now());
+                const gold = acc ? acc.gold : 0, runs = acc ? acc.runs : 0;
+                if (accruedEl) accruedEl.textContent = t('farm.accrued', { n: gold, runs });
+                if (collectBtn) {
+                    collectBtn.disabled = gold <= 0;
+                    collectBtn.textContent = gold > 0 ? t('farm.collect', { n: gold }) : t('farm.collect_empty');
+                }
+            };
+            tick();
+            this._farmTickTimer = setInterval(tick, 1000);   // 라이브 누적 표시
+            collectBtn.addEventListener('click', () => {
+                const r = rs.collectFarmAccrual(farmer, DUNGEON_CONFIG, Date.now());
+                if (r.gold > 0) this._updateGuildResources();
+                this._renderFarmRoom(dungeonId);             // 누적 리셋 후 재렌더(틱 재시작)
+            });
+            panel.querySelector('.btn-farm-unassign').addEventListener('click', () => {
+                rs.removeFarming(farmer);
+                this._renderFarmRoom(dungeonId);             // 피커 상태로 재렌더
+            });
+        } else {
+            const assignBtn = panel.querySelector('.btn-farm-assign');
+            if (assignBtn) assignBtn.addEventListener('click', () => {
+                const sel = panel.querySelector('.farm-serpa-select');
+                const nm = sel && sel.value;
+                if (nm && rs.assignFarming(nm, dungeonId, DUNGEON_CONFIG, Date.now())) {
+                    this._renderFarmRoom(dungeonId);         // 배치 → 누적 블록으로
+                }
+            });
+        }
+    }
+
+    _clearFarmTick() {
+        if (this._farmTickTimer) { clearInterval(this._farmTickTimer); this._farmTickTimer = null; }
     }
 
     /** 대기실 미니맵 — 단순 플랫셀(인게임 텍스처 필드와 다름). 첫 던전은 제공.
