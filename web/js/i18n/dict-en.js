@@ -78,6 +78,13 @@ export const EN = {
     'onboard.b10': "Now then, let's start with that request.",
     // Condensed onboarding only — short send-off after the greeting (b1), straight into Rika (b8).
     'onboard.short_go': "Right — give it your best today, Master!",
+    // Replayed once on returning to the guild after the first clear (GUILD_FIRSTCLEAR_BEATS).
+    'firstclear.b1': "{master}! You cleared your very first request already — nicely done!",
+    'firstclear.b2': "That map was lent by the Adventurers' Guild. Later, you'll be able to sell maps you've cleared yourself.",
+    'firstclear.b3': "I've pinned a few other requests to the board. Take a look!",
+    'firstclear.b4': "Oh — Q is back, just in time. Your first Serpa, {master}.",
+    'firstclear.b5': "Leave stage 1 to Q and it'll dig up gold while you're busy elsewhere. That's 'farming'.",
+    'firstclear.b6': "While Q farms, {master} can take the next request.",
 
     // === Mission board / cards ===
     'mission.badge.new': 'NEW',

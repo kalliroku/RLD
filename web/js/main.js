@@ -39,6 +39,8 @@ const GUILD_ONBOARD_KEY = 'rld_guild_onboarded';
 // 온보딩을 함께 가른다. clearedDungeons 는 런마다 리셋되므로 세이프넷 게이트로 쓰면
 // 새 런마다 다시 켜짐 → 반드시 localStorage 플래그여야 진짜 1회성.
 const TUTORIAL_DONE_KEY = 'rld_tutorial_done';
+// 첫 클리어 후 길드 복귀 시 리카/레플리 대화(GUILD_FIRSTCLEAR_BEATS) 1회 재생 마커. 영속.
+const FIRSTCLEAR_SEEN_KEY = 'rld_firstclear_seen';
 // who → 흉상(drawRepliPortrait/drawRikaPortrait), highlight → 자원 박스 강조,
 // reveal → 진입 버튼 공개. 대사는 시나리오 기반 (레플리=일상/안내, 리카=모험가 의뢰).
 // 온보딩 비트. side='npc'|'master' (목소리 진영), mode='speak'(기본)|'inner'(속마음).
@@ -73,6 +75,18 @@ const GUILD_ONBOARD_BEATS_SHORT = [
     { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'onboard.b8' },
     { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'onboard.b9', reveal: 'quest' },
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'onboard.b10', cta: 'quest' },
+];
+
+// 첫 던전 클리어 후 길드 복귀 시 1회 재생(FIRSTCLEAR_SEEN_KEY). 비트 플레이어(_startGuildBeats) 재사용.
+// 리카: 칭찬 → 지도판매 떡밥(canSellMaps, 게이트는 false 유지) → 게시판 넛지(2관).
+// 레플리: Q군 합류 → 파밍 소개 → 2관도 마스터 수동. (보스전 자동학습 연출은 별도)
+const GUILD_FIRSTCLEAR_BEATS = [
+    { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'firstclear.b1' },
+    { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'firstclear.b2' },
+    { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'firstclear.b3', reveal: 'quest' },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.b4' },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.b5' },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.b6' },
 ];
 
 const PRESET_MULTI_DUNGEONS = {
@@ -132,6 +146,11 @@ class Game {
 
         // C-2: Chapter progression
         this.newChapterInfo = null;
+
+        // 길드 비트 시퀀스 모드 — 'onboard'|'firstclear'. _finishGuildOnboarding 가 종료 시
+        // 시드키(GUILD_ONBOARD_KEY vs FIRSTCLEAR_SEEN_KEY)를 가르는 데 사용. 명시 기본값으로
+        // "온보딩 안 했는데 완료 플래그가 박히는" 암묵 fallback 의존 차단(W1).
+        this._beatMode = null;
 
         // C-4: Treasure state
         this.carryingTreasure = false;
@@ -360,6 +379,7 @@ class Game {
             OpeningManager.reset();
             localStorage.removeItem(GUILD_ONBOARD_KEY);
             localStorage.removeItem(TUTORIAL_DONE_KEY);   // 풀 온보딩 + 식량 세이프넷 재무장(재테스트용)
+            localStorage.removeItem(FIRSTCLEAR_SEEN_KEY);  // 첫-클리어 대화도 재무장
             this._beginNewGame();
         });
 
@@ -493,6 +513,7 @@ class Game {
         this._drawGuildScene();
         this._updateGuildHotspots();
         this._maybeStartGuildOnboarding();
+        this._maybeStartFirstClearBeats();   // 온보딩 미진행 시에만(내부 게이트)
     }
 
     /**
@@ -567,11 +588,28 @@ class Game {
         if (!this._onboardingRequested) return;  // 새 게임/새 런 트리거에서만
         this._onboardingRequested = false;
         // 풀/단축 비트셋 선택 — _renderGuildBeat/_finishGuildTyping 가 this._beats 참조.
-        this._beats = this._tutorialDone() ? GUILD_ONBOARD_BEATS_SHORT : GUILD_ONBOARD_BEATS;
+        this._startGuildBeats(this._tutorialDone() ? GUILD_ONBOARD_BEATS_SHORT : GUILD_ONBOARD_BEATS, 'onboard');
+    }
+
+    /**
+     * 첫 던전 클리어 후 길드 복귀 시 1회 재생. 온보딩과 동일 비트 플레이어 재사용.
+     * 게이트: 온보딩 미진행 + 1관 클리어됨 + 미시청. 클린 플로우(guild→play) 서사.
+     */
+    _maybeStartFirstClearBeats() {
+        if (this._guildOnboarding || this._onboardingRequested) return;  // 온보딩 우선
+        if (localStorage.getItem(FIRSTCLEAR_SEEN_KEY) === '1') return;    // 1회성
+        if (!this.runState.clearedDungeons.has('level_01_easy')) return;  // 1관 클리어 후에만
+        this._startGuildBeats(GUILD_FIRSTCLEAR_BEATS, 'firstclear');
+    }
+
+    /** 비트 시퀀스 재생 시작 — 온보딩/첫클리어 공용. mode='onboard'|'firstclear' (종료 시 시드키 분기). */
+    _startGuildBeats(beats, mode) {
+        if (this._guildOnboarding) return;       // 이미 재생 중
+        this._beats = beats;
+        this._beatMode = mode;
         this._guildOnboarding = true;
         this._guildBeatIdx = 0;
-        // Game 인스턴스는 페이지당 1회 — dev 리플레이(localStorage만 지움, reload 없음)에서
-        // 이전 플레이의 stale-true 가 남으면 첫 비트부터 종이가 그려진다. 무대도 함께 초기화.
+        // Game 인스턴스는 페이지당 1회 — 이전 플레이의 stale-true 잔상 방지(무대도 초기화).
         this._questPosted = false;
         this._guildStage = [];
         this._guildActive = null;
@@ -630,12 +668,14 @@ class Game {
     _finishGuildOnboarding() {
         this._guildOnboarding = false;
         this._clearGuildTyping();
-        localStorage.setItem(GUILD_ONBOARD_KEY, '1');
+        // 시드키 분기 — 첫클리어 시퀀스는 별도 마커(온보딩 완료 플래그를 덮지 않게).
+        localStorage.setItem(this._beatMode === 'firstclear' ? FIRSTCLEAR_SEEN_KEY : GUILD_ONBOARD_KEY, '1');
         const dlg = document.getElementById('guild-dialogue');
         if (dlg) dlg.classList.remove('show', 'ready');
         document.querySelectorAll('.guild-res.is-highlight').forEach(e => e.classList.remove('is-highlight'));
         this._guildStage = [];                     // 무대 비움 → 다음 진입 깨끗하게
         this._guildActive = null;
+        this._beatMode = null;                     // 시퀀스 종료 → 모드 리셋(종료 후 stale 잔상 가드)
         this._drawGuildScene();                    // back to the normal scene
         // the board marker glows over the quest parchment so the player knows to
         // click the bulletin board next (no buttons — scene objects are the cue).
@@ -4041,17 +4081,21 @@ class Game {
     // ========== First Clear Tutorial Chain (Task #5: sequenced) ==========
 
     _queueFirstClearTutorials() {
-        // Task #28 (Cycle 5): progressive disclosure (NEW! 배지 시퀀스) + tutorial 박힘 모두 시퀀셜 — celebration 1.8s 끝난 후
+        // progressive disclosure(섹션 NEW! 공개)는 항상 — 상태 관리라 클린 플로우엔 무해.
         setTimeout(() => this.updateProgressiveDisclosure(), 200);
-        setTimeout(() => this.tutorial.tryShow('first_clear'), 1500);
+        // first-clear 안내 툴팁/토스트는 dev 워크벤치 전용 표면(training-section/char-section 등)을
+        // 가리켜, 클린 플로우(screen-play/guild)에선 죽은 포인터 + 새 길드 대화(GUILD_FIRSTCLEAR_BEATS)와
+        // 충돌 → screen-dev 에서만 노출. 클린 플로우는 첫-클리어 대화가 파밍/다음단계를 안내.
+        const devOnly = () => this.screenManager?.current === 'screen-dev';
+        setTimeout(() => { if (devOnly()) this.tutorial.tryShow('first_clear'); }, 1500);
         setTimeout(() => {
-            if (this.runState.clearedDungeons.size === 1 && this.toast) {
+            if (devOnly() && this.runState.clearedDungeons.size === 1 && this.toast) {
                 this.toast.show(t('tutorial.train_now'), 'info');
-                // Task #29 (Cycle 8 옵션 A — Q3): 우측 'AI 학습' 섹션 일시 강조 (~7s 또는 학습 시작 버튼 클릭 시 해제)
                 this._pulseTrainingSection();
             }
         }, 3000);
         setTimeout(() => {
+            if (!devOnly()) return;
             const curChapter = this.runState.getCurrentChapter();
             if (curChapter >= 2) this.tutorial.tryShow('chapter2');
             if (this.runState.clearedDungeons.size >= 1) this.tutorial.tryShow('first_farm_unlock');
