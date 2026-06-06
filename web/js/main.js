@@ -3976,6 +3976,9 @@ class Game {
     // B-5: Map choice overlay (sell vs keep map)
     showMapChoiceOverlay(dungeonId, config, unlockedNext) {
         const overlay = document.getElementById('map-choice-overlay');
+        // 지도 팔기는 세르파 합류 후 해금 (canSellMaps 플레이스홀더 = 현재 false). 그 전까진
+        // '팔기' 분기를 숨기고 '보관'만 → 첫 던전 지도 = 못 파는 형태.
+        const canSell = this.runState.canSellMaps();
         const salePrice = this.runState.getMapSalePrice(dungeonId, DUNGEON_CONFIG);
         const levelMatch = dungeonId.match(/level_(\d+)/);
         const level = levelMatch ? parseInt(levelMatch[1]) : 1;
@@ -3998,10 +4001,13 @@ class Game {
         document.getElementById('map-choice-dungeon').textContent = `${dungeonName} (Lv.${level})`;
         document.getElementById('map-choice-details').innerHTML =
             `${unlockMsg}` +
-            `<div>${t('overlay.map_choice.sell_detail', { price: salePrice })}</div>` +
+            (canSell ? `<div>${t('overlay.map_choice.sell_detail', { price: salePrice })}</div>` : '') +
             `<div>${t('overlay.map_choice.keep_detail', { reward: exclusiveReward, runs: exclusiveRuns })}</div>`;
 
-        document.getElementById('btn-sell-map').onclick = () => {
+        // 세르파 전: 팔기 버튼 자체를 숨기고 stale 핸들러도 제거(보관만 노출).
+        const sellBtn = document.getElementById('btn-sell-map');
+        sellBtn.style.display = canSell ? '' : 'none';
+        sellBtn.onclick = canSell ? () => {
             const earned = this.runState.sellMap(dungeonId, DUNGEON_CONFIG);
             overlay.style.display = 'none';
             this.showMessage(t('game.first_clear.map_sold', { earned }), 'success');
@@ -4013,7 +4019,7 @@ class Game {
                 this._pendingFirstClearTutorials = false;
                 this._queueFirstClearTutorials();
             }
-        };
+        } : null;
 
         document.getElementById('btn-keep-map').onclick = () => {
             this.runState.keepMap(dungeonId);

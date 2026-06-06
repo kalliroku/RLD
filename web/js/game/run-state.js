@@ -448,6 +448,16 @@ export class RunState {
         return 13;
     }
 
+    // 지도 팔기 해금 게이트 (플레이스홀더). 깬 지도를 골드로 파는 경제는 세르파 합류 후
+    // 온디멘드 튜토리얼로 학습하는 내용 — 합류 조건은 세르파 시스템 배선 시 여기 채운다.
+    // 그 전까진 항상 false → 첫 던전 포함 모든 지도가 '못 파는 형태'(보관만 가능).
+    // NOTE: sim/strategies.js:109 → simulator.js:231 의 mapSell 은 이 게이트를 미경유
+    //       (현재 sim 격리 근거). 세르파 게이팅이 캠페인 정식 룰화되면 sim 정책도 동일
+    //       게이트를 반영해야 함 — 안 그러면 25.5/27 baseline 이 web 골드 흐름과 괴리.
+    canSellMaps() {
+        return false;  // TODO(세르파): 합류 시점에 해금 조건 배선
+    }
+
     sellMap(dungeonId, dungeonConfig) {
         const config = dungeonConfig[dungeonId];
         if (!config) return 0;
