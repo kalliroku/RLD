@@ -87,6 +87,8 @@ export const KO = {
     'onboard.b8': '{master}! 마침 잘 오셨어요. 모험가 길드에서 의뢰가 왔어요.',
     'onboard.b9': '벌써 첫 의뢰가 왔어요. 방금 게시판에 붙여 뒀어요!',
     'onboard.b10': '자, 저 의뢰서부터 살펴볼까요.',
+    // 단축 온보딩 전용 — 인사(b1) 다음 짧은 마무리, 곧장 리카 등장(b8)로 연결.
+    'onboard.short_go': '자, 오늘도 잘 해봐요 마스터!',
 
     // === 미션 보드 / 카드 ===
     'mission.badge.new': 'NEW',
@@ -376,6 +378,12 @@ export const KO = {
 
     // === Food warning (F2 임계 경고) ===
     'food.warn.threshold': '⚠️ 식량 부족! 출구로 돌아가세요.',
+
+    // === Tutorial safety net (첫 던전·첫 클리어 전 한정) ===
+    // 1차: 레플리 식량 보급 (정식 등장). 2차: 자동 이동 어시스트 (한 줄 대사).
+    'tutor.rescue.text': '보급 챙겨왔어요! 식량 떨어지면 큰일이니까, 든든하게 채워둘게요.',
+    'tutor.rescue.ok': '고마워요',
+    'tutor.assist.line': '이번엔 제가 G 까지 데려다줄게요. 길, 잘 봐두세요!',
 
     // === Escape rope (긴급 탈출 아이템) ===
     'rope.escape': '긴급 탈출! 로프가 소모되었습니다.',

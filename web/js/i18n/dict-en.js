@@ -76,6 +76,8 @@ export const EN = {
     'onboard.b8': "{master}! Good timing. A request came in from the Adventurers' Guild.",
     'onboard.b9': 'Your first request already. I just pinned it to the board!',
     'onboard.b10': "Now then, let's start with that request.",
+    // Condensed onboarding only — short send-off after the greeting (b1), straight into Rika (b8).
+    'onboard.short_go': "Right — give it your best today, Master!",
 
     // === Mission board / cards ===
     'mission.badge.new': 'NEW',
@@ -365,6 +367,12 @@ export const EN = {
 
     // === Food warning (F2 threshold alert) ===
     'food.warn.threshold': '⚠️ Food low! Head back to the exit.',
+
+    // === Tutorial safety net (first dungeon only, before first clear) ===
+    // Tier 1: Repli food resupply (full appearance). Tier 2: auto-move assist (single line).
+    'tutor.rescue.text': "Brought you some supplies! Can't have you starving out here — let me top you right up.",
+    'tutor.rescue.ok': 'Thanks',
+    'tutor.assist.line': "Let me walk you to the G this time. Watch the path closely!",
 
     // === Escape rope (emergency item) ===
     'rope.escape': 'Emergency escape! Rope consumed.',

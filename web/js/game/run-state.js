@@ -29,7 +29,7 @@ const STARTING_GOLD = 800;
 // sim 결합 주의: `sim/simulator.js` constructor 가 `new RunState()` 직접 호출 →
 // 본 상수가 sim baseline 도 침범. sim 측에서 `this.runState.food = 0` 으로 명시 리셋해
 // HybridPlayer 의 buyFood 자동 구매 흐름 (캠페인 25.5/27 ± 2, D-2026-05-14-14) 보존.
-const STARTING_FOOD = 100;
+export const STARTING_FOOD = 100;
 
 // D-2026-06-02-18: 세르파 무한부활 (구 B-203 누적 사망 4회 한도 supersede).
 // 1단계 — 하드 한도/리스타트 분기만 제거. deathCount 는 엔딩 기록용 카운터로만 유지(NG+ 시 0).

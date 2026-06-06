@@ -7,12 +7,12 @@ import { Grid } from './game/grid.js';
 import { Agent, Action } from './game/agent.js';
 import { Renderer } from './game/renderer.js';
 import { TilemapRenderer } from './game/tilemap-renderer.js';
-import { TileType, TileProperties } from './game/tiles.js';
+import { TileType, TileProperties, isPassable, isLethal } from './game/tiles.js';
 import { sound } from './game/sound.js';
 import { music, MusicManager } from './game/music.js';
 import { DungeonEditor } from './game/editor.js';
 import { MultiStageGrid } from './game/multi-stage-grid.js';
-import { RunState, CHARACTER_STATS, CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS, HIRE_COSTS } from './game/run-state.js';
+import { RunState, CHARACTER_STATS, CHAPTER_CONFIG, DUNGEON_TREASURES, ITEMS, HIRE_COSTS, STARTING_FOOD } from './game/run-state.js';
 import { CHARACTERS, DUNGEON_CONFIG, DUNGEON_ORDER, BASE_OP_COST, DUNGEON_HINTS,
          MAX_EPISODES, CONVERGENCE_WINDOW, CONVERGENCE_THRESHOLD,
          createAlgorithm as createAlgorithmFromConfig } from './game/game-config.js';
@@ -34,6 +34,11 @@ import { drawGuildHall, drawCharacter, drawRepliPortrait, drawRikaPortrait, draw
 // at a time and reveals entry buttons progressively. Korean hardcoded for now —
 // i18n keys (guild.onboard.*) to follow. Narrative per STORY.md / D-2026-06-02-18.
 const GUILD_ONBOARD_KEY = 'rld_guild_onboarded';
+// 튜토리얼 1회성 마커. 첫 던전 세션이 끝나면(클리어/나가기) localStorage 에 박는다 →
+// 런 리셋(새 런)과 무관하게 영속. 이 플래그로 (1) 식량 세이프넷 ON/OFF, (2) 풀/단축
+// 온보딩을 함께 가른다. clearedDungeons 는 런마다 리셋되므로 세이프넷 게이트로 쓰면
+// 새 런마다 다시 켜짐 → 반드시 localStorage 플래그여야 진짜 1회성.
+const TUTORIAL_DONE_KEY = 'rld_tutorial_done';
 // who → 흉상(drawRepliPortrait/drawRikaPortrait), highlight → 자원 박스 강조,
 // reveal → 진입 버튼 공개. 대사는 시나리오 기반 (레플리=일상/안내, 리카=모험가 의뢰).
 // 온보딩 비트. side='npc'|'master' (목소리 진영), mode='speak'(기본)|'inner'(속마음).
@@ -57,6 +62,16 @@ const GUILD_ONBOARD_BEATS = [
     { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'onboard.b8' },
     { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'onboard.b9', reveal: 'quest' },
     // 레플리 마무리 CTA (전면) / 리카 딤+뒤로 → 끝나면 종이 클릭 가능.
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'onboard.b10', cta: 'quest' },
+];
+
+// 단축 온보딩 — 튜토리얼 완료(rld_tutorial_done) 후 재시작(새 게임/새 런)마다 재생.
+// 하이라이트·G(골드) 설명·속마음 전부 제거 → [인사 → 잘 해봐요 → 리카 의뢰 → CTA] 4비트.
+const GUILD_ONBOARD_BEATS_SHORT = [
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'onboard.b1' },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'onboard.short_go' },
+    { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'onboard.b8' },
+    { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'onboard.b9', reveal: 'quest' },
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'onboard.b10', cta: 'quest' },
 ];
 
@@ -344,6 +359,7 @@ class Game {
         document.getElementById('btn-new-game-opening').addEventListener('click', () => {
             OpeningManager.reset();
             localStorage.removeItem(GUILD_ONBOARD_KEY);
+            localStorage.removeItem(TUTORIAL_DONE_KEY);   // 풀 온보딩 + 식량 세이프넷 재무장(재테스트용)
             this._beginNewGame();
         });
 
@@ -371,6 +387,9 @@ class Game {
                 this.isGameOver = false;
                 if (this.gameOverOverlay) this.gameOverOverlay.style.display = 'none';
             }
+            // 첫 던전 세션을 한 번 떠나면 튜토리얼 소진 → 세이프넷 OFF + 단축 온보딩 전환.
+            this._cancelTutorAssist();
+            this._markTutorialDone();
             this.screenManager.show('screen-guild');
             this.updateGuildHall();
         });
@@ -411,6 +430,7 @@ class Game {
         this.runState = new RunState();
         this.runState.saveRunState();
         this._clearAllQTables();
+        this._onboardingRequested = true;   // 새 게임 → 길드 진입 시 온보딩(풀/단축) 재생
         this.loadDungeon('level_01_easy');
         this.updateStatsUI();
         this.updateFarmingUI();
@@ -538,11 +558,16 @@ class Game {
 
     // ── Guild onboarding (NPC dialogue + progressive button reveal) ──────────
 
-    /** Start the first-time guild onboarding, or reveal all buttons if done. */
+    /**
+     * 온보딩 재생 — 새 게임/새 런에서만(_onboardingRequested). 일반 길드 진입(준비실 취소,
+     * dev 복귀 등)엔 안 뜬다. 첫 플레이=풀버전, 튜토리얼 완료(rld_tutorial_done) 후=단축판.
+     */
     _maybeStartGuildOnboarding() {
-        const done = localStorage.getItem(GUILD_ONBOARD_KEY) === '1';
-        if (done) return;                    // already onboarded — scene hotspots are live
-        if (this._guildOnboarding) return;   // already running — don't restart
+        if (this._guildOnboarding) return;       // already running — don't restart
+        if (!this._onboardingRequested) return;  // 새 게임/새 런 트리거에서만
+        this._onboardingRequested = false;
+        // 풀/단축 비트셋 선택 — _renderGuildBeat/_finishGuildTyping 가 this._beats 참조.
+        this._beats = this._tutorialDone() ? GUILD_ONBOARD_BEATS_SHORT : GUILD_ONBOARD_BEATS;
         this._guildOnboarding = true;
         this._guildBeatIdx = 0;
         // Game 인스턴스는 페이지당 1회 — dev 리플레이(localStorage만 지움, reload 없음)에서
@@ -554,7 +579,7 @@ class Game {
     }
 
     _renderGuildBeat() {
-        const beat = GUILD_ONBOARD_BEATS[this._guildBeatIdx];
+        const beat = (this._beats || GUILD_ONBOARD_BEATS)[this._guildBeatIdx];
         const dlg = document.getElementById('guild-dialogue');
         if (!beat) { this._finishGuildOnboarding(); return; }
         // the quest reveal flags the board marker, shown once the dialogue ends and
@@ -663,7 +688,7 @@ class Game {
 
     _finishGuildTyping() {
         this._clearGuildTyping();
-        const beat = GUILD_ONBOARD_BEATS[this._guildBeatIdx];
+        const beat = (this._beats || GUILD_ONBOARD_BEATS)[this._guildBeatIdx];
         const tx = document.getElementById('guild-dialogue-text');
         if (tx && beat) tx.textContent = this._guildDisplayText(beat);
         this._guildTyping = false;
@@ -3393,12 +3418,22 @@ class Game {
         this.activeDefenseContract = false;
         this.activeTrapNullify = false;
 
+        // 튜토리얼 게임오버 방지 세이프넷 — per-attempt 리셋. 1차 보급(resupplyUsed)을
+        // 쓴 뒤에만 2차 자동이동이 활성화. paused=보급 팝업 중 입력 차단, autoMoving=자동이동 중.
+        this._cancelTutorAssist();
+        this._tutorAssist = { resupplyUsed: false, autoMoving: false, paused: false, allowStep: false };
+
         this.updateUI();
         this.render();
     }
 
     handleAction(action) {
         if (this.done || this.isGameOver) return;
+
+        // 튜토리얼 세이프넷 입력 가드 — 보급 팝업 중(paused)엔 전면 차단,
+        // 자동이동 중(autoMoving)엔 내부 구동 스텝(allowStep)만 통과시키고 플레이어 입력 무시.
+        const ta = this._tutorAssist;
+        if (ta && (ta.paused || (ta.autoMoving && !ta.allowStep))) return;
 
         // M4 daily modifiers (manual play only — training uses its own loop):
         // - wind_gust: 10% chance per turn to skip the action.
@@ -3427,6 +3462,14 @@ class Game {
                 this.showMessage(t('food.warn.threshold'), 'warning');
             }
         } else if (!this.isTraining && isBuiltIn && this.runState.food <= 0 && this.steps > 0) {
+            // 튜토리얼 최종 가드 — 첫 던전에선 굶주림 게임오버 절대 금지(세이프넷이 닿지 못한
+            // 경우의 보험: BFS 도달 불가 등). 식량 보충 후 계속 진행.
+            if (this._isTutorialRun()) {
+                this.runState.food = STARTING_FOOD;
+                this.updateUI();
+                this.render();
+                return;
+            }
             // C-5: Escape rope — prevent game over
             if (this.runState.hasItem('escape_rope')) {
                 this.runState.useItem('escape_rope');
@@ -3620,6 +3663,168 @@ class Game {
 
         this.updateUI();
         this.render();
+
+        // 튜토리얼 게임오버 방지 — 매 스텝 후 보급/자동이동 트리거 평가 (스텝 결과 반영된 상태에서).
+        this._maybeTutorAssist();
+    }
+
+    // ========== 튜토리얼 게임오버 방지 세이프넷 ==========
+    // 첫 던전(아직 한 번도 클리어 X) 한정. 1차 식량 보급(레플리 정식 등장) → 그 뒤에만
+    // 2차 자동 이동(G까지 한 칸씩) 활성화. 식량은 스텝당 -2 라 보급 트리거(food<=2)가
+    // 자동이동 트리거(food≈거리×2)보다 항상 나중 → "1차 보급 1회 사용 후 2차 해금" 게이트.
+    // 맴돌이(뺑글뺑글)는 식량을 갉아먹으므로, food≈거리×2 트리거가 자연히 escort 로 흡수.
+
+    /** 튜토리얼 1회성 마커 (localStorage 영속 — 런 리셋 무관). */
+    _tutorialDone() {
+        return localStorage.getItem(TUTORIAL_DONE_KEY) === '1';
+    }
+
+    /** 첫 던전 세션 종료(클리어/나가기) 시 1회 박음 → 세이프넷 OFF + 단축 온보딩 전환. */
+    _markTutorialDone() {
+        if (this._tutorialDone()) return;
+        localStorage.setItem(TUTORIAL_DONE_KEY, '1');
+    }
+
+    /** 세이프넷은 튜토리얼 미완료 + 빌트인 + 수동 플레이일 때만. 1회성(localStorage). */
+    _isTutorialRun() {
+        return !this.isTraining
+            && this.isBuiltInDungeon(this.currentDungeon)
+            && !this._tutorialDone();
+    }
+
+    /**
+     * agent → grid.goalPos 까지 BFS. walkable = isPassable && !isLethal(PIT 즉사 회피).
+     * 반환 { dist, action } (action = 골 쪽 첫 걸음) — 도달 불가/이미 골이면 null.
+     * 매 틱 재계산해 슬립 등으로 경로가 틀어져도 self-correct.
+     */
+    _bfsTowardGoal() {
+        const grid = this.grid, goal = grid && grid.goalPos, ag = this.agent;
+        if (!grid || !goal || !ag) return null;
+        if (ag.x === goal.x && ag.y === goal.y) return null;
+        const walkable = (x, y) => {
+            if (!grid.isValidPosition(x, y)) return false;
+            const tile = grid.getTile(x, y);
+            return isPassable(tile) && !isLethal(tile);
+        };
+        const DIRS = [
+            { a: Action.UP, dx: 0, dy: -1 },
+            { a: Action.DOWN, dx: 0, dy: 1 },
+            { a: Action.LEFT, dx: -1, dy: 0 },
+            { a: Action.RIGHT, dx: 1, dy: 0 },
+        ];
+        const start = `${ag.x},${ag.y}`;
+        const dist = new Map([[start, 0]]);
+        const firstAction = new Map();        // "x,y" → 시작점에서의 첫 걸음 Action
+        const queue = [{ x: ag.x, y: ag.y }];
+        let qi = 0;
+        while (qi < queue.length) {
+            const cur = queue[qi++];
+            const ck = `${cur.x},${cur.y}`;
+            const cd = dist.get(ck);
+            for (const d of DIRS) {
+                const nx = cur.x + d.dx, ny = cur.y + d.dy;
+                if (!walkable(nx, ny)) continue;
+                const nk = `${nx},${ny}`;
+                if (dist.has(nk)) continue;
+                dist.set(nk, cd + 1);
+                firstAction.set(nk, ck === start ? d.a : firstAction.get(ck));
+                if (nx === goal.x && ny === goal.y) {
+                    return { dist: cd + 1, action: firstAction.get(nk) };
+                }
+                queue.push({ x: nx, y: ny });
+            }
+        }
+        return null;   // 도달 불가
+    }
+
+    /** 매 스텝 후 평가 — 보급(1차) 또는 자동이동(2차) 트리거. */
+    _maybeTutorAssist() {
+        const ta = this._tutorAssist;
+        if (!ta || ta.paused || ta.autoMoving) return;
+        if (this.done || this.isGameOver) return;
+        if (!this._isTutorialRun()) return;
+        const food = this.runState.food;
+
+        if (ta.resupplyUsed) {
+            // 2차 — 남은 식량으로 G까지 가는 게 빠듯해지기 직전(food ≤ 거리×2 + 버퍼2)에 escort.
+            // 버퍼2 → 도착 시 food=2 로 굶주림 직전 안전 도달.
+            const path = this._bfsTowardGoal();
+            if (path && path.dist > 0 && food <= path.dist * 2 + 2) {
+                this._startAutoMoveAssist();
+            }
+            return;
+        }
+        // 1차 — 레플리 보급. _maybeTutorAssist 는 consumeFood 적용 후 호출되므로 이 시점 food 는
+        // 0 또는 2 (이동 1회분 이하). food<=2 비교라 둘 다 보급으로 흡수 → 굶주림 게임오버 도달
+        // 전에 _startResupply 가 paused=true 로 다음 입력을 막아 직렬화. (food==2 보장 아님 주의)
+        if (food <= 2) this._startResupply();
+    }
+
+    /** 1차 보급 — 게임 멈추고(paused) 레플리 정식 등장(초상+대사). 버튼 → 식량 보충 + 2차 해금. */
+    _startResupply() {
+        const ta = this._tutorAssist;
+        if (ta.resupplyUsed || ta.paused) return;
+        ta.paused = true;
+        const overlay = document.getElementById('tutor-rescue-overlay');
+        const speaker = document.getElementById('tutor-rescue-speaker');
+        const text = document.getElementById('tutor-rescue-text');
+        const btn = document.getElementById('btn-tutor-rescue');
+        const portrait = document.getElementById('tutor-rescue-portrait');
+        if (speaker) speaker.textContent = t('onboard.speaker.repli');
+        if (text) text.textContent = t('tutor.rescue.text');
+        if (btn) btn.textContent = t('tutor.rescue.ok');
+        if (portrait) {
+            const ctx = portrait.getContext('2d');
+            ctx.clearRect(0, 0, portrait.width, portrait.height);
+            drawRepliPortrait(ctx, portrait.width / 2, portrait.height - 12, 7);
+        }
+        const myTa = ta;     // 리셋으로 ta 가 교체되면 stale 클릭 무시
+        const onOk = () => {
+            if (this._tutorAssist !== myTa) return;
+            if (overlay) overlay.style.display = 'none';
+            this.runState.food = STARTING_FOOD;     // 든든하게 보충
+            myTa.resupplyUsed = true;
+            myTa.paused = false;
+            this.updateUI();
+            this.render();
+        };
+        if (btn) btn.addEventListener('click', onOk, { once: true });
+        if (overlay) overlay.style.display = 'flex';
+        sound.heal();
+    }
+
+    /** 2차 자동이동 — 대사 한 줄 → G 향해 한 칸씩(텀 두고). 도달 시 handleVictory 자연 클리어. */
+    _startAutoMoveAssist() {
+        const ta = this._tutorAssist;
+        if (ta.autoMoving) return;
+        ta.autoMoving = true;
+        this.showMessage(t('tutor.assist.line'), 'info', { duration: 2200 });
+        const STEP_MS = 320;
+        const tick = () => {
+            if (this._tutorAssist !== ta || !ta.autoMoving) return;
+            if (this.done || this.isGameOver) { ta.autoMoving = false; return; }
+            const path = this._bfsTowardGoal();
+            if (!path || path.action == null) { ta.autoMoving = false; return; }
+            ta.allowStep = true;
+            this.handleAction(path.action);          // 식량 소모 + 골 도달 시 handleVictory
+            ta.allowStep = false;
+            if (this.done || this.isGameOver) { ta.autoMoving = false; return; }
+            ta._timer = setTimeout(tick, STEP_MS);
+        };
+        ta._timer = setTimeout(tick, STEP_MS);
+    }
+
+    /** in-flight 자동이동 타이머/팝업 정리 (던전 리셋·이탈 시). */
+    _cancelTutorAssist() {
+        const ta = this._tutorAssist;
+        if (ta) {
+            if (ta._timer) { clearTimeout(ta._timer); ta._timer = null; }
+            ta.autoMoving = false;
+            ta.paused = false;
+            ta.allowStep = false;
+        }
+        const overlay = document.getElementById('tutor-rescue-overlay');
+        if (overlay) overlay.style.display = 'none';
     }
 
     handleVictory() {
@@ -3646,6 +3851,9 @@ class Game {
             this.updateUI();
             return;
         }
+
+        // 첫 던전(빌트인)을 깨면 튜토리얼 소진 → 세이프넷 OFF + 단축 온보딩 전환 (localStorage 영속).
+        this._markTutorialDone();
 
         // C-1: Record serpa clear
         this.runState.recordSerpaClear(this.currentCharacter);
@@ -3888,6 +4096,7 @@ class Game {
         this.isGameOver = false;
         this.gameOverOverlay.style.display = 'none';
 
+        this._onboardingRequested = true;   // 새 런 → 길드 복귀 시 단축 온보딩 재생 (튜토리얼 완료 후)
         this.runState.startNewRun();
         this.updateCharacterGrid();
         this.updateDungeonSelect();
