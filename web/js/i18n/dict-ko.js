@@ -96,6 +96,9 @@ export const KO = {
     'firstclear.b4': '아, 마침 퀴니가 돌아왔네요. {master}의 첫 세르파예요.',
     'firstclear.b5': '퀴니한테 1관을 맡겨 두면, 다른 일을 보는 동안 골드를 캐 와요. 이게 ‘파밍’이에요.',
     'firstclear.b6': '퀴니가 골드 캐는 동안, 다음 의뢰는 {master}가 다녀오죠.',
+    // 액션 비트 — 게시판에서 답파한 1관을 열어 퀴니 배치(하이라이트 유도). 배치 완료 시 assign_done 으로.
+    'firstclear.assign': '그럼 직접 해봐요. 게시판에서 답파한 첫걸음을 열어 퀴니를 배치하면 돼요.',
+    'firstclear.assign_done': '좋아요! 이제 퀴니가 첫걸음에서 골드를 캐 와요.',
 
     // === 미션 보드 / 카드 ===
     'mission.badge.new': 'NEW',

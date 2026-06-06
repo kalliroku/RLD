@@ -86,6 +86,9 @@ const GUILD_FIRSTCLEAR_BEATS = [
     { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'firstclear.b3', reveal: 'quest' },
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.b4' },
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.b5' },
+    // 액션 비트 — 대사 후 클릭하면 'farm-assign' 태스크 무장(대사 닫고 하이라이트). 퀴니 1관 배치 완료 시 다음으로.
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.assign', action: 'farm-assign' },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.assign_done' },
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.b6' },
 ];
 
@@ -151,6 +154,7 @@ class Game {
         // 시드키(GUILD_ONBOARD_KEY vs FIRSTCLEAR_SEEN_KEY)를 가르는 데 사용. 명시 기본값으로
         // "온보딩 안 했는데 완료 플래그가 박히는" 암묵 fallback 의존 차단(W1).
         this._beatMode = null;
+        this._tutorTask = null;   // 액션 비트 무장 태스크(예: 'farm-assign') — 하이라이트+완료 게이트
 
         // C-4: Treasure state
         this.carryingTreasure = false;
@@ -418,7 +422,7 @@ class Game {
         // hotspot opens its panel. Held back until onboarding hands off the room.
         document.querySelectorAll('.guild-hotspot').forEach(spot => {
             spot.addEventListener('click', () => {
-                if (this._guildOnboarding) return;
+                if (this._guildOnboarding && !this._tutorTask) return;  // 태스크 무장 중엔 핫스팟 클릭 허용(보드 열기)
                 const key = spot.dataset.popup;
                 this._openGuildPopup(key, t('guild.tab.' + key));
             });
@@ -426,10 +430,10 @@ class Game {
         const guildPopup = document.getElementById('guild-popup');
         if (guildPopup) {
             guildPopup.querySelectorAll('[data-popup-close]').forEach(el => {
-                el.addEventListener('click', () => { this._clearFarmTick(); guildPopup.hidden = true; });
+                el.addEventListener('click', () => { this._clearFarmTick(); guildPopup.hidden = true; if (this._tutorTask === 'farm-assign') this._setGuildQuestMarker(true); });
             });
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && !guildPopup.hidden) { this._clearFarmTick(); guildPopup.hidden = true; }
+                if (e.key === 'Escape' && !guildPopup.hidden) { this._clearFarmTick(); guildPopup.hidden = true; if (this._tutorTask === 'farm-assign') this._setGuildQuestMarker(true); }
             });
         }
         // NPC onboarding dialogue — click OR arrow/Enter/Space to advance (오프닝과 동일)
@@ -657,10 +661,36 @@ class Game {
         if (dlg) dlg.classList.add('show');
     }
 
-    /** Advance on click; first click finishes an in-progress typewriter. */
+    /** Advance on click; first click finishes an in-progress typewriter.
+     *  액션 비트는 대사 클릭 시 idx++ 대신 태스크를 무장(하이라이트) — 그 행동 완료가 진행을 잇는다. */
     _advanceGuildBeat() {
         if (!this._guildOnboarding) return;
+        if (this._tutorTask) return;                 // 태스크 무장 중엔 대사클릭 무시(대상 클릭/행동으로 진행)
         if (this._guildTyping) { this._finishGuildTyping(); return; }
+        const beat = (this._beats || GUILD_ONBOARD_BEATS)[this._guildBeatIdx];
+        if (beat && beat.action) { this._armTutorTask(beat.action); return; }
+        this._guildBeatIdx++;
+        this._renderGuildBeat();
+    }
+
+    /** 액션 비트 무장 — 대사를 닫고 태스크 하이라이트를 켠다(대상은 각 뷰 렌더 훅이 글로우). */
+    _armTutorTask(task) {
+        // 이미 충족됐으면(리플레이 등) 즉시 완료 — 배치 버튼 없는 화면에서 스턱 방지.
+        if (task === 'farm-assign' && this.runState.getFarmingDungeon('qkun') === 'level_01_easy') {
+            this._completeTutorTask();
+            return;
+        }
+        this._tutorTask = task;
+        document.getElementById('guild-dialogue')?.classList.remove('show');
+        // farm-assign: 의뢰판으로 유도(마커 글로우). 카드/배치 버튼 글로우는 _updateGuildQuests·_renderFarmRoom 훅.
+        if (task === 'farm-assign') this._setGuildQuestMarker(true);
+    }
+
+    /** 태스크 완료 — 팝업 닫고 다음(확인) 비트로 복귀. */
+    _completeTutorTask() {
+        this._tutorTask = null;
+        const popup = document.getElementById('guild-popup');
+        if (popup && !popup.hidden) { this._clearFarmTick(); popup.hidden = true; }
         this._guildBeatIdx++;
         this._renderGuildBeat();
     }
@@ -893,6 +923,10 @@ class Game {
             if (card.classList.contains('locked')) return;   // 잠김/파밍중은 클릭 불가
             card.addEventListener('click', () => this._renderPrepRoom(card.dataset.dungeon));
         });
+        // 파밍 배치 튜토리얼 — 답파한 1관 카드 글로우(클릭 유도).
+        if (this._tutorTask === 'farm-assign') {
+            panel.querySelector('.mission-card[data-dungeon="level_01_easy"]')?.classList.add('tutor-glow');
+        }
     }
 
     /** 미션 카드 1장 — NEW / CLEAR / 파밍중(잠김) 상태. isBoss=보스 태그. */
@@ -1168,9 +1202,20 @@ class Game {
                 const sel = panel.querySelector('.farm-serpa-select');
                 const nm = sel && sel.value;
                 if (nm && rs.assignFarming(nm, dungeonId, DUNGEON_CONFIG, Date.now())) {
-                    this._renderFarmRoom(dungeonId);         // 배치 → 누적 블록으로
+                    // 파밍 배치 튜토리얼 완료 — 퀴니를 1관에 배치하면 다음(확인) 비트로.
+                    if (this._tutorTask === 'farm-assign' && nm === 'qkun' && dungeonId === 'level_01_easy') {
+                        this._completeTutorTask();
+                    } else {
+                        this._renderFarmRoom(dungeonId);     // 배치 → 누적 블록으로
+                    }
                 }
             });
+            // 파밍 배치 튜토리얼 — 1관 한정: 퀴니 프리셀렉트 + 배치 버튼 글로우(클릭 유도).
+            if (this._tutorTask === 'farm-assign' && dungeonId === 'level_01_easy') {
+                const sel = panel.querySelector('.farm-serpa-select');
+                if (sel && [...sel.options].some(o => o.value === 'qkun')) sel.value = 'qkun';
+                assignBtn?.classList.add('tutor-glow');
+            }
         }
     }
 

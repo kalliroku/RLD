@@ -85,6 +85,9 @@ export const EN = {
     'firstclear.b4': "Oh — Quinnie's back, just in time. Your first Serpa, {master}.",
     'firstclear.b5': "Leave stage 1 to Quinnie and she'll dig up gold while you're busy elsewhere. That's 'farming'.",
     'firstclear.b6': "While Quinnie farms, {master} can take the next request.",
+    // Action beat — open the cleared stage 1 on the board and assign Quinnie (highlight-guided). Advances on assign.
+    'firstclear.assign': "Go on, try it. Open the cleared Tutorial stage on the board and assign Quinnie there.",
+    'firstclear.assign_done': "Nice! Now Quinnie digs up gold at the Tutorial stage.",
 
     // === Mission board / cards ===
     'mission.badge.new': 'NEW',

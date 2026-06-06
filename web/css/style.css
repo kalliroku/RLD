@@ -1273,6 +1273,14 @@ body.editor-mode .dpad-container {
     border-radius: 8px;
 }
 
+/* 튜토리얼 액션 비트 — 클릭 유도 대상(의뢰 카드/배치 버튼 등) 글로우. attentionPulse 재사용. */
+.tutor-glow {
+    outline: 2px solid #e6b450;
+    outline-offset: 2px;
+    animation: attentionPulse 1.4s ease-in-out infinite;
+    border-radius: 8px;
+}
+
 /* ========== Roguelike: Game Over Overlay ========== */
 .game-over-overlay {
     position: absolute;
