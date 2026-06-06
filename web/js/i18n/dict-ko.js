@@ -89,13 +89,13 @@ export const KO = {
     'onboard.b10': '자, 저 의뢰서부터 살펴볼까요.',
     // 단축 온보딩 전용 — 인사(b1) 다음 짧은 마무리, 곧장 리카 등장(b8)로 연결.
     'onboard.short_go': '자, 오늘도 잘 해봐요 마스터!',
-    // 첫 던전 클리어 후 길드 복귀 1회 재생 (GUILD_FIRSTCLEAR_BEATS). 리카 칭찬→지도판매 떡밥→게시판 / 레플리 Q군 합류→파밍→2관 수동.
+    // 첫 던전 클리어 후 길드 복귀 1회 재생 (GUILD_FIRSTCLEAR_BEATS). 리카 칭찬→지도판매 떡밥→게시판 / 레플리 퀴니 합류→파밍→2관 수동.
     'firstclear.b1': '{master}! 첫 의뢰를 벌써 답파하다니, 대단해요!',
     'firstclear.b2': '그 지도는 모험가 길드가 내준 거예요. 나중엔 직접 답파한 지도를 길드에 팔 수도 있고요.',
     'firstclear.b3': '게시판에 다른 의뢰도 붙여 뒀어요. 한번 확인해 보세요!',
-    'firstclear.b4': '아, 마침 Q군이 돌아왔네요. {master}의 첫 세르파예요.',
-    'firstclear.b5': 'Q군한테 1관을 맡겨 두면, 다른 일을 보는 동안 골드를 캐 와요. 이게 ‘파밍’이에요.',
-    'firstclear.b6': 'Q군이 골드 캐는 동안, 다음 의뢰는 {master}가 다녀오죠.',
+    'firstclear.b4': '아, 마침 퀴니가 돌아왔네요. {master}의 첫 세르파예요.',
+    'firstclear.b5': '퀴니한테 1관을 맡겨 두면, 다른 일을 보는 동안 골드를 캐 와요. 이게 ‘파밍’이에요.',
+    'firstclear.b6': '퀴니가 골드 캐는 동안, 다음 의뢰는 {master}가 다녀오죠.',
 
     // === 미션 보드 / 카드 ===
     'mission.badge.new': 'NEW',
@@ -257,7 +257,7 @@ export const KO = {
 
     // === Character names (D-4 정체성 — 알고리즘이 곧 캐릭터) ===
     // 알고리즘 라벨 (Q-Learning, SARSA, ACLA, …) 은 universal 약어라 i18n 외 처리.
-    'char.qkun': 'Q군',
+    'char.qkun': '퀴니',
     'char.scout': '스카우트',
     'char.sarsa': '사르사',
     'char.monte': '몬테',
@@ -456,7 +456,7 @@ export const KO = {
     'item.trap_nullify.desc': '1탐험 함정 무효',
 
     // === Character personalities (15종, hire.confirm 노출) ===
-    'character.personality.qkun': '낙관적 멍청이',
+    'character.personality.qkun': '충성스러운 덜렁이',
     'character.personality.scout': '근시안 정찰병',
     'character.personality.sarsa': '겁쟁이',
     'character.personality.monte': '끝까지 가봐야 직성',
@@ -473,7 +473,7 @@ export const KO = {
     'character.personality.sweeper': '효율주의자',
 
     // === Character descriptions (15종, character-desc UI) ===
-    'character.desc.qkun': '한 번 가본 길을 그대로 기억합니다. 같은 던전을 반복하면 강합니다.',
+    'character.desc.qkun': '한 번 가본 길을 그대로 외우는 강아지 세르파. 자주 넘어져도 우직하게 다 기억해, 같은 던전을 반복할수록 강해집니다.',
     'character.desc.scout': '주변을 관찰해서 학습합니다. 처음 보는 던전도 경험을 활용!',
     'character.desc.sarsa': '실수에서 배우는 신중파. 안전한 길을 선호합니다.',
     'character.desc.monte': '끝까지 가봐야 안다! 완주 후 복기하는 사색가.',
@@ -484,7 +484,7 @@ export const KO = {
     'character.desc.qvkun': 'Q와 V를 동시에 학습. 과대추정을 줄여 안정적입니다.',
     'character.desc.acla': '학습 오토마톤. 확률을 직접 조작해 빠르게 정책을 바꿉니다.',
     'character.desc.ensemble': '5개 알고리즘의 합의. 볼츠만 곱으로 최적 행동을 선택합니다.',
-    'character.desc.exsa': '기대값으로 학습. 분산 없는 업데이트로 Q군과 사르사를 모두 지배합니다.',
+    'character.desc.exsa': '기대값으로 학습. 분산 없는 업데이트로 퀴니와 사르사를 모두 지배합니다.',
     'character.desc.doubleq': '두 개의 눈으로 편향 없이 판단. 과대추정의 해결사.',
     'character.desc.treeback': 'n걸음 앞을 내다보는 전략가. 기대값의 나무를 키웁니다.',
     'character.desc.sweeper': '중요한 것부터 정리하는 효율주의자. 다이나의 진화형.',

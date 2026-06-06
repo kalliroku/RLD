@@ -9,7 +9,7 @@
  * Missing keys fall back to dict-ko.js (Korean shows through during draft).
  * Final user review pass required before 1.0 — flagged carefully:
  *   - D-4 정체성 문구는 의역 (literal translation 부자연스러움)
- *   - Character names: transliteration 유지 (Q-kun → "Q", 사르사 → "Sarsa") — D-4 캐릭터 정체성 보존
+ *   - Character names: 캐릭터별 transliteration(사르사 → "Sarsa") 또는 localized rename(qkun → "Quinnie", Q 어두문자 유지) — D-4 정체성 보존(음역 강제 아님)
  *   - "세르파" → "Sherpa" (시그니처 약어 보존)
  *   - In-game 카피는 narrative 톤 (D-2026-05-19-1 §10 / STORY.md §RL 메타 흡수 룰):
  *     학명 (Q-table / episode / reinforcement) 회피, "exploration" / "memory" 등
@@ -82,9 +82,9 @@ export const EN = {
     'firstclear.b1': "{master}! You cleared your very first request already — nicely done!",
     'firstclear.b2': "That map was lent by the Adventurers' Guild. Later, you'll be able to sell maps you've cleared yourself.",
     'firstclear.b3': "I've pinned a few other requests to the board. Take a look!",
-    'firstclear.b4': "Oh — Q is back, just in time. Your first Serpa, {master}.",
-    'firstclear.b5': "Leave stage 1 to Q and it'll dig up gold while you're busy elsewhere. That's 'farming'.",
-    'firstclear.b6': "While Q farms, {master} can take the next request.",
+    'firstclear.b4': "Oh — Quinnie's back, just in time. Your first Serpa, {master}.",
+    'firstclear.b5': "Leave stage 1 to Quinnie and she'll dig up gold while you're busy elsewhere. That's 'farming'.",
+    'firstclear.b6': "While Quinnie farms, {master} can take the next request.",
 
     // === Mission board / cards ===
     'mission.badge.new': 'NEW',
@@ -244,8 +244,8 @@ export const EN = {
     'section.controls': 'Controls',
     'section.legend': 'Legend',
 
-    // === Character names (D-4 정체성 — transliteration 보존) ===
-    'char.qkun': 'Q',
+    // === Character names (D-4 정체성 보존 — transliteration 또는 localized rename, Q 어두문자 유지) ===
+    'char.qkun': 'Quinnie',
     'char.scout': 'Scout',
     'char.sarsa': 'Sarsa',
     'char.monte': 'Monte',
@@ -445,7 +445,7 @@ export const EN = {
     'item.trap_nullify.desc': 'Traps nullified for 1 exploration',
 
     // === Character personalities (15종, hire.confirm 노출) ===
-    'character.personality.qkun': 'Cheerful Fool',
+    'character.personality.qkun': 'Loyal Klutz',
     'character.personality.scout': 'Nearsighted Scout',
     'character.personality.sarsa': 'Coward',
     'character.personality.monte': 'Goes All the Way',
@@ -462,7 +462,7 @@ export const EN = {
     'character.personality.sweeper': 'Efficient',
 
     // === Character descriptions (15종) ===
-    'character.desc.qkun': 'Remembers the exact path once walked. Strong on repeated dungeons.',
+    'character.desc.qkun': 'A dogfolk Serpa who memorizes every path once walked. Clumsy, but doggedly remembers it all — stronger the more a dungeon repeats.',
     'character.desc.scout': 'Learns from surroundings. Brings experience to new dungeons.',
     'character.desc.sarsa': 'Learns from mistakes. Prefers the safe path.',
     'character.desc.monte': "Has to see it through to the end! A finisher who reflects after the run.",
@@ -473,7 +473,7 @@ export const EN = {
     'character.desc.qvkun': 'Learns Q and V together. Less overestimation, more stable.',
     'character.desc.acla': 'Learning automaton. Tweaks probabilities directly for fast policy shifts.',
     'character.desc.ensemble': 'Consensus of 5 algorithms. Picks the best via Boltzmann product.',
-    'character.desc.exsa': 'Learns by expectation. Variance-free updates dominate Q and Sarsa alike.',
+    'character.desc.exsa': 'Learns by expectation. Variance-free updates dominate Quinnie and Sarsa alike.',
     'character.desc.doubleq': 'Two eyes, no bias. The overestimation killer.',
     'character.desc.treeback': 'Strategist that sees n steps ahead. Grows trees of expectation.',
     'character.desc.sweeper': 'Prioritizes what matters most. Dyna evolved.',

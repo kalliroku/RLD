@@ -79,7 +79,7 @@ const GUILD_ONBOARD_BEATS_SHORT = [
 
 // 첫 던전 클리어 후 길드 복귀 시 1회 재생(FIRSTCLEAR_SEEN_KEY). 비트 플레이어(_startGuildBeats) 재사용.
 // 리카: 칭찬 → 지도판매 떡밥(canSellMaps, 게이트는 false 유지) → 게시판 넛지(2관).
-// 레플리: Q군 합류 → 파밍 소개 → 2관도 마스터 수동. (보스전 자동학습 연출은 별도)
+// 레플리: 퀴니 합류 → 파밍 소개 → 2관도 마스터 수동. (보스전 자동학습 연출은 별도)
 const GUILD_FIRSTCLEAR_BEATS = [
     { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'firstclear.b1' },
     { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'firstclear.b2' },

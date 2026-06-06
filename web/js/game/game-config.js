@@ -22,7 +22,7 @@ import { PrioritizedSweeping } from './prioritized-sweeping.js';
 // Character registry
 // B-105 / D-4: personality 가 카드 표면 라벨, algo 학명은 hover 툴팁으로 격하 (알고리즘=캐릭터)
 export const CHARACTERS = {
-    qkun:   { name: 'Q군',     algo: 'Q-Learning',   personality: '낙관적 멍청이',          cls: QLearning,      desc: '좌표를 외워서 학습합니다. 던전별 전문가.' },
+    qkun:   { name: '퀴니',    algo: 'Q-Learning',   personality: '충성스러운 덜렁이',      cls: QLearning,      desc: '한 번 가본 길을 그대로 외우는 강아지 세르파. 자주 넘어져도 우직하게 다 기억합니다.' },
     scout:  { name: '스카우트', algo: 'Local Q',      personality: '근시안 정찰병',          cls: LocalQLearning, desc: '주변을 관찰해서 학습합니다. 처음 보는 던전도 경험을 활용!' },
     sarsa:  { name: '사르사',   algo: 'SARSA',        personality: '겁쟁이',                cls: SARSA,          desc: '실수에서 배우는 신중파. 안전한 길을 선호합니다.' },
     monte:  { name: '몬테',     algo: 'Monte Carlo',  personality: '끝까지 가봐야 직성',     cls: MonteCarlo,     desc: '끝까지 가봐야 안다! 완주 후 복기하는 사색가.' },
@@ -33,7 +33,7 @@ export const CHARACTERS = {
     qvkun:  { name: 'QV군',    algo: 'QV-Learning',  personality: '이중인격',              cls: QVLearning,     desc: 'Q와 V를 동시에 학습. 과대추정을 줄여 안정적입니다.' },
     acla:   { name: '아클라',   algo: 'ACLA',         personality: '변덕쟁이',              cls: ACLA,           desc: '학습 오토마톤. 확률을 직접 조작해 빠르게 정책을 바꿉니다.' },
     ensemble: { name: '앙상블', algo: 'Ensemble',     personality: '합의체',                cls: Ensemble,       desc: '5개 알고리즘의 합의. 볼츠만 곱으로 최적 행동을 선택합니다.' },
-    exsa:     { name: '에크사', algo: 'Expected SARSA', personality: '계산기',              cls: ExpectedSarsa, desc: '기대값으로 학습. 분산 없는 업데이트로 Q군과 사르사를 모두 지배합니다.' },
+    exsa:     { name: '에크사', algo: 'Expected SARSA', personality: '계산기',              cls: ExpectedSarsa, desc: '기대값으로 학습. 분산 없는 업데이트로 퀴니와 사르사를 모두 지배합니다.' },
     doubleq:  { name: '더블Q', algo: 'Double Q',     personality: '의심쟁이',              cls: DoubleQLearning, desc: '두 개의 눈으로 편향 없이 판단. 과대추정의 해결사.' },
     treeback: { name: '트리백', algo: 'Tree Backup',  personality: '선견자',                cls: TreeBackup,      desc: 'n걸음 앞을 내다보는 전략가. 기대값의 나무를 키웁니다.' },
     sweeper:  { name: '스위퍼', algo: 'Pri. Sweep',   personality: '효율주의자',            cls: PrioritizedSweeping, desc: '중요한 것부터 정리하는 효율주의자. 다이나의 진화형.' },
