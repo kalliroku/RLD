@@ -439,21 +439,7 @@ class Game {
 
         // 클린 플레이 화면 나가기 → 길드 복귀 (dev 워크벤치 거치지 않음)
         const playExitBtn = document.getElementById('btn-play-exit');
-        if (playExitBtn) playExitBtn.addEventListener('click', () => {
-            // 게임오버 오버레이가 뜬 채 나가면 재출발 시 stale 잔존 → 여기서 정리
-            if (this.isGameOver) {
-                this.isGameOver = false;
-                if (this.gameOverOverlay) this.gameOverOverlay.style.display = 'none';
-            }
-            // 첫 던전 세션을 한 번 떠나면 튜토리얼 소진 → 세이프넷 OFF + 단축 온보딩 전환.
-            this._cancelTutorAssist();
-            this._markTutorialDone();
-            // 식량 = 출정 소모품 — 던전을 떠나면 잔여 폐기(전역 재고로 잔존 금지, bm 2026-06-10).
-            this.runState.food = 0;
-            this.runState.saveRunState();
-            this.screenManager.show('screen-guild');
-            this.updateGuildHall();
-        });
+        if (playExitBtn) playExitBtn.addEventListener('click', () => this._exitPlayToGuild());
 
         // Scene objects ARE the entry points (HUD-over-scene): each transparent
         // hotspot opens its panel. Held back until onboarding hands off the room.
@@ -969,6 +955,8 @@ class Game {
             ? `<button class="mboard-nav" data-chnav="${view + 1}">›</button>`
             : `<span class="mboard-nav disabled">›</span>`;
         let html = `<div class="mboard-head">${prev}<span class="mboard-chtitle">Ch.${view} ${t('chapter.' + view)}</span>${next}</div>`;
+        // 첫 출정 강제 — 레플리의 게시판 안내(메뉴 설명). 스타일은 farm-assign-hint 재사용.
+        if (this._isFirstDeployPhase()) html += `<div class="farm-assign-hint">${t('firstdeploy.board_hint')}</div>`;
 
         // 일반 의뢰 — 해금/답파된 것만 (잠긴 미래는 숨김)
         html += `<div class="mboard-cards">`;
@@ -1138,12 +1126,13 @@ class Game {
                 <canvas id="prep-minimap" class="prep-minimap"></canvas>
                 <div class="prep-info">${info}</div>
                 <div class="prep-flavor">"${this._dungeonFlavor(dungeonId)}"</div>
+                ${this._isFirstDeployPhase() && dungeonId === 'level_01_easy'
+                    ? `<div class="farm-assign-hint">${t('firstdeploy.prep_hint')}</div>` : ''}
                 <div class="prep-rows">
                     <div class="prep-row"><span>${t('prep.label.food')}</span><span class="food-stepper">
                         <button data-food="-10">−</button><b id="prep-food"></b><button data-food="10">+</button>
                         <small>${t('prep.food_unit')}</small> <small class="prep-gold" id="prep-food-cost"></small></span></div>
                     <div class="prep-row"><span>${t('prep.label.cost')}</span><span class="prep-gold">${config.cost}G</span></div>
-                    <div class="prep-row"><span>${t('prep.label.gold')}</span><span class="prep-gold" id="prep-hold">${rs.gold}G</span></div>
                     <div class="prep-row"><span>${t('prep.label.reward')}</span><span class="prep-reward">${reward}</span></div>
                 </div>
                 <div class="prep-actions">
@@ -3878,6 +3867,23 @@ class Game {
         return localStorage.getItem(TUTORIAL_DONE_KEY) === '1';
     }
 
+    /** 클린 플레이 세션 종료 → 길드 복귀. 나가기 버튼 + 첫클리어 보상 확인(자동 복귀) 공용. */
+    _exitPlayToGuild() {
+        // 게임오버 오버레이가 뜬 채 나가면 재출발 시 stale 잔존 → 여기서 정리
+        if (this.isGameOver) {
+            this.isGameOver = false;
+            if (this.gameOverOverlay) this.gameOverOverlay.style.display = 'none';
+        }
+        // 첫 던전 세션을 한 번 떠나면 튜토리얼 소진 → 세이프넷 OFF + 단축 온보딩 전환.
+        this._cancelTutorAssist();
+        this._markTutorialDone();
+        // 식량 = 출정 소모품 — 던전을 떠나면 잔여 폐기(전역 재고로 잔존 금지, bm 2026-06-10).
+        this.runState.food = 0;
+        this.runState.saveRunState();
+        this.screenManager.show('screen-guild');
+        this.updateGuildHall();
+    }
+
     /** 첫 출정 강제 단계 — 튜토리얼 미완료 + 답파 0. 이 동안 보드 마커 상시 재무장 +
      *  1관 카드/출발 버튼 글로우 + 준비실 취소 숨김 + 팝업 닫기 잠금(_guildPopupLocked).
      *  첫 던전 세션 종료(_markTutorialDone, 클리어/나가기) 시 해제. */
@@ -4233,6 +4239,8 @@ class Game {
                 this._pendingFirstClearTutorials = false;
                 this._queueFirstClearTutorials();
             }
+            // 클린 플로우: 보상 처리 후 자동 길드 복귀(나가기 불필요 — 첫클리어 대화로 즉시 연결).
+            if (this.screenManager?.current === 'screen-play') this._exitPlayToGuild();
         } : null;
 
         // 판매 미해금 시 같은 버튼이 '확인'(보상 수령 닫기)으로 — keepMap(독점 보너스) 미발동.
@@ -4252,6 +4260,9 @@ class Game {
                 this._pendingFirstClearTutorials = false;
                 this._queueFirstClearTutorials();
             }
+            // 클린 플로우: 보상 확인 후 자동 길드 복귀(나가기 불필요 — 첫클리어 대화로 즉시 연결).
+            // dev 워크벤치(screen-dev)에서의 클리어는 기존대로 화면 유지.
+            if (this.screenManager?.current === 'screen-play') this._exitPlayToGuild();
         };
 
         overlay.style.display = 'flex';

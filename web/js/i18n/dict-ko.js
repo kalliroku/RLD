@@ -134,8 +134,10 @@ export const KO = {
     'prep.food_unit': '(1G/개)',
     // 출정 보급 합계 비용 — 보급량을 올리는 만큼 필요한 골드 표시.
     'prep.food_cost': '−{n}G',
+    // 첫 출정 강제 단계 — 레플리의 메뉴 안내(게시판/준비실). 카피는 자리표시자, 톤 검수 후 조정.
+    'firstdeploy.board_hint': '레플리: 여기가 의뢰 게시판이에요. 길드가 받은 던전 의뢰가 붙고, 답파하면 보상과 함께 다음 의뢰가 열려요. 우선 첫 의뢰부터 볼까요?',
+    'firstdeploy.prep_hint': '레플리: 출정 준비실이에요. 식량은 던전에서 한 걸음마다 2씩 줄어요 — 이번엔 제가 추천량으로 챙겨 뒀으니 다음부터 직접 조절해요. 입장료가 붙는 의뢰도 있어요. 확인했으면 ‘출발’!',
     'prep.label.cost': '입장료',
-    'prep.label.gold': '보유 골드',
     'prep.label.reward': '보상',
     'prep.cancel': '취소',
     'prep.deploy': '출발 ▶',
@@ -240,7 +242,8 @@ export const KO = {
     'overlay.map_choice.confirm': '확인',
     'overlay.map_choice.sell_detail': '판매: +{price}G (즉시)',
     'overlay.map_choice.keep_detail': '보관: {reward}G/run × {runs}회 (전용 파밍)',
-    'overlay.map_choice.unlock_next': '{name} 해방!',
+    // "{던전명} 해방!" 은 던전명이 '첫 함정' 같은 보통명사라 무슨 말인지 안 읽힘(bm) → 게시판 의뢰 추가로 명시.
+    'overlay.map_choice.unlock_next': '게시판에 새 의뢰가 붙었어요 — {name}',
     'overlay.map_choice.chapter_join': '챕터 {ch} "{name}": {members} 합류!',
 
     // === Stats panel ===

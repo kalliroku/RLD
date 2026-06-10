@@ -122,8 +122,10 @@ export const EN = {
     'prep.food_unit': '(1G each)',
     // Total provision cost — shows the gold needed for the chosen amount.
     'prep.food_cost': '−{n}G',
+    // Forced first-deploy phase — Repli's menu guidance (board / staging room).
+    'firstdeploy.board_hint': "Repli: This is the request board. Dungeon requests from the guild get pinned here — clear one and you earn rewards and the next request opens. Let's start with the first one!",
+    'firstdeploy.prep_hint': "Repli: The staging room. Provisions drop by 2 with every step in a dungeon — I've packed the recommended amount this time, so adjust it yourself from the next trip. Some requests charge an entry fee. All set? Hit 'Deploy'!",
     'prep.label.cost': 'Entry fee',
-    'prep.label.gold': 'Gold held',
     'prep.label.reward': 'Reward',
     'prep.cancel': 'Cancel',
     'prep.deploy': 'Depart ▶',
@@ -228,7 +230,7 @@ export const EN = {
     'overlay.map_choice.confirm': 'OK',
     'overlay.map_choice.sell_detail': 'Sell: +{price}G (instant)',
     'overlay.map_choice.keep_detail': 'Keep: {reward}G/run × {runs} runs (exclusive farm)',
-    'overlay.map_choice.unlock_next': '{name} Unlocked!',
+    'overlay.map_choice.unlock_next': 'A new request is on the board — {name}',
     'overlay.map_choice.chapter_join': 'Ch.{ch} "{name}": {members} joined!',
 
     // === Stats panel ===
