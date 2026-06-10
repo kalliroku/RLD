@@ -4146,8 +4146,9 @@ class Game {
     // B-5: Map choice overlay (sell vs keep map)
     showMapChoiceOverlay(dungeonId, config, unlockedNext) {
         const overlay = document.getElementById('map-choice-overlay');
-        // 지도 팔기는 세르파 합류 후 해금 (canSellMaps 플레이스홀더 = 현재 false). 그 전까진
-        // '팔기' 분기를 숨기고 '보관'만 → 첫 던전 지도 = 못 파는 형태.
+        // 지도 팔기/보관 선택은 야생(무지도) 던전이 열려야 의미가 생긴다 (canSellMaps
+        // 플레이스홀더 = 현재 false). 그 전까지 길드가 내준 지도 = 이미 밝혀진 던전이라
+        // 팔 것도 '보관'할 것도 없음 → 선택지·독점 보너스 없이 보상 확인 버튼만.
         const canSell = this.runState.canSellMaps();
         const salePrice = this.runState.getMapSalePrice(dungeonId, DUNGEON_CONFIG);
         const levelMatch = dungeonId.match(/level_(\d+)/);
@@ -4172,7 +4173,7 @@ class Game {
         document.getElementById('map-choice-details').innerHTML =
             `${unlockMsg}` +
             (canSell ? `<div>${t('overlay.map_choice.sell_detail', { price: salePrice })}</div>` : '') +
-            `<div>${t('overlay.map_choice.keep_detail', { reward: exclusiveReward, runs: exclusiveRuns })}</div>`;
+            (canSell ? `<div>${t('overlay.map_choice.keep_detail', { reward: exclusiveReward, runs: exclusiveRuns })}</div>` : '');
 
         // 세르파 전: 팔기 버튼 자체를 숨기고 stale 핸들러도 제거(보관만 노출).
         const sellBtn = document.getElementById('btn-sell-map');
@@ -4191,10 +4192,15 @@ class Game {
             }
         } : null;
 
-        document.getElementById('btn-keep-map').onclick = () => {
-            this.runState.keepMap(dungeonId);
+        // 판매 미해금 시 같은 버튼이 '확인'(보상 수령 닫기)으로 — keepMap(독점 보너스) 미발동.
+        const keepBtn = document.getElementById('btn-keep-map');
+        keepBtn.textContent = t(canSell ? 'overlay.map_choice.keep' : 'overlay.map_choice.confirm');
+        keepBtn.onclick = () => {
+            if (canSell) {
+                this.runState.keepMap(dungeonId);
+                this.showMessage(t('game.first_clear.map_kept', { reward: exclusiveReward, runs: exclusiveRuns }), 'success');
+            }
             overlay.style.display = 'none';
-            this.showMessage(t('game.first_clear.map_kept', { reward: exclusiveReward, runs: exclusiveRuns }), 'success');
             this.saveProgress();
             this.updateUI();
             this.updateFarmingUI();

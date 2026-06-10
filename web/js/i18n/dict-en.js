@@ -222,6 +222,8 @@ export const EN = {
     'overlay.map_choice.title': 'FIRST CLEAR!',
     'overlay.map_choice.sell': 'Sell Map',
     'overlay.map_choice.keep': 'Keep Map',
+    // Sale not unlocked (guild-issued map = already revealed) — single confirm, no choice.
+    'overlay.map_choice.confirm': 'OK',
     'overlay.map_choice.sell_detail': 'Sell: +{price}G (instant)',
     'overlay.map_choice.keep_detail': 'Keep: {reward}G/run × {runs} runs (exclusive farm)',
     'overlay.map_choice.unlock_next': '{name} Unlocked!',

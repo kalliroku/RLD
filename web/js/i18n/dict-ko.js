@@ -234,6 +234,8 @@ export const KO = {
     'overlay.map_choice.title': '첫 클리어!',
     'overlay.map_choice.sell': '지도 판매',
     'overlay.map_choice.keep': '지도 보관',
+    // 판매 미해금(길드 지급 지도 = 이미 밝혀짐) 시 선택지 없이 보상 확인만.
+    'overlay.map_choice.confirm': '확인',
     'overlay.map_choice.sell_detail': '판매: +{price}G (즉시)',
     'overlay.map_choice.keep_detail': '보관: {reward}G/run × {runs}회 (전용 파밍)',
     'overlay.map_choice.unlock_next': '{name} 해방!',
