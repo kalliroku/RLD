@@ -80,6 +80,7 @@ nul
 # Claude Code — track agents/skills/commands/hooks, ignore local state
 .claude/agent-memory/
 .claude/handoff/
+.handoff/
 .claude/settings.local.json
 
 # design/ — Claude Design 작업 폴더: 코드만 commit, 큰 바이너리는 히스토리 보호 차원에서 제외
