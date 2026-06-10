@@ -88,6 +88,15 @@ export const EN = {
     // Action beat — open the cleared stage 1 on the board and assign Quinnie (highlight-guided). Advances on assign.
     'firstclear.assign': "Go on, try it. Open the cleared Tutorial stage on the board and assign Quinnie there.",
     'firstclear.assign_done': "Nice! Now Quinnie digs up gold at the Tutorial stage.",
+    // Replayed once on returning to the guild after clearing stage 2 (GUILD_SECONDCLEAR_BEATS).
+    'secondclear.b1': "A trap-riddled request, cleared! You're starting to look like a real adventurer, {master}.",
+    'secondclear.b2': "…On the way back, I saw a cave mouth that isn't on any map.",
+    'secondclear.b3': "Not on any map?! That would be a 'wild dungeon' — even the Guild has no map of those.",
+    // Action beat — open the farming request (Quinnie) on the board and collect (highlight-guided). Advances on collect.
+    'secondclear.collect': "Before that — Quinnie has dug up some gold in the meantime. Open the farming request on the board and collect it.",
+    'secondclear.collect_done': "That's farming income. Quinnie keeps digging even while you're out in a dungeon, {master}.",
+    'secondclear.b4': "About that wild dungeon… a place with no map is dangerous. Rather than going yourself, {master} — why not send Quinnie?",
+    'secondclear.b5': "Quinnie would bump around and memorize the way! Check the board for a new request when you're ready.",
 
     // === Mission board / cards ===
     'mission.badge.new': 'NEW',

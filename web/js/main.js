@@ -41,6 +41,21 @@ const GUILD_ONBOARD_KEY = 'rld_guild_onboarded';
 const TUTORIAL_DONE_KEY = 'rld_tutorial_done';
 // 첫 클리어 후 길드 복귀 시 리카/레플리 대화(GUILD_FIRSTCLEAR_BEATS) 1회 재생 마커. 영속.
 const FIRSTCLEAR_SEEN_KEY = 'rld_firstclear_seen';
+// 2관(함정) 클리어 후 길드 복귀 시 대화(GUILD_SECONDCLEAR_BEATS) 1회 재생 마커. 영속.
+const SECONDCLEAR_SEEN_KEY = 'rld_secondclear_seen';
+// 비트 시퀀스 모드 → 종료 시 박는 1회성 시드키 (_finishGuildOnboarding 분기 SSOT).
+const BEAT_MODE_SEEN_KEY = {
+    onboard: GUILD_ONBOARD_KEY,
+    firstclear: FIRSTCLEAR_SEEN_KEY,
+    secondclear: SECONDCLEAR_SEEN_KEY,
+};
+// 액션 비트 태스크 — 현재 전부 의뢰판 경유(팝업 닫기/ESC 시 보드 마커를 복원해 재유도).
+const TUTOR_TASKS_VIA_BOARD = ['farm-assign', 'farm-collect'];
+// 액션 비트 사전조건 — 렌더 시점에 false 면 액션 비트(+skipNext 로 묶인 확인 비트)를 통째로 건너뜀
+// → 행동 대상이 없는데 관련 카피("골드를 캐 뒀어요" 류)가 노출되는 것 방지. 무장 시점 재검사는 폴백.
+const TUTOR_TASK_PRECONDITION = {
+    'farm-collect': (g) => g.runState.isFarming('qkun'),
+};
 // who → 흉상(drawRepliPortrait/drawRikaPortrait), highlight → 자원 박스 강조,
 // reveal → 진입 버튼 공개. 대사는 시나리오 기반 (레플리=일상/안내, 리카=모험가 의뢰).
 // 온보딩 비트. side='npc'|'master' (목소리 진영), mode='speak'(기본)|'inner'(속마음).
@@ -90,6 +105,22 @@ const GUILD_FIRSTCLEAR_BEATS = [
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.assign', action: 'farm-assign' },
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.assign_done' },
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.b6' },
+];
+
+// 2관(함정) 클리어 후 길드 복귀 시 1회 재생(SECONDCLEAR_SEEN_KEY). 비트 플레이어 재사용.
+// 아크: 리카 칭찬 → 마스터 복귀길 '지도 없는 입구' 발견(속마음) → 리카 야생 던전 소개
+// → 레플리 파밍 수금 액션 비트(farm-collect) → "직접 가지 말고 퀴니를 보내자" 위임 넛지
+// → 리카 보드 넛지(보스 의뢰 해금됨). 보스전 자동학습 연출은 별도 세션 — 여기선 넛지까지만.
+const GUILD_SECONDCLEAR_BEATS = [
+    { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'secondclear.b1' },
+    { side: 'master', mode: 'inner', textKey: 'secondclear.b2' },
+    { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'secondclear.b3' },
+    // 액션 비트 — 대사 후 클릭하면 'farm-collect' 무장(대사 닫고 하이라이트). 퀴니 누적분 수금 시 다음으로.
+    // skipNext:1 = 사전조건(퀴니 파밍 중) 불충족 시 확인 비트(collect_done)까지 묶어서 건너뜀.
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'secondclear.collect', action: 'farm-collect', skipNext: 1 },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'secondclear.collect_done' },
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'secondclear.b4' },
+    { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'secondclear.b5', reveal: 'quest' },
 ];
 
 const PRESET_MULTI_DUNGEONS = {
@@ -384,6 +415,7 @@ class Game {
             localStorage.removeItem(GUILD_ONBOARD_KEY);
             localStorage.removeItem(TUTORIAL_DONE_KEY);   // 풀 온보딩 + 식량 세이프넷 재무장(재테스트용)
             localStorage.removeItem(FIRSTCLEAR_SEEN_KEY);  // 첫-클리어 대화도 재무장
+            localStorage.removeItem(SECONDCLEAR_SEEN_KEY); // 2관-클리어 대화도 재무장
             this._beginNewGame();
         });
 
@@ -430,10 +462,10 @@ class Game {
         const guildPopup = document.getElementById('guild-popup');
         if (guildPopup) {
             guildPopup.querySelectorAll('[data-popup-close]').forEach(el => {
-                el.addEventListener('click', () => { this._clearFarmTick(); guildPopup.hidden = true; if (this._tutorTask === 'farm-assign') this._setGuildQuestMarker(true); });
+                el.addEventListener('click', () => { this._clearFarmTick(); guildPopup.hidden = true; if (TUTOR_TASKS_VIA_BOARD.includes(this._tutorTask)) this._setGuildQuestMarker(true); });
             });
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && !guildPopup.hidden) { this._clearFarmTick(); guildPopup.hidden = true; if (this._tutorTask === 'farm-assign') this._setGuildQuestMarker(true); }
+                if (e.key === 'Escape' && !guildPopup.hidden) { this._clearFarmTick(); guildPopup.hidden = true; if (TUTOR_TASKS_VIA_BOARD.includes(this._tutorTask)) this._setGuildQuestMarker(true); }
             });
         }
         // NPC onboarding dialogue — click OR arrow/Enter/Space to advance (오프닝과 동일)
@@ -518,6 +550,7 @@ class Game {
         this._updateGuildHotspots();
         this._maybeStartGuildOnboarding();
         this._maybeStartFirstClearBeats();   // 온보딩 미진행 시에만(내부 게이트)
+        this._maybeStartSecondClearBeats();  // 첫클리어 대화 기시청 후에만(내부 게이트)
     }
 
     /**
@@ -606,7 +639,19 @@ class Game {
         this._startGuildBeats(GUILD_FIRSTCLEAR_BEATS, 'firstclear');
     }
 
-    /** 비트 시퀀스 재생 시작 — 온보딩/첫클리어 공용. mode='onboard'|'firstclear' (종료 시 시드키 분기). */
+    /**
+     * 2관(함정) 클리어 후 길드 복귀 시 1회 재생 — 야생 던전 발견 + 파밍 수금 튜토 + 위임 넛지.
+     * 게이트: 비트 미진행 + 첫클리어 대화 기시청(같은 사이클 이중재생 불가·순서 보장) + 2관 클리어 + 미시청.
+     */
+    _maybeStartSecondClearBeats() {
+        if (this._guildOnboarding || this._onboardingRequested) return;   // 진행 중 시퀀스 우선
+        if (localStorage.getItem(FIRSTCLEAR_SEEN_KEY) !== '1') return;    // 첫클리어 대화 먼저
+        if (localStorage.getItem(SECONDCLEAR_SEEN_KEY) === '1') return;   // 1회성
+        if (!this.runState.clearedDungeons.has('level_02_trap')) return;  // 2관 클리어 후에만
+        this._startGuildBeats(GUILD_SECONDCLEAR_BEATS, 'secondclear');
+    }
+
+    /** 비트 시퀀스 재생 시작 — 온보딩/첫클리어/2관클리어 공용. mode='onboard'|'firstclear'|'secondclear' (종료 시 BEAT_MODE_SEEN_KEY 분기). */
     _startGuildBeats(beats, mode) {
         if (this._guildOnboarding) return;       // 이미 재생 중
         this._beats = beats;
@@ -621,7 +666,13 @@ class Game {
     }
 
     _renderGuildBeat() {
-        const beat = (this._beats || GUILD_ONBOARD_BEATS)[this._guildBeatIdx];
+        let beat = (this._beats || GUILD_ONBOARD_BEATS)[this._guildBeatIdx];
+        // 액션 비트 사전조건 — 불충족이면 액션 비트 + 묶인 확인 비트(skipNext)를 건너뛰고 다음 비트로.
+        while (beat && beat.action && TUTOR_TASK_PRECONDITION[beat.action]
+               && !TUTOR_TASK_PRECONDITION[beat.action](this)) {
+            this._guildBeatIdx += 1 + (beat.skipNext || 0);
+            beat = (this._beats || GUILD_ONBOARD_BEATS)[this._guildBeatIdx];
+        }
         const dlg = document.getElementById('guild-dialogue');
         if (!beat) { this._finishGuildOnboarding(); return; }
         // the quest reveal flags the board marker, shown once the dialogue ends and
@@ -680,10 +731,22 @@ class Game {
             this._completeTutorTask();
             return;
         }
+        if (task === 'farm-collect') {
+            // 폴백 — 렌더 시점 사전조건(TUTOR_TASK_PRECONDITION)을 통과했어도 무장 직전 상태가
+            // 변했을 수 있음. 수금 대상이 없으면 확인 비트(skipNext)까지 건너뛰고 즉시 다음으로.
+            if (!this.runState.isFarming('qkun')) {
+                const beat = (this._beats || [])[this._guildBeatIdx];
+                this._guildBeatIdx += (beat && beat.skipNext) || 0;
+                this._completeTutorTask();
+                return;
+            }
+            // 수금분 보장 — 2관을 회차 간격보다 빨리 깬 경우 0G 수금 스턱 방지로 1회차 소급.
+            this.runState.ensureFarmRuns('qkun', 1, Date.now());
+        }
         this._tutorTask = task;
         document.getElementById('guild-dialogue')?.classList.remove('show');
-        // farm-assign: 의뢰판으로 유도(마커 글로우). 카드/배치 버튼 글로우는 _updateGuildQuests·_renderFarmRoom 훅.
-        if (task === 'farm-assign') this._setGuildQuestMarker(true);
+        // 보드 경유 태스크: 의뢰판으로 유도(마커 글로우). 카드/버튼 글로우는 _updateGuildQuests·_renderFarmRoom 훅.
+        if (TUTOR_TASKS_VIA_BOARD.includes(task)) this._setGuildQuestMarker(true);
     }
 
     /** 태스크 완료 — 팝업 닫고 다음(확인) 비트로 복귀. */
@@ -698,8 +761,8 @@ class Game {
     _finishGuildOnboarding() {
         this._guildOnboarding = false;
         this._clearGuildTyping();
-        // 시드키 분기 — 첫클리어 시퀀스는 별도 마커(온보딩 완료 플래그를 덮지 않게).
-        localStorage.setItem(this._beatMode === 'firstclear' ? FIRSTCLEAR_SEEN_KEY : GUILD_ONBOARD_KEY, '1');
+        // 시드키 분기 — 시퀀스별 별도 마커(서로의 완료 플래그를 덮지 않게). 매핑 SSOT = BEAT_MODE_SEEN_KEY.
+        localStorage.setItem(BEAT_MODE_SEEN_KEY[this._beatMode] || GUILD_ONBOARD_KEY, '1');
         const dlg = document.getElementById('guild-dialogue');
         if (dlg) dlg.classList.remove('show', 'ready');
         document.querySelectorAll('.guild-res.is-highlight').forEach(e => e.classList.remove('is-highlight'));
@@ -923,9 +986,13 @@ class Game {
             if (card.classList.contains('locked')) return;   // 잠김/파밍중은 클릭 불가
             card.addEventListener('click', () => this._renderPrepRoom(card.dataset.dungeon));
         });
-        // 파밍 배치 튜토리얼 — 답파한 1관 카드 글로우(클릭 유도).
+        // 파밍 튜토리얼(배치/수금) — 대상 던전 카드 글로우(클릭 유도).
         if (this._tutorTask === 'farm-assign') {
             panel.querySelector('.mission-card[data-dungeon="level_01_easy"]')?.classList.add('tutor-glow');
+        } else if (this._tutorTask === 'farm-collect') {
+            // 수금 대상 = 퀴니가 실제 파밍 중인 던전(통상 1관 — 재배치했어도 따라감).
+            const did = this.runState.getFarmingDungeon('qkun');
+            if (did) panel.querySelector(`.mission-card[data-dungeon="${did}"]`)?.classList.add('tutor-glow');
         }
     }
 
@@ -1190,12 +1257,23 @@ class Game {
             collectBtn.addEventListener('click', () => {
                 const r = rs.collectFarmAccrual(farmer, DUNGEON_CONFIG, Date.now());
                 if (r.gold > 0) this._updateGuildResources();
+                // 파밍 수금 튜토리얼 완료 — 퀴니의 누적분을 실제로 수금하면 다음(확인) 비트로.
+                if (this._tutorTask === 'farm-collect' && farmer === 'qkun' && r.gold > 0) {
+                    this._completeTutorTask();
+                    return;
+                }
                 this._renderFarmRoom(dungeonId);             // 누적 리셋 후 재렌더(틱 재시작)
             });
             panel.querySelector('.btn-farm-unassign').addEventListener('click', () => {
                 rs.removeFarming(farmer);
                 this._renderFarmRoom(dungeonId);             // 피커 상태로 재렌더
             });
+            // 파밍 수금 튜토리얼 — 퀴니 통제판 한정: 수금 버튼 글로우(클릭 유도).
+            if (this._tutorTask === 'farm-collect' && farmer === 'qkun') {
+                collectBtn.classList.add('tutor-glow');
+                // 무장 중 배치 해제를 막아 수금 대상이 사라지는 스턱 차단(수금 완료가 출구).
+                panel.querySelector('.btn-farm-unassign').disabled = true;
+            }
         } else {
             const assignBtn = panel.querySelector('.btn-farm-assign');
             if (assignBtn) assignBtn.addEventListener('click', () => {

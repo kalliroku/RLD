@@ -381,6 +381,19 @@ export class RunState {
         return { gold: acc.gold, runs: acc.runs, message };
     }
 
+    /** 누적이 최소 minRuns 회차가 되도록 since 를 소급(이미 충분하면 무변).
+     *  수금 튜토리얼 보정용 — 2관을 회차 간격(30s)보다 빨리 깬 경우 0G 수금 스턱 방지.
+     *  nowMs 는 호출부 주입(sim 결정론 보존). */
+    ensureFarmRuns(charName, minRuns, nowMs) {
+        if (!this.farmingAssignments[charName]) return;
+        const intervalMs = this.getFarmIntervalMs(charName);
+        const since = this.farmingSince[charName] ?? nowMs;
+        const runs = Math.floor(Math.max(0, nowMs - since) / intervalMs);
+        if (runs >= minRuns) return;
+        this.farmingSince[charName] = nowMs - minRuns * intervalMs;
+        this.saveRunState();
+    }
+
     isFarming(charName) {
         return !!this.farmingAssignments[charName];
     }
