@@ -533,6 +533,132 @@ export function drawRikaPortrait(ctx, cx, baseY, scale = 6) {
     ctx.restore();
 }
 
+/**
+ * 퀴니(Quinnie / 내부 키 qkun) — Q-Learning 세르파, 플레이어의 첫 동료.
+ * 갈색 강아지 수인 여성(인간형 본체 + 개 귀/꼬리끝). 동안 + 글래머 + 무도가.
+ * 밝은 덜렁이(접힌 귀·덧니 미소·홍조) + 우직한 충성(호박색 눈).
+ * repli/rika 와 동일 골격의 waist-up 흉상(torso -19..0 · head -33..-21 ·
+ * 눈높이 y=-29 · scale 6 · +x lit) — 무대 드롭인 호환. 광원/딤은 호출부 소유.
+ * 산출처/디자인 의도: design/quinnie-portrait/ (Claude Design, 1차 제안 —
+ * 컨셉 레퍼런스 확정 후 함수 상단 색 토큰으로 미세조정).
+ */
+export function drawQkunPortrait(ctx, cx, baseY, scale = 6) {
+    ctx.save();
+    ctx.translate(Math.round(cx), Math.round(baseY));
+    ctx.scale(scale, scale);
+    const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+
+    // ── 색 토큰 (캐릭터색은 로컬 토큰 — repli/rika 방식) ──
+    const SKIN = '#e6b48e', SKIN_SH = '#c48f6c', SKIN_HI = '#f2e4d4';   // 형제와 동일 피부
+    const FUR = '#8a5a34', FUR_SH = '#5f3d22', FUR_HI = '#b07d4a';      // 갈색 개 털/머리
+    const EAR_IN = '#d99c86';                                          // 귀 안쪽(분홍빛)
+    const GI = '#d8c49a', GI_SH = '#b09a68', GI_HI = '#ece0c4';         // 따뜻한 크림 무도복
+    const LEATHER = '#6b4e2e', LEATHER_SH = '#4c3720';                 // 갈색 가죽 가드
+    const SASH = '#8b3a1f', SASH_SH = '#5e2613';                       // rust 새시(시그니처)
+    const EYE = '#c9883f', EYE_D = '#3a2a1c';                          // 호박색 눈 + 어두운 동공
+    const BLUSH = '#d9866a', LIP = '#b56a5e';
+    const GOLD = '#e6b450';                                            // 브래스 1점(새시 매듭)
+
+    // ── 꼬리끝 — −x 아래 모서리(허리 크롭 아래 본체에서 끝만 보임) ──
+    R(-9, -6, 3, 5, FUR);
+    R(-10, -4, 2, 4, FUR);
+    R(-10, -4, 1, 4, FUR_SH);
+    R(-7, -5, 1, 4, FUR_HI);
+
+    // ── torso — 무도복 + 모래시계(어깨 넓고 허리 tuck) = 글래머+무도가 ──
+    R(-7, -19, 14, 9, GI);                     // 어깨+가슴  −19..−10
+    R(-6, -10, 12, 10, GI);                    // 허리 tuck  −10..0
+    R(-7, -19, 2, 9, GI_SH);
+    R(-6, -10, 2, 10, GI_SH);
+    R(5, -10, 1, 10, GI_SH);
+    R(5, -19, 1, 9, GI_HI);                    // +x lit 모서리(상)
+    R(5, -10, 1, 6, GI_HI);                    // +x lit 모서리(하)
+    // 무도복 V-여밈(라펠) + 안쪽 rust 언더랩(노출 없이 따뜻한 V)
+    R(-1.5, -19, 3, 3, SASH);
+    R(-1.5, -19, 1.5, 3, SASH_SH);
+    R(-5, -19, 4, 2, GI_HI);
+    R(1, -19, 4, 2, GI_HI);
+    R(-3.5, -18, 2.5, 5, GI_HI);
+    R(1, -18, 2.5, 5, GI_HI);
+    R(-0.6, -17, 1.2, 8, GI_SH);               // 여밈 중심선
+    // 가슴 볼륨(무도복 톤, 절제)
+    R(-5, -16, 3, 2, GI_HI); R(2, -16, 3, 2, GI_HI);
+    R(-6.3, -15, 1, 3, GI_SH); R(5.3, -15, 1, 3, GI_SH);
+    R(-6, -12, 4.5, 1, GI_SH); R(1.5, -12, 4.5, 1, GI_SH);
+    // 어깨 가죽 가드 — +x 폴드런 / −x 는 작은 스트랩만(무도가)
+    R(2.5, -20, 5, 4, LEATHER);
+    R(2.5, -20, 5, 1, LEATHER_SH);
+    R(6.5, -19, 1, 3, FUR_HI);
+    R(3, -16.5, 4, 1, LEATHER_SH);
+    R(-7, -17, 2, 1, LEATHER);
+    // rust 새시 — 허리 크롭 위 + −x 매듭, 브래스 매듭쇠 1점
+    R(-6, -5, 12, 3, SASH);
+    R(-6, -5, 12, 1, SASH_SH);
+    R(-7, -4, 3, 5, SASH);
+    R(-7, -4, 1, 5, SASH_SH);
+    R(-1, -5, 2, 2, GOLD);
+    R(-0.5, -5, 1, 1, GI_HI);
+
+    // ── neck ──
+    R(-2, -21, 4, 2, SKIN);
+    R(-2, -21, 1.5, 2, SKIN_SH);
+
+    // ── head — 둥글고 큰 동안 (형제 골격 −33..−21, 10×12) ──
+    R(-5, -33, 10, 12, SKIN);
+    R(-5, -33, 2, 12, SKIN_SH);
+    R(4, -33, 1, 11, SKIN_HI);
+    R(-4, -22, 8, 1, SKIN_SH);
+
+    // ── 갈색 머리 — 프린지 + 옆머리 + (+x) 높은 옆 포니테일 ──
+    R(-5, -35, 10, 3, FUR);
+    R(-5, -35, 3, 3, FUR_SH);
+    R(2, -35, 3, 2, FUR_HI);
+    R(-5, -33, 1.5, 8, FUR);
+    R(3.5, -33, 1.5, 7, FUR);
+    R(-5, -33, 8, 2, FUR);
+    R(-1, -34, 3, 1, FUR_HI);
+    R(-5, -33, 1.5, 5, FUR_SH);
+    R(5, -34, 3, 4, FUR);                      // 포니테일 묶음
+    R(6, -31, 3, 7, FUR);
+    R(8, -31, 1, 7, FUR_HI);
+    R(6, -30, 1, 6, FUR_SH);
+    R(4.5, -33, 2, 1.5, SASH);                 // 머리끈(rust)
+
+    // ── 개 귀 — 좌(쫑긋)/우(끝 접힘 = 덜렁이) ──
+    R(-7, -37, 3, 3, FUR);
+    R(-8, -40, 2.5, 4, FUR);
+    R(-8.5, -42, 2, 3, FUR);
+    R(-8.5, -42, 1, 5, FUR_SH);
+    R(-6.5, -38, 1, 3, EAR_IN);
+    R(4, -37, 3, 3, FUR);
+    R(5, -40, 2.5, 3, FUR);
+    R(5.5, -41, 3, 2, FUR);                    // 접힌 끝
+    R(7.5, -41, 1, 2, FUR_HI);
+    R(4.5, -38, 1, 3, EAR_IN);
+
+    // ── 얼굴 — 호박색 눈(큰 캐치라이트) + 개 코끝 + 활짝 덧니 미소 + 홍조 ──
+    R(-3.6, -29, 2.6, 2, '#f6f1e6');
+    R(1, -29, 2.6, 2, '#f6f1e6');
+    R(-3.2, -29, 1.8, 2, EYE);
+    R(1.4, -29, 1.8, 2, EYE);
+    R(-2.6, -28.6, 0.9, 1.3, EYE_D);
+    R(1.8, -28.6, 0.9, 1.3, EYE_D);
+    R(-3.0, -29, 1.1, 1, SKIN_HI);
+    R(1.6, -29, 1.1, 1, SKIN_HI);
+    R(-1.4, -29, 0.6, 0.6, '#fff');
+    R(2.4, -29, 0.6, 0.6, '#fff');
+    R(-0.5, -26, 1, 1, FUR_SH);                // 개 코끝
+    R(-1.8, -24.4, 3.6, 1.4, EYE_D);           // 벌린 입
+    R(-2.1, -25, 0.9, 0.9, LIP);
+    R(1.2, -25, 0.9, 0.9, LIP);
+    R(-1.2, -23.2, 2.6, 0.7, LIP);
+    R(-1.4, -24.4, 0.8, 0.8, '#fbf6ea');       // 덧니
+    R(-4, -26.2, 1.1, 0.9, BLUSH);
+    R(2.9, -26.2, 1.1, 0.9, BLUSH);
+
+    ctx.restore();
+}
+
 /** Small flickering torch glow at (x,y). intensity 0..1. */
 export function drawTorch(ctx, x, y, intensity = 1) {
     const g = ctx.createRadialGradient(x, y, 1, x, y, 60 * intensity);

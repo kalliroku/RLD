@@ -28,7 +28,7 @@ import { ModifierSet, MODIFIERS } from './game/modifiers.js';
 import { t, tHtml, initI18n, setLang, getLang, onLangChange } from './i18n/index.js';
 import { renderTitleArt } from './game/title-art.js';
 import { OpeningManager } from './game/opening.js';
-import { drawGuildHall, drawCharacter, drawRepliPortrait, drawRikaPortrait, drawRepliBackground, drawWallMap, drawShopStall, GUILD_OBJECTS } from './game/opening-art.js';
+import { drawGuildHall, drawCharacter, drawRepliPortrait, drawRikaPortrait, drawQkunPortrait, drawRepliBackground, drawWallMap, drawShopStall, GUILD_OBJECTS } from './game/opening-art.js';
 
 // Guild onboarding (first guild entry only). NPC introduces the room one beat
 // at a time and reveals entry buttons progressively. Korean hardcoded for now —
@@ -56,8 +56,9 @@ const TUTOR_TASKS_VIA_BOARD = ['farm-assign', 'farm-collect'];
 const TUTOR_TASK_PRECONDITION = {
     'farm-collect': (g) => g.runState.isFarming('qkun'),
 };
-// who → 흉상(drawRepliPortrait/drawRikaPortrait), highlight → 자원 박스 강조,
-// reveal → 진입 버튼 공개. 대사는 시나리오 기반 (레플리=일상/안내, 리카=모험가 의뢰).
+// who → 흉상(repli/rika/qkun — _drawGuildBust 맵), highlight → 자원 박스 강조,
+// reveal → 진입 버튼 공개, enter → 발화 없는 무대 등장(퀴니 합류). 대사는 시나리오 기반
+// (레플리=일상/안내, 리카=모험가 의뢰).
 // 온보딩 비트. side='npc'|'master' (목소리 진영), mode='speak'(기본)|'inner'(속마음).
 // who=무대 전면에 세울 NPC. {master}=주인공 이름(현재 '마스터' 자리표시자).
 // ※ 카피는 자리표시자 — 톤/문구는 검수 후 조정. (CTA 클릭까지만이 이번 스코프)
@@ -99,7 +100,8 @@ const GUILD_FIRSTCLEAR_BEATS = [
     { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'firstclear.b1' },
     { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'firstclear.b2' },
     { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'firstclear.b3', reveal: 'quest' },
-    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.b4' },
+    // 퀴니 합류 — 레플리가 소개하는 비트에서 무대 등장(enter, 발화 없음 — 이후 장면 끝까지 체류).
+    { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.b4', enter: 'qkun' },
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.b5' },
     // 액션 비트 — 대사 후 클릭하면 'farm-assign' 태스크 무장(대사 닫고 하이라이트). 퀴니 1관 배치 완료 시 다음으로.
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.assign', action: 'farm-assign' },
@@ -684,6 +686,9 @@ class Game {
         // 무대(stage): 흉상은 한 번 오르면 장면 끝까지 유지(영속). 말하는 NPC=전면(active),
         // 나머지(주인공 차례 포함)=딤+뒤로. 줄마다 생성/제거 X → 깜빡임 없음(MVP 스냅).
         if (!this._guildStage) this._guildStage = [];
+        // enter — 발화자가 아닌 NPC 의 무대 등장(예: 퀴니 합류 — 대사 없이 서 있음).
+        // 흉상은 한 번 오르면 장면 끝까지 유지(영속), active 가 아니므로 딤+뒤로.
+        if (beat.enter && !this._guildStage.includes(beat.enter)) this._guildStage.push(beat.enter);
         if (beat.side === 'npc' && beat.who) {
             if (!this._guildStage.includes(beat.who)) this._guildStage.push(beat.who);
             this._guildActive = beat.who;
@@ -862,9 +867,10 @@ class Game {
         const stage = this._guildStage || [];
         if (this._guildOnboarding && stage.length) {
             const baseY = h * 0.90, sc = Math.max(4, Math.round(h / 100));
-            // 슬롯: 1명=중앙, 2명=좌(0.34)·우(0.66). ※ 최대 2 NPC 가정 + stage 순서=등장순=좌→우.
-            // NPC 3명 이상이면 slots[i] 가 undefined → NaN 좌표. 확장 시 슬롯 테이블 보강 필요.
-            const slots = stage.length === 1 ? [0.5] : [0.34, 0.66];
+            // 슬롯: 1명=중앙, 2명=좌·우, 3명=좌·중·우(퀴니 enter 비트). stage 순서=등장순=좌→우.
+            // NPC 4명 이상이면 slots[i] 가 undefined → NaN 좌표. 확장 시 슬롯 테이블 보강 필요.
+            const slots = stage.length === 1 ? [0.5]
+                : stage.length === 2 ? [0.34, 0.66] : [0.22, 0.5, 0.78];
             const activeIdx = this._guildActive ? stage.indexOf(this._guildActive) : -1;
 
             // 1) 후면(비활성) 흉상을 불투명하게 먼저 — 곧 딤에 잠긴다(축소 = 뒤로).
@@ -907,7 +913,8 @@ class Game {
     /** Draw one stage bust. active=전면(풀 크기), else recede(85% 축소). 밝기 차는 위의
      *  스포트라이트(그림자)가 처리 — 투명도 조정 안 함(ghost 방지). MVP 스냅(트윈 X). */
     _drawGuildBust(ctx, who, cx, baseY, sc, active) {
-        const draw = who === 'rika' ? drawRikaPortrait : drawRepliPortrait;
+        const BUSTS = { rika: drawRikaPortrait, qkun: drawQkunPortrait };
+        const draw = BUSTS[who] || drawRepliPortrait;
         const useSc = active ? sc : Math.max(3, Math.round(sc * 0.85));
         draw(ctx, cx, baseY, useSc);
     }

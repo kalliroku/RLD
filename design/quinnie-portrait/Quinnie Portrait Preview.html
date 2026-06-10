@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Quinnie Bust — Preview (with Repli / Rika)</title>
+<style>
+  :root{
+    --line:#241810; --text:#e8dcc4; --dim:#8a7a59; --muted:#544a37; --amber:#e6b562;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;background:#050406;color:var(--text);
+    font-family:"Pretendard",ui-monospace,Menlo,Consolas,monospace;}
+  .wrap{max-width:1120px;margin:0 auto;padding:40px 28px 72px;}
+  header{border-bottom:1px solid var(--line);padding-bottom:18px;margin-bottom:24px;}
+  h1{font-size:20px;font-weight:700;letter-spacing:.01em;margin:0 0 6px;}
+  .sub{font-size:12.5px;line-height:1.6;color:var(--dim);max-width:760px;margin:0;}
+  .sub b{color:var(--text);font-weight:600;} .sub code{color:var(--amber);font-size:11.5px;}
+
+  .controls{display:flex;align-items:center;gap:18px;flex-wrap:wrap;
+    margin:0 0 22px;padding:14px 16px;background:#0a0907;border:1px solid var(--line);border-radius:4px;}
+  .controls label{font-size:12px;color:var(--dim);display:flex;align-items:center;gap:9px;}
+  .controls input[type=range]{accent-color:var(--amber);width:150px;}
+  .controls .val{color:var(--text);font-variant-numeric:tabular-nums;min-width:22px;}
+  .controls .seg{display:flex;gap:6px;}
+  .controls button{background:#15120e;color:var(--dim);border:1px solid var(--line);
+    border-radius:3px;padding:5px 11px;font:inherit;font-size:11.5px;cursor:pointer;}
+  .controls button.on{background:#241810;color:var(--amber);border-color:#6a4a1f;}
+
+  .stage-row{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;}
+  .stage{background:radial-gradient(120% 80% at 62% 32%, #100d0a 0%, #07060a 62%, #040305 100%);
+    border:1px solid var(--line);border-radius:4px;overflow:hidden;position:relative;}
+  .stage.hero{outline:1px solid #6a4a1f;}
+  .stage canvas{display:block;width:100%;height:auto;image-rendering:pixelated;image-rendering:crisp-edges;}
+  .cap{display:flex;align-items:baseline;justify-content:space-between;gap:8px;
+    padding:9px 13px;border-top:1px solid var(--line);background:#0a0907;}
+  .cap .name{font-size:12.5px;font-weight:700;}
+  .cap .name .ko{color:var(--amber);font-weight:600;}
+  .cap .meta{font-size:10.5px;color:var(--muted);}
+  .eyeline{position:absolute;left:0;right:0;height:1px;background:rgba(230,181,98,.32);pointer-events:none;display:none;}
+  .stage.showline .eyeline{display:block;}
+  .eyeline span{position:absolute;right:4px;top:-12px;font-size:9px;color:var(--amber);}
+
+  .note{margin-top:26px;padding:15px 18px;background:#0a0907;border:1px solid var(--line);
+    border-left:3px solid #6a4a1f;border-radius:3px;font-size:12px;line-height:1.65;color:var(--dim);}
+  .note b{color:var(--text);} .note code{color:var(--amber);font-size:11.5px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>퀴니(Quinnie) 흉상 — 미리보기 · 레플리 / 리카 나란히</h1>
+    <p class="sub">신규 <b>drawQkunPortrait(ctx, cx, baseY, scale=6)</b> 를 실제 형제 흉상
+    <b>drawRepliPortrait</b> · <b>drawRikaPortrait</b> 옆에. 셋 다 waist-up <b>흉상</b>(다리 없음,
+    torso 바닥 = baseY) · <code>scale 6</code> · +x 횃불 광원. <b>eyeline</b> 토글로 세 눈높이가
+    <code>y=-29</code> 에 맞는지 확인.</p>
+  </header>
+
+  <div class="controls">
+    <label>scale <input id="scale" type="range" min="4" max="8" step="1" value="6"><span class="val" id="scaleVal">6</span></label>
+    <div class="seg">
+      <button id="btnTorch" class="on">torch glow</button>
+      <button id="btnSpot" class="on">spotlight</button>
+      <button id="btnLine">eyeline</button>
+    </div>
+  </div>
+
+  <div class="stage-row">
+    <div class="stage" id="sRepli">
+      <canvas id="cRepli" width="300" height="360"></canvas>
+      <div class="eyeline"><span>eye y=-29</span></div>
+      <div class="cap"><span class="name">Repli <span class="ko">— 레플리</span></span>
+        <span class="meta">길드 안내 · 형제 기준</span></div>
+    </div>
+    <div class="stage" id="sRika">
+      <canvas id="cRika" width="300" height="360"></canvas>
+      <div class="eyeline"><span>eye y=-29</span></div>
+      <div class="cap"><span class="name">Rika <span class="ko">— 리카</span></span>
+        <span class="meta">의뢰 전령 · 형제 기준</span></div>
+    </div>
+    <div class="stage hero" id="sQ">
+      <canvas id="cQuinnie" width="300" height="360"></canvas>
+      <div class="eyeline"><span>eye y=-29</span></div>
+      <div class="cap"><span class="name">Quinnie <span class="ko">— 퀴니 / Q-kun</span></span>
+        <span class="meta">신규 · 첫 세르파</span></div>
+    </div>
+  </div>
+
+  <div class="note">
+    <b>드롭인 호환 체크리스트.</b> 시그니처 <code>(ctx, cx, baseY, scale=6)</code> · 발/다리 없는
+    waist-up 흉상(torso 바닥 = <code>y 0</code> = baseY) · 표준 골격(torso −19..0 · head −33..−21 ·
+    <b>눈높이 −29</b> · 코 −26 · 입 −24) · +x lit / −x shadow · 함수 상단 로컬 색 토큰 — 모두
+    레플리/리카와 동일. 퀴니 고유 신호(개 귀 · 옆 포니테일 · 호박색 눈 · 덧니 · 꼬리끝)는 그
+    골격 위에 얹음.
+  </div>
+</div>
+
+<script type="module">
+import { drawQkunPortrait } from './drawQkunPortrait.js';
+
+// ── 실제 형제 흉상 — opening-art.js 에서 verbatim 복사 (비교용) ───────────────
+function drawRepliPortrait(ctx, cx, baseY, scale = 6) {
+    ctx.save();
+    ctx.translate(Math.round(cx), Math.round(baseY));
+    ctx.scale(scale, scale);
+    const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+    const SKIN = '#e6b48e', SKIN_SH = '#c48f6c', HAIR = '#e8cf52', HAIR_SH = '#bd9f34';
+    const EYE = '#7ec8e3', LIP = '#c07266';
+    const JACKET = '#6aa9da', JACKET_SH = '#427aac', JACKET_HI = '#8fc6ee';
+    const INNER = '#f4ecda', GOLD = '#e6b450';
+    R(-7, -19, 14, 9, JACKET); R(-6, -10, 12, 10, JACKET); R(-7, -19, 2, 9, JACKET_SH);
+    R(-6, -10, 2, 10, JACKET_SH); R(5, -10, 1, 10, JACKET_SH);
+    R(-4, -19, 8, 1.5, INNER); R(-2, -19, 1, 3, INNER); R(1, -19, 1, 3, INNER);
+    R(-4, -19, 8, 0.6, GOLD);
+    R(-5, -17, 3, 2, JACKET_HI); R(1, -17, 3, 2, JACKET_HI); R(-1, -17, 2, 4, JACKET_SH);
+    R(-6.5, -16, 1, 3, JACKET_SH); R(5.5, -16, 1, 3, JACKET_SH);
+    R(-6, -12, 5, 1, JACKET_SH); R(1, -12, 5, 1, JACKET_SH);
+    R(-0.5, -15, 1, 1, GOLD); R(-0.5, -12, 1, 1, GOLD); R(-0.5, -8, 1, 1, GOLD); R(-0.5, -5, 1, 1, GOLD);
+    R(-2, -21, 4, 2, SKIN); R(-2, -21, 1.5, 2, SKIN_SH);
+    R(-5, -34, 10, 13, SKIN); R(-5, -34, 2, 13, SKIN_SH); R(4, -34, 1, 12, '#f2e4d4');
+    R(-4, -38, 8, 1, HAIR); R(-5, -37, 10, 1, HAIR); R(-6, -36, 12, 4, HAIR);
+    R(-6, -34, 2, 21, HAIR); R(4, -34, 2, 21, HAIR); R(4, -34, 1, 21, HAIR_SH);
+    R(-6, -37, 1, 5, HAIR_SH); R(-5, -34, 10, 2, HAIR);
+    R(-3.5, -30, 2.5, 2, '#f4f4f4'); R(1, -30, 2.5, 2, '#f4f4f4');
+    R(-3, -30, 1.5, 2, EYE); R(1.5, -30, 1.5, 2, EYE);
+    R(-2.6, -30, 0.8, 1, '#23323a'); R(1.9, -30, 0.8, 1, '#23323a');
+    R(-0.5, -27, 1, 1, SKIN_SH); R(-1.5, -25, 3, 1, LIP);
+    ctx.restore();
+}
+function drawRikaPortrait(ctx, cx, baseY, scale = 6) {
+    ctx.save();
+    ctx.translate(Math.round(cx), Math.round(baseY));
+    ctx.scale(scale, scale);
+    const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(x, y, w, h); };
+    const SKIN = '#e6b48e', SKIN_SH = '#c48f6c', HAIR = '#e89ab0', HAIR_SH = '#c7798f';
+    const CAP = '#6b4e2e', CAP_SH = '#4c3720', TEE = '#eef0ec', TEE_SH = '#c9cdc7';
+    const DENIM = '#41618a', DENIM_SH = '#2e4866';
+    R(-6, -19, 12, 19, TEE); R(-6, -19, 2, 19, TEE_SH);
+    R(-6, -7, 12, 7, DENIM); R(-6, -7, 2, 7, DENIM_SH);
+    R(-4.5, -19, 1.5, 13, DENIM); R(3, -19, 1.5, 13, DENIM);
+    R(-3, -15, 2.5, 2, '#f8faf6'); R(0.5, -15, 2.5, 2, '#f8faf6');
+    R(-3, -13, 2.5, 1, TEE_SH); R(0.5, -13, 2.5, 1, TEE_SH);
+    R(-2, -21, 4, 2, SKIN);
+    R(-5, -33, 10, 12, SKIN); R(-5, -33, 2, 12, SKIN_SH); R(4, -33, 1, 11, '#f2e4d4');
+    R(-6, -31, 1.5, 11, HAIR); R(4.5, -31, 1.5, 11, HAIR); R(-5, -33, 10, 2, HAIR);
+    R(4.5, -31, 1.5, 3, HAIR_SH);
+    R(-6, -38, 12, 5, CAP); R(-6, -38, 12, 1, CAP_SH); R(-8, -34, 16, 1.5, CAP); R(-8, -34, 16, 0.5, CAP_SH);
+    R(-3.5, -29, 2.5, 2, '#3a2a30'); R(1, -29, 2.5, 2, '#3a2a30');
+    R(-3, -29, 1, 1, '#fff'); R(1.5, -29, 1, 1, '#fff'); R(-1, -25, 2, 1, '#b56a5e');
+    ctx.restore();
+}
+
+const stages = {
+  repli:   { c: document.getElementById('cRepli'),   draw: drawRepliPortrait, box: document.getElementById('sRepli') },
+  rika:    { c: document.getElementById('cRika'),    draw: drawRikaPortrait,  box: document.getElementById('sRika') },
+  quinnie: { c: document.getElementById('cQuinnie'), draw: drawQkunPortrait,  box: document.getElementById('sQ') },
+};
+const opt = { scale: 6, torch: true, spot: true, line: false };
+
+function torchGlow(ctx, w, h){
+  const x = w*0.72, y = h*0.34;
+  const g = ctx.createRadialGradient(x, y, 6, x, y, w*0.95);
+  g.addColorStop(0,'rgba(230,181,98,0.20)');
+  g.addColorStop(0.45,'rgba(192,138,58,0.07)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.fillStyle = g; ctx.fillRect(0,0,w,h);
+}
+function spotPool(ctx, cx, baseY, rw){
+  const g = ctx.createRadialGradient(cx, baseY, 2, cx, baseY, rw);
+  g.addColorStop(0,'rgba(230,200,120,0.18)');
+  g.addColorStop(0.5,'rgba(192,138,58,0.06)');
+  g.addColorStop(1,'rgba(0,0,0,0)');
+  ctx.save(); ctx.scale(1, 0.32);
+  ctx.fillStyle = g; ctx.beginPath();
+  ctx.arc(cx, baseY/0.32, rw, 0, Math.PI*2); ctx.fill(); ctx.restore();
+}
+
+function render(){
+  for(const key in stages){
+    const {c, draw, box} = stages[key];
+    const ctx = c.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    const w = c.width, h = c.height;
+    ctx.clearRect(0,0,w,h);
+    const cx = Math.round(w/2);
+    const baseY = h - 14;                  // bust bottom crop (waist) near frame bottom
+    if(opt.spot) spotPool(ctx, cx, baseY, 70);
+    if(opt.torch) torchGlow(ctx, w, h);
+    draw(ctx, cx, baseY, opt.scale);
+    // eyeline overlay at y=-29 (device px from top)
+    const eyeDev = baseY - 29 * opt.scale;
+    const lineEl = box.querySelector('.eyeline');
+    lineEl.style.top = (eyeDev / h * 100) + '%';
+    box.classList.toggle('showline', opt.line);
+  }
+}
+
+const scaleEl = document.getElementById('scale'), scaleVal = document.getElementById('scaleVal');
+scaleEl.addEventListener('input', () => { opt.scale = +scaleEl.value; scaleVal.textContent = opt.scale; render(); });
+function toggle(btn, key){ const b=document.getElementById(btn); b.addEventListener('click',()=>{ opt[key]=!opt[key]; b.classList.toggle('on', opt[key]); render(); }); }
+toggle('btnTorch','torch'); toggle('btnSpot','spot'); toggle('btnLine','line');
+render();
+window.__render = render;
+</script>
+</body>
+</html>
