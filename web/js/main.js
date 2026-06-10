@@ -1184,11 +1184,13 @@ class Game {
             this.tryEnterDungeon();
             this.saveProgress();
         });
-        // 첫 출정 강제 — 출발 버튼 글로우 + 취소 숨김(유도 경로 = 출발만. 팝업 닫기(X/ESC)는
-        // 살아 있고 그 경우 보드 마커가 재무장되므로 트랩 아님 — 큐가 끊기지 않을 뿐).
+        // 첫 출정 강제 — 출발 버튼 글로우 + 취소 숨김 + 식량 스테퍼 잠금(보급은 추천량 고정 —
+        // 아직 배우지 않은 개념을 건드려 0 출발 같은 사고를 내지 않게). 출구 = 출발뿐
+        // (팝업 닫기는 _guildPopupLocked 가 차단).
         if (this._isFirstDeployPhase() && dungeonId === 'level_01_easy') {
             panel.querySelector('.btn-prep-deploy')?.classList.add('tutor-glow');
             panel.querySelector('.btn-prep-back').hidden = true;
+            panel.querySelectorAll('[data-food]').forEach(b => { b.disabled = true; });
         }
     }
 
