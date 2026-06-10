@@ -56,3 +56,20 @@ father/레플리/리카와 동일 — `R(x,y,w,h,c)=fillRect`, **`(cx, baseY)` �
 - 미리보기: `web/_npc-preview.html` (퀴니 슬롯 추가)
 - 코드 반영 완료(이번 커밋): `CHARACTERS.qkun`(name 퀴니/성격/설명), dict-ko·en(char.qkun/personality/desc/firstclear), play.html
 - 선례: `docs/PM/handoffs/2026-06-05-guild-art-to-claude-design.md`(레플리/리카) · `2026-06-02-opening-v2-asbuilt-to-claude-design.md`(father). 협업 규칙 `design/README.md`.
+
+---
+
+## 9. rev 2 — v1 피드백 (bm, 2026-06-10)
+
+v1 흉상(e4a3902 이식분)에 대한 bm 피드백. v2 Tweak 진행 중 (Claude Design).
+
+- **실루엣**: 강아지보다 "다람쥐"로 읽힘 — 높이 솟은 뾰족 귀 + 머리 옆 포니테일
+  덩어리(북슬 꼬리 인상)가 원인 추정. 개로 읽히는 귀(넓적·낮게 또는 drop ear),
+  포니테일 분리/축소, 꼬리끝도 가늘게.
+- **복장**: 무도복(gi) 불채택 → **초보 모험가 복장** (여행자 튜닉 + 잡일 소품 1점).
+  §3 의 "무도가 골격" 컨셉은 외형 복장에서 제외 (체형 자체는 유지).
+- **★ 백스토리 확정 (후일 스토리 공개용 — 현재 대사/UI 노출 금지)**:
+  퀴니는 과거 **주인공의 아버지에게 구출**되어 세르파 길드에 들어왔고,
+  지금은 **길드 잡일을 하는 신입**. 아버지를 닮은 주인공(마스터)이기에
+  우직하게 충성한다. → 나중에 스토리 비트로 밝혀지는 것이 목표.
+  외형에는 "잡일 신입" 무드로만 은은히 반영.
