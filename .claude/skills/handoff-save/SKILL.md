@@ -1,6 +1,6 @@
 ---
 name: handoff-save
-description: 현재 세션 컨텍스트를 .claude/handoff/<slug>.md 로 dump. PM 핸드오프 (docs/PM/handoffs/) 가 작업 사이클 인계라면, 이건 *세션 단위* 스크래치 — in-flight 작업·열린 질문·다음 즉시 행동을 박제. 파일은 .gitignore 되므로 머신/repo 본체와 분리.
+description: 현재 세션 컨텍스트를 .handoff/<slug>.md 로 dump. PM 핸드오프 (docs/PM/handoffs/) 가 작업 사이클 인계라면, 이건 *세션 단위* 스크래치 — in-flight 작업·열린 질문·다음 즉시 행동을 박제. 파일은 .gitignore 되므로 머신/repo 본체와 분리.
 allowed-tools: Bash(git status:*), Bash(git diff:*), Bash(git log:*), Bash(ls:*), Bash(mkdir:*), Read, Write, AskUserQuestion
 argument-hint: "<slug>  (예: t2b2-modifier-mvp, b109-sim-integration)"
 ---
@@ -10,11 +10,11 @@ argument-hint: "<slug>  (예: t2b2-modifier-mvp, b109-sim-integration)"
 - Working dir: !`pwd`
 - Git status: !`git status --short`
 - Recent commits: !`git log --oneline -5`
-- Existing handoffs: !`ls .claude/handoff/ 2>/dev/null || echo '(empty)'`
+- Existing handoffs: !`ls .handoff/ 2>/dev/null || echo '(empty)'`
 
 ## Task
 
-현재 세션의 in-flight 컨텍스트를 `.claude/handoff/<slug>.md` 로 저장. 다음 세션이 `/handoff-load <slug>` 로 즉시 재개 가능하도록.
+현재 세션의 in-flight 컨텍스트를 `.handoff/<slug>.md` 로 저장. 다음 세션이 `/handoff-load <slug>` 로 즉시 재개 가능하도록.
 
 ### Step 1: slug 결정
 
@@ -39,7 +39,7 @@ slug 검증:
 
 ### Step 3: 핸드오프 파일 작성
 
-경로: `.claude/handoff/<slug>.md`
+경로: `.handoff/<slug>.md`
 
 프론트매터:
 ```yaml
@@ -114,7 +114,7 @@ session_summary: <한 줄 요약, 30자 내외>
 ## 메모
 
 - 이 스킬은 *세션 단위* 컨텍스트 dump 가 목적. 작업 사이클 인계 (T2B-2 → B-109 같은) 는 `docs/PM/handoffs/` 에 별도 작성
-- `.claude/handoff/` 는 `.gitignore` 됨 — git 에 안 들어감, 머신 로컬
+- `.handoff/` 는 `.gitignore` 됨 — git 에 안 들어감, 머신 로컬
 - slug 충돌 시 덮어쓰기 결정은 사용자 몫
 - PM 핸드오프 (tracked) 와 이 로컬 핸드오프 (ignored) 의 *경계*:
   - PM: 작업 ID 단위 (T2B-2 / B-109), 마일스톤 전환 정당화, 누구나 zero-base 진입 가능
