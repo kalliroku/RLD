@@ -464,10 +464,10 @@ class Game {
         const guildPopup = document.getElementById('guild-popup');
         if (guildPopup) {
             guildPopup.querySelectorAll('[data-popup-close]').forEach(el => {
-                el.addEventListener('click', () => { this._clearFarmTick(); guildPopup.hidden = true; if (TUTOR_TASKS_VIA_BOARD.includes(this._tutorTask)) this._setGuildQuestMarker(true); });
+                el.addEventListener('click', () => { this._clearFarmTick(); guildPopup.hidden = true; if (TUTOR_TASKS_VIA_BOARD.includes(this._tutorTask) || this._isFirstDeployPhase()) this._setGuildQuestMarker(true); });
             });
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && !guildPopup.hidden) { this._clearFarmTick(); guildPopup.hidden = true; if (TUTOR_TASKS_VIA_BOARD.includes(this._tutorTask)) this._setGuildQuestMarker(true); }
+                if (e.key === 'Escape' && !guildPopup.hidden) { this._clearFarmTick(); guildPopup.hidden = true; if (TUTOR_TASKS_VIA_BOARD.includes(this._tutorTask) || this._isFirstDeployPhase()) this._setGuildQuestMarker(true); }
             });
         }
         // NPC onboarding dialogue — click OR arrow/Enter/Space to advance (오프닝과 동일)
@@ -553,6 +553,8 @@ class Game {
         this._maybeStartGuildOnboarding();
         this._maybeStartFirstClearBeats();   // 온보딩 미진행 시에만(내부 게이트)
         this._maybeStartSecondClearBeats();  // 첫클리어 대화 기시청 후에만(내부 게이트)
+        // 첫 출정 강제 — 비트 재생 중이 아니면 보드 마커 상시 재무장(길드 재진입 포함).
+        if (!this._guildOnboarding && this._isFirstDeployPhase()) this._setGuildQuestMarker(true);
     }
 
     /**
@@ -1000,6 +1002,9 @@ class Game {
             // 수금 대상 = 퀴니가 실제 파밍 중인 던전(통상 1관 — 재배치했어도 따라감).
             const did = this.runState.getFarmingDungeon('qkun');
             if (did) panel.querySelector(`.mission-card[data-dungeon="${did}"]`)?.classList.add('tutor-glow');
+        } else if (this._isFirstDeployPhase()) {
+            // 첫 출정 강제 — 첫 의뢰(1관) 카드 글로우(준비실까지 큐 연결).
+            panel.querySelector('.mission-card[data-dungeon="level_01_easy"]')?.classList.add('tutor-glow');
         }
     }
 
@@ -1163,6 +1168,12 @@ class Game {
             this.tryEnterDungeon();
             this.saveProgress();
         });
+        // 첫 출정 강제 — 출발 버튼 글로우 + 취소 숨김(유도 경로 = 출발만. 팝업 닫기(X/ESC)는
+        // 살아 있고 그 경우 보드 마커가 재무장되므로 트랩 아님 — 큐가 끊기지 않을 뿐).
+        if (this._isFirstDeployPhase() && dungeonId === 'level_01_easy') {
+            panel.querySelector('.btn-prep-deploy')?.classList.add('tutor-glow');
+            panel.querySelector('.btn-prep-back').hidden = true;
+        }
     }
 
     // ── 파밍 통제판 — 답파 던전 대기실의 변신형. 방치형 누적(실제 답파 X). ───────────
@@ -3847,6 +3858,13 @@ class Game {
     /** 튜토리얼 1회성 마커 (localStorage 영속 — 런 리셋 무관). */
     _tutorialDone() {
         return localStorage.getItem(TUTORIAL_DONE_KEY) === '1';
+    }
+
+    /** 첫 출정 강제 단계 — 튜토리얼 미완료 + 답파 0. 이 동안 보드 마커는 닫을 때마다
+     *  재무장되고 1관 카드/출발 버튼이 글로우, 준비실 취소가 숨겨진다(임의 이탈 스턱 방지 —
+     *  마커→카드→출발 큐가 끊기지 않음). 첫 던전 세션 종료(_markTutorialDone) 시 해제. */
+    _isFirstDeployPhase() {
+        return !this._tutorialDone() && this.runState.clearedDungeons.size === 0;
     }
 
     /** 첫 던전 세션 종료(클리어/나가기) 시 1회 박음 → 세이프넷 OFF + 단축 온보딩 전환. */
