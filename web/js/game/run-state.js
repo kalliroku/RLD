@@ -668,6 +668,34 @@ export class RunState {
         };
     }
 
+    /** '시작'(새 게임) — 저장된 진행 전부 초기화(메타+런, NG+ 기록 포함). 생성자가
+     *  저장본을 자동 로드하므로(loadMeta/loadRunState), 새 게임은 이 메서드로 명시 리셋
+     *  해야 한다 — 안 하면 이전 답파/해금이 부활해 길드 게이트가 전부 열려 보인다. */
+    resetForNewGame() {
+        this.ngPlusCount = 0;
+        this.bestTotalSteps = null;
+        this.totalSteps = 0;
+        this.deathCount = 0;
+        this.serpaClearCounts = {};
+        this.totalFarmingSteps = 0;
+        this.runNumber = 1;
+        this.gold = STARTING_GOLD;
+        this.food = 0;   // 출정 소모품 — 전역 지급 없음
+        this.hiredCharacters = new Set();
+        this.clearedDungeons = new Set();
+        this.unlockedDungeons = new Set(['level_01_easy']);
+        this.answerPaths = {};
+        this.characterLevels = {};
+        this.farmingAssignments = {};
+        this.farmingSince = {};
+        this.mapStatus = {};
+        this.purchasedHints = {};
+        this.treasureStatus = {};
+        this.inventory = {};
+        this.saveMeta();
+        this.saveRunState();
+    }
+
     // ========== New Game+ (§10.3) ==========
 
     isNewGamePlus() {

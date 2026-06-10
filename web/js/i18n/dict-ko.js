@@ -36,7 +36,9 @@ export const KO = {
     'title.logo': 'RL DUNGEON',
     'title.tagline': '멍청한 세르파와 던전 답파',
     'title.new_game': '시작',
-    'title.continue': '이어하기',
+    'title.start_opening': '오프닝부터',
+    'title.start_tutorial': '튜토리얼 처음부터',
+    'title.wipe_confirm': '저장된 진행이 모두 삭제됩니다. 처음부터 시작할까요?',
     'title.dev_mode': 'Dev Mode',
 
     // === Opening V2 — tutorial-as-opening (narrative locked 2026-06-02) ===

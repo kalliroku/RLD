@@ -360,9 +360,6 @@ class Game {
         // Step 6: Progressive disclosure initial state
         this.updateProgressiveDisclosure();
 
-        // Title screen: enable Continue if save exists
-        this._updateTitleButtons();
-
         // B-106: initial sparkline placeholder
         this.renderSparkline();
 
@@ -406,25 +403,30 @@ class Game {
             });
         }
 
-        // Title buttons
-        document.getElementById('btn-new-game').addEventListener('click', () => {
-            this._beginNewGame();
-        });
-
-        // DEV/TEST: always replay the opening + guild onboarding, then enter.
-        document.getElementById('btn-new-game-opening').addEventListener('click', () => {
+        // Title buttons — 진입 분기 3종 (bm 2026-06-10 정리):
+        //   오프닝부터        = 전체 리셋 + 오프닝 시네마틱부터
+        //   튜토리얼 처음부터 = 전체 리셋, 오프닝은 스킵하고 길드 온보딩부터
+        //   시작             = 세이브 있으면 이어하기(남은 튜토 시퀀스 재개), 없으면 새 게임
+        document.getElementById('btn-start-opening').addEventListener('click', () => {
+            if (!this._confirmWipeSave()) return;
             OpeningManager.reset();
-            localStorage.removeItem(GUILD_ONBOARD_KEY);
-            localStorage.removeItem(TUTORIAL_DONE_KEY);   // 풀 온보딩 + 식량 세이프넷 재무장(재테스트용)
-            localStorage.removeItem(FIRSTCLEAR_SEEN_KEY);  // 첫-클리어 대화도 재무장
-            localStorage.removeItem(SECONDCLEAR_SEEN_KEY); // 2관-클리어 대화도 재무장
+            this._resetTutorialProgress();
             this._beginNewGame();
         });
 
-        document.getElementById('btn-continue').addEventListener('click', () => {
-            this.screenManager.show('screen-guild');
-            this.updateGuildHall();
-            this.tutorial.tryShow('init');
+        document.getElementById('btn-start-tutorial').addEventListener('click', () => {
+            if (!this._confirmWipeSave()) return;
+            OpeningManager.markSeen();   // 오프닝 건너뛰고 바로 길드 온보딩
+            this._resetTutorialProgress();
+            this._beginNewGame();
+        });
+
+        document.getElementById('btn-start').addEventListener('click', () => {
+            if (localStorage.getItem('rld_run_state') === null) {
+                this._beginNewGame();   // 첫 플레이 — 오프닝 미시청이면 자동 재생
+                return;
+            }
+            this._continueGame();
         });
 
         document.getElementById('btn-dev-mode').addEventListener('click', () => {
@@ -474,10 +476,35 @@ class Game {
         });
     }
 
-    /** Fresh run setup shared by the 시작 and 오프닝+시작 (dev) buttons. */
+    /** 진행 삭제 전 확인 — 세이브 없으면 조용히 통과. 네이티브 confirm 은 자리표시자(전용 UI 추후). */
+    _confirmWipeSave() {
+        return localStorage.getItem('rld_run_state') === null || confirm(t('title.wipe_confirm'));
+    }
+
+    /** 튜토리얼 진행 마커 일괄 재무장 — '오프닝부터'/'튜토리얼 처음부터' 공용. */
+    _resetTutorialProgress() {
+        localStorage.removeItem(GUILD_ONBOARD_KEY);
+        localStorage.removeItem(TUTORIAL_DONE_KEY);    // 풀 온보딩 + 식량 세이프넷 재무장
+        localStorage.removeItem(FIRSTCLEAR_SEEN_KEY);  // 첫-클리어 대화 재무장
+        localStorage.removeItem(SECONDCLEAR_SEEN_KEY); // 2관-클리어 대화 재무장
+    }
+
+    /** '시작'(세이브 존재) — 이어하기. 튜토리얼이 중간에 끊겼으면 남은 시퀀스부터 재개:
+     *  오프닝 미시청(시네마틱 도중 종료) → 오프닝부터, 온보딩은 시드키 미설정이면 재요청,
+     *  firstclear/secondclear 는 updateGuildHall 의 게이트가 답파 상태·시드키를 보고
+     *  알아서 이어 붙는다(시퀀스 단위 재개). */
+    _continueGame() {
+        if (localStorage.getItem(GUILD_ONBOARD_KEY) !== '1') this._onboardingRequested = true;
+        this._enterGameStart();
+    }
+
+    /** Fresh run setup shared by the 시작(첫 플레이) and 처음부터 계열 버튼. */
     _beginNewGame() {
         this.runState = new RunState();
-        this.runState.saveRunState();
+        // 새 게임 = 명시 리셋 — RunState 생성자가 저장본을 자동 로드하므로 그냥 두면
+        // 이전 진행도가 부활해 첫 시작인데 길드 메뉴(지도/상점/파티)가 전부 열려 보이고,
+        // 숨겨야 할 핫스팟이 호버에 반응했다(bm 발견 2026-06-10).
+        this.runState.resetForNewGame();
         this._clearAllQTables();
         this._onboardingRequested = true;   // 새 게임 → 길드 진입 시 온보딩(풀/단축) 재생
         this.loadDungeon('level_01_easy');
@@ -499,27 +526,6 @@ class Game {
             this.screenManager.show('screen-guild');
             this.updateGuildHall();
         });
-    }
-
-    _updateTitleButtons() {
-        const hasSave = localStorage.getItem('rld_run_state') !== null;
-        const btnNew = document.getElementById('btn-new-game');
-        const btnCont = document.getElementById('btn-continue');
-        if (hasSave) {
-            btnCont.style.display = '';
-            btnCont.disabled = false;
-            // When a save exists, "Continue" is the primary action and "New Game" is secondary.
-            btnNew.classList.remove('title-btn-primary');
-            btnCont.classList.add('title-btn-primary');
-            // Swap order visually so Continue is on top: rely on flex order to keep it cheap.
-            btnCont.style.order = '0';
-            btnNew.style.order = '1';
-        } else {
-            btnCont.style.display = 'none';
-            btnCont.classList.remove('title-btn-primary');
-            btnNew.classList.add('title-btn-primary');
-            btnNew.style.order = '0';
-        }
     }
 
     _clearAllQTables() {

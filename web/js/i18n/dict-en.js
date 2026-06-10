@@ -25,7 +25,9 @@ export const EN = {
     'title.logo': 'RL DUNGEON',
     'title.tagline': 'Dumb Sherpas, Deep Dungeons',
     'title.new_game': 'Start',
-    'title.continue': 'Continue',
+    'title.start_opening': 'From the Opening',
+    'title.start_tutorial': 'Tutorial from the Start',
+    'title.wipe_confirm': 'All saved progress will be erased. Start over?',
     'title.dev_mode': 'Dev Mode',
 
     // === Opening V2 — tutorial-as-opening (narrative locked 2026-06-02) ===
