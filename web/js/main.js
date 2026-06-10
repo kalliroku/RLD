@@ -464,10 +464,12 @@ class Game {
         const guildPopup = document.getElementById('guild-popup');
         if (guildPopup) {
             guildPopup.querySelectorAll('[data-popup-close]').forEach(el => {
-                el.addEventListener('click', () => { this._clearFarmTick(); guildPopup.hidden = true; if (TUTOR_TASKS_VIA_BOARD.includes(this._tutorTask) || this._isFirstDeployPhase()) this._setGuildQuestMarker(true); });
+                // 강제 구간(_guildPopupLocked)엔 닫기 차단 — X 자체도 _openGuildPopup 이 숨기지만,
+                // 열린 사이 상태가 바뀌는 레이스 대비 핸들러에서도 가드(이중 방어).
+                el.addEventListener('click', () => { if (this._guildPopupLocked()) return; this._clearFarmTick(); guildPopup.hidden = true; });
             });
             document.addEventListener('keydown', (e) => {
-                if (e.key === 'Escape' && !guildPopup.hidden) { this._clearFarmTick(); guildPopup.hidden = true; if (TUTOR_TASKS_VIA_BOARD.includes(this._tutorTask) || this._isFirstDeployPhase()) this._setGuildQuestMarker(true); }
+                if (e.key === 'Escape' && !guildPopup.hidden) { if (this._guildPopupLocked()) return; this._clearFarmTick(); guildPopup.hidden = true; }
             });
         }
         // NPC onboarding dialogue — click OR arrow/Enter/Space to advance (오프닝과 동일)
@@ -615,6 +617,8 @@ class Game {
         if (titleEl) titleEl.textContent = title || '';
         // 의뢰 보드/준비실은 풀-페이지(전체 덮기), 나머지 탭은 기존 중앙 모달.
         popup.classList.toggle('is-fullpage', key === 'quest');
+        // 튜토리얼 강제 구간 — 닫기(X) 숨김(출구 = 요구 행동 완료). 해제되면 다음 오픈 때 복귀.
+        popup.querySelectorAll('[data-popup-close]').forEach(el => { el.hidden = this._guildPopupLocked(); });
         popup.hidden = false;
     }
 
@@ -3860,11 +3864,18 @@ class Game {
         return localStorage.getItem(TUTORIAL_DONE_KEY) === '1';
     }
 
-    /** 첫 출정 강제 단계 — 튜토리얼 미완료 + 답파 0. 이 동안 보드 마커는 닫을 때마다
-     *  재무장되고 1관 카드/출발 버튼이 글로우, 준비실 취소가 숨겨진다(임의 이탈 스턱 방지 —
-     *  마커→카드→출발 큐가 끊기지 않음). 첫 던전 세션 종료(_markTutorialDone) 시 해제. */
+    /** 첫 출정 강제 단계 — 튜토리얼 미완료 + 답파 0. 이 동안 보드 마커 상시 재무장 +
+     *  1관 카드/출발 버튼 글로우 + 준비실 취소 숨김 + 팝업 닫기 잠금(_guildPopupLocked).
+     *  첫 던전 세션 종료(_markTutorialDone, 클리어/나가기) 시 해제. */
     _isFirstDeployPhase() {
         return !this._tutorialDone() && this.runState.clearedDungeons.size === 0;
+    }
+
+    /** 튜토리얼 강제 구간 — 길드 팝업을 닫을 수 없다(X 숨김 + ESC 무시). 출구 = 요구 행동
+     *  완료(첫 출정=출발 / 액션 비트=배치·수금)뿐. 강제 구간엔 quest 보드만 열리므로
+     *  (상점/지도/파티는 첫 클리어 전 잠김) 다른 팝업이 갇힐 표면은 없다. */
+    _guildPopupLocked() {
+        return this._isFirstDeployPhase() || TUTOR_TASKS_VIA_BOARD.includes(this._tutorTask);
     }
 
     /** 첫 던전 세션 종료(클리어/나가기) 시 1회 박음 → 세이프넷 OFF + 단축 온보딩 전환. */
