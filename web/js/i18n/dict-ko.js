@@ -132,6 +132,8 @@ export const KO = {
     'prep.reward.repeat': '반복 +{n}G',
     'prep.label.food': '식량',
     'prep.food_unit': '(1G/개)',
+    // 출정 보급 합계 비용 — 보급량을 올리는 만큼 필요한 골드 표시.
+    'prep.food_cost': '−{n}G',
     'prep.label.cost': '입장료',
     'prep.label.gold': '보유 골드',
     'prep.label.reward': '보상',

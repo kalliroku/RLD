@@ -448,6 +448,9 @@ class Game {
             // 첫 던전 세션을 한 번 떠나면 튜토리얼 소진 → 세이프넷 OFF + 단축 온보딩 전환.
             this._cancelTutorAssist();
             this._markTutorialDone();
+            // 식량 = 출정 소모품 — 던전을 떠나면 잔여 폐기(전역 재고로 잔존 금지, bm 2026-06-10).
+            this.runState.food = 0;
+            this.runState.saveRunState();
             this.screenManager.show('screen-guild');
             this.updateGuildHall();
         });
@@ -1111,8 +1114,13 @@ class Game {
         const config = DUNGEON_CONFIG[dungeonId] || { cost: 0, firstReward: 0, repeatReward: 0 };
         const lv = this.getDungeonLevel(dungeonId), name = this.getDungeonDisplayName(dungeonId);
         const cleared = rs.clearedDungeons.has(dungeonId);
-        // 입장료 차단은 tryEnterDungeon(라인 ~3140)과 동일 조건으로 — builtin 던전만 골드 가드(daily 등 면제 던전 오잠금 방지).
-        const cantAfford = () => this.isBuiltInDungeon(dungeonId) && rs.gold < (config.cost || 0);
+        // 출정 보급(식량) — 스테이지 소모품(bm 결정 2026-06-10): 여기서 정한 양을 출발 시
+        // 일괄 결제(현 1G/개 — 단가 밸런스 추후 재논의), 던전 종료 시 잔여 폐기.
+        // 기본 = 추천량(STARTING_FOOD), 상한 = 입장료를 빼고 남는 골드(출발 불능 트랩 방지).
+        const provisionMax = () => Math.max(0, rs.gold - (this.isBuiltInDungeon(dungeonId) ? (config.cost || 0) : 0));
+        let provision = Math.min(STARTING_FOOD, provisionMax());
+        // 입장료+보급 합계 가드 — builtin 던전만 골드 가드(daily 등 면제 던전 오잠금 방지).
+        const cantAfford = () => this.isBuiltInDungeon(dungeonId) && rs.gold < (config.cost || 0) + provision;
         const best = rs.answerPaths && rs.answerPaths[dungeonId] && rs.answerPaths[dungeonId].steps;
         if (titleEl) titleEl.textContent = t('prep.title', { lv, name });
 
@@ -1132,8 +1140,8 @@ class Game {
                 <div class="prep-flavor">"${this._dungeonFlavor(dungeonId)}"</div>
                 <div class="prep-rows">
                     <div class="prep-row"><span>${t('prep.label.food')}</span><span class="food-stepper">
-                        <button data-food="-10">−</button><b id="prep-food">${rs.food}</b><button data-food="10">+</button>
-                        <small>${t('prep.food_unit')}</small></span></div>
+                        <button data-food="-10">−</button><b id="prep-food"></b><button data-food="10">+</button>
+                        <small>${t('prep.food_unit')}</small> <small class="prep-gold" id="prep-food-cost"></small></span></div>
                     <div class="prep-row"><span>${t('prep.label.cost')}</span><span class="prep-gold">${config.cost}G</span></div>
                     <div class="prep-row"><span>${t('prep.label.gold')}</span><span class="prep-gold" id="prep-hold">${rs.gold}G</span></div>
                     <div class="prep-row"><span>${t('prep.label.reward')}</span><span class="prep-reward">${reward}</span></div>
@@ -1146,17 +1154,17 @@ class Game {
         this._renderPrepMinimap(document.getElementById('prep-minimap'), dungeonId);
 
         const refresh = () => {
-            const f = document.getElementById('prep-food'), g = document.getElementById('prep-hold');
-            if (f) f.textContent = rs.food;
-            if (g) g.textContent = `${rs.gold}G`;
+            const f = document.getElementById('prep-food'), c = document.getElementById('prep-food-cost');
+            if (f) f.textContent = provision;
+            if (c) c.textContent = t('prep.food_cost', { n: provision });   // 올리는 만큼 필요 골드 표시
             const deploy = panel.querySelector('.btn-prep-deploy');
-            if (deploy) deploy.disabled = cantAfford();   // 식량 구매로 골드<입장료 되면 출발 잠금(깨진 진입 방지)
-            this._updateGuildResources();
+            if (deploy) deploy.disabled = cantAfford();   // 입장료+보급 합계 > 보유 골드면 출발 잠금
         };
+        refresh();
+        // 보급량 조절 — 골드는 아직 안 빠짐(출발 시 일괄 결제). 상한 = provisionMax.
         panel.querySelectorAll('[data-food]').forEach(b => b.addEventListener('click', () => {
             const d = parseInt(b.dataset.food, 10);
-            if (d > 0 && rs.gold >= d) { rs.gold -= d; rs.food += d; }          // 구매 (1G/개)
-            else if (d < 0 && rs.food >= -d) { rs.food += d; rs.gold -= d; }     // 환불 (출발 전)
+            provision = Math.max(0, Math.min(provisionMax(), provision + d));
             refresh();
         }));
         panel.querySelector('.btn-prep-back').addEventListener('click', () => {
@@ -1164,6 +1172,10 @@ class Game {
             this._updateGuildQuests();                                          // 보드로 복귀
         });
         panel.querySelector('.btn-prep-deploy').addEventListener('click', () => {
+            if (cantAfford()) return;                                           // disabled 우회 방지 가드
+            // 보급 일괄 결제 — 입장료는 tryEnterDungeon 이 차감(provision 상한 캡이 합계 지불 보장).
+            rs.gold -= provision;
+            rs.food = provision;   // 출정 휴대분으로 교체(전역 재고 아님 — 종료 시 폐기)
             const popup = document.getElementById('guild-popup');
             if (popup) popup.hidden = true;
             if (titleEl) titleEl.textContent = t('guild.tab.quest');

@@ -120,6 +120,8 @@ export const EN = {
     'prep.reward.repeat': 'Repeat +{n}G',
     'prep.label.food': 'Provisions',
     'prep.food_unit': '(1G each)',
+    // Total provision cost — shows the gold needed for the chosen amount.
+    'prep.food_cost': '−{n}G',
     'prep.label.cost': 'Entry fee',
     'prep.label.gold': 'Gold held',
     'prep.label.reward': 'Reward',
