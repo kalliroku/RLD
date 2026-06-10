@@ -189,9 +189,9 @@ export const EN = {
 
     // === Game area ===
     'game.minimap': 'Minimap',
-    'game.step0_hint': 'Use the arrow keys to move your Sherpa to the green G.',
+    'game.step0_hint': 'Use the arrow keys to move your Sherpa to the golden G.',
     'game.bump_toast': 'Bump! (-1)',
-    'game.reset_log': 'Game Reset! Food: {food}. Reach the green G.',
+    'game.reset_log': 'Game Reset! Food: {food}. Reach the golden G.',
     'game.clear_repeat': 'Clear! +{reward}G (Steps: {steps}){treasure}',
     'game.first_clear.map_sold': 'First Clear! Map sold for {earned}G!',
     'game.first_clear.map_kept': 'First Clear! Map kept! Exclusive farming: {reward}G x {runs} runs',
@@ -355,7 +355,7 @@ export const EN = {
     'bottom_tab.aria_label': 'Section navigation',
 
     // === Footer ===
-    'footer.controls_hint': 'Arrow keys to move | R to reset | Reach the green goal!',
+    'footer.controls_hint': 'Arrow keys to move | R to reset | Reach the golden goal!',
 
     // === Modifier band (T2B-2) ===
     'modifier_band.this_run': 'This run:',
@@ -440,7 +440,7 @@ export const EN = {
     'modifier.silent_q.desc': 'Q-value heatmap and sparkline hidden.',
 
     // === Tutorial steps (5개) ===
-    'tutorial.welcome': "Welcome! Use arrow keys to move your Sherpa to the green G (goal).",
+    'tutorial.welcome': "Welcome! Use arrow keys to move your Sherpa to the golden G (goal).",
     'tutorial.first_dungeon': "First dungeon cleared! Move on, or use AI Training to teach your Sherpa the path.",
     'tutorial.ai_training': 'The Sherpa learns the dungeon through repeated exploration. Try different speeds — Instant is fastest. Each exploration costs gold.',
     'tutorial.economy': 'Dungeons now cost gold to enter. Sell maps for instant cash, or keep them for farming runs.',

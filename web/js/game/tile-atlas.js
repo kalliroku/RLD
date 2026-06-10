@@ -4,6 +4,7 @@
  */
 
 import { TileType } from './tiles.js';
+import { PAL } from './opening-art.js';   // 오프닝과 같은 비주얼 언어 (D-2026-06-10 bm — 인던전 = 오프닝 문법)
 
 // Simple deterministic hash for coordinate-based variation
 function coordHash(x, y) {
@@ -104,7 +105,7 @@ export class TileAtlas {
 
     _buildFloors(ts) {
         this._floorCache = [];
-        const baseColor = '#1a1a2e';
+        const baseColor = PAL.stone;          // 따뜻한 동굴 석재 (#2a2520)
         const rgb = hexToRgb(baseColor);
 
         for (let v = 0; v < 4; v++) {
@@ -145,8 +146,8 @@ export class TileAtlas {
             // v === 3: no crack (clean tile)
             ctx.stroke();
 
-            // Grid edge line (very subtle)
-            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            // Grid edge line (very subtle, warm)
+            ctx.strokeStyle = 'rgba(232,220,196,0.045)';
             ctx.lineWidth = 1;
             ctx.strokeRect(0.5, 0.5, ts - 1, ts - 1);
 
@@ -158,9 +159,10 @@ export class TileAtlas {
 
     _buildWalls(ts) {
         this._wallCache = [];
-        const baseColor = '#374151';
-        const highlight = '#4b5563';
-        const shadow = '#1f2937';
+        // 벽 = 바닥보다 어두운 암반 (오프닝의 어두운 벽 밴드와 동일 톤 계열)
+        const baseColor = '#1f1914';
+        const highlight = PAL.stoneLight;     // #382c20 — 빛 받는 윗면
+        const shadow = '#0c0a07';
 
         for (let mask = 0; mask < 16; mask++) {
             const c = this._createCanvas(ts, ts);
@@ -213,12 +215,12 @@ export class TileAtlas {
             }
             if (!hasN && !hasE) {
                 // Top-right: mix of highlight (top) and shadow (right)
-                ctx.fillStyle = '#3d4a5c';
+                ctx.fillStyle = '#2a211a';
                 ctx.fillRect(ts - bevel, 0, bevel, bevel);
             }
             if (!hasS && !hasW) {
                 // Bottom-left: mix
-                ctx.fillStyle = '#3d4a5c';
+                ctx.fillStyle = '#2a211a';
                 ctx.fillRect(0, ts - bevel, bevel, bevel);
             }
 
@@ -268,27 +270,27 @@ export class TileAtlas {
         const cx = ts / 2, cy = ts / 2;
         const r = ts * 0.3;
 
-        // Blue glow circle
+        // 입구 표식 — 차분한 슬레이트 블루 링 (오프닝 playerBlue 계열, 차가운 네온 금지)
         ctx.save();
-        ctx.shadowColor = '#3b82f6';
-        ctx.shadowBlur = ts * 0.25;
+        ctx.shadowColor = PAL.playerBlue;
+        ctx.shadowBlur = ts * 0.18;
 
         // Outer ring
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.strokeStyle = '#60a5fa';
+        ctx.strokeStyle = '#6d7f9c';
         ctx.lineWidth = 2.5;
         ctx.stroke();
 
         // Inner filled circle
         ctx.beginPath();
         ctx.arc(cx, cy, r * 0.5, 0, Math.PI * 2);
-        ctx.fillStyle = 'rgba(59, 130, 246, 0.4)';
+        ctx.fillStyle = 'rgba(76, 90, 114, 0.4)';
         ctx.fill();
         ctx.restore();
 
         // Arrow up symbol (entry marker)
-        ctx.fillStyle = '#93c5fd';
+        ctx.fillStyle = '#93a5c0';
         ctx.beginPath();
         ctx.moveTo(cx, cy - r * 0.35);
         ctx.lineTo(cx + r * 0.25, cy + r * 0.1);
@@ -300,42 +302,26 @@ export class TileAtlas {
     }
 
     _buildGoal(ts) {
+        // 골 = 오프닝의 "빛나는 금색 G" (opening-art drawCharacter('goal') 과 동일 문법)
         const c = this._createCanvas(ts, ts);
         const ctx = c.getContext('2d');
         const cx = ts / 2, cy = ts / 2;
-        const r = ts * 0.3;
+        const px = ts / 8;
 
-        // Green portal glow
-        ctx.save();
-        ctx.shadowColor = '#22c55e';
-        ctx.shadowBlur = ts * 0.3;
+        // 따뜻한 후광 — 어둠 속에서 멀리서도 보이는 목적지 등불
+        const g = ctx.createRadialGradient(cx, cy, 1, cx, cy, ts * 0.55);
+        g.addColorStop(0, 'rgba(230, 200, 120, 0.4)');
+        g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(0, 0, ts, ts);
 
-        // Outer portal ring
-        ctx.beginPath();
-        ctx.arc(cx, cy, r, 0, Math.PI * 2);
-        ctx.strokeStyle = '#4ade80';
-        ctx.lineWidth = 3;
-        ctx.stroke();
-
-        // Inner swirl (simplified as concentric arcs)
-        ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.6, 0, Math.PI * 1.5);
-        ctx.strokeStyle = '#86efac';
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.3, Math.PI * 0.5, Math.PI * 2);
-        ctx.strokeStyle = '#bbf7d0';
-        ctx.lineWidth = 1.5;
-        ctx.stroke();
-
-        // Center dot
-        ctx.beginPath();
-        ctx.arc(cx, cy, r * 0.12, 0, Math.PI * 2);
-        ctx.fillStyle = '#fff';
-        ctx.fill();
-        ctx.restore();
+        // 픽셀 G 글리프 (8px 그리드 — 오프닝과 동일 좌표)
+        ctx.fillStyle = PAL.goal;
+        ctx.fillRect(2 * px, 2 * px, 4 * px, px);       // top
+        ctx.fillRect(2 * px, 2 * px, px, 4 * px);       // left
+        ctx.fillRect(2 * px, 5 * px, 4 * px, px);       // bottom
+        ctx.fillRect(4 * px, 4 * px, 2 * px, px);       // middle nub
+        ctx.fillRect(5 * px, 4 * px, px, 2 * px);
 
         return c;
     }
@@ -346,9 +332,9 @@ export class TileAtlas {
         const cx = ts / 2, cy = ts / 2;
         const s = ts * 0.28;
 
-        // Red warning triangle
+        // 함정 — 녹슨 붉은 경고 (오프닝 rust 계열)
         ctx.save();
-        ctx.shadowColor = '#ef4444';
+        ctx.shadowColor = '#8b3a1f';
         ctx.shadowBlur = ts * 0.15;
 
         ctx.beginPath();
@@ -356,9 +342,9 @@ export class TileAtlas {
         ctx.lineTo(cx + s * 0.9, cy + s * 0.6);
         ctx.lineTo(cx - s * 0.9, cy + s * 0.6);
         ctx.closePath();
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.3)';
+        ctx.fillStyle = 'rgba(139, 58, 31, 0.35)';
         ctx.fill();
-        ctx.strokeStyle = '#f87171';
+        ctx.strokeStyle = '#b3552f';
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.restore();
@@ -366,7 +352,7 @@ export class TileAtlas {
         // Spikes at bottom
         const spikeH = ts * 0.12;
         const spikeW = ts * 0.06;
-        ctx.fillStyle = '#dc2626';
+        ctx.fillStyle = '#8b3a1f';
         for (let i = 0; i < 3; i++) {
             const sx = cx - spikeW * 2.5 + i * spikeW * 2.5;
             const sy = cy + s * 0.15;
@@ -379,7 +365,7 @@ export class TileAtlas {
         }
 
         // "!" exclamation
-        ctx.fillStyle = '#fca5a5';
+        ctx.fillStyle = '#e0a584';
         ctx.font = `bold ${ts * 0.22}px monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
@@ -393,14 +379,14 @@ export class TileAtlas {
         const ctx = c.getContext('2d');
         const cx = ts / 2, cy = ts / 2;
 
-        // Pink glow
+        // 회복 — 약초 그린 (차가운 핑크 네온 제거)
         ctx.save();
-        ctx.shadowColor = '#f472b6';
+        ctx.shadowColor = '#6f9c5e';
         ctx.shadowBlur = ts * 0.2;
 
         // Heart shape
         const size = ts * 0.2;
-        ctx.fillStyle = '#f472b6';
+        ctx.fillStyle = '#6f9c5e';
         ctx.beginPath();
         ctx.moveTo(cx, cy + size * 0.7);
         ctx.bezierCurveTo(cx - size * 1.5, cy - size * 0.2,
@@ -415,7 +401,7 @@ export class TileAtlas {
         // Cross symbol overlay
         const crossW = ts * 0.06;
         const crossH = ts * 0.18;
-        ctx.fillStyle = '#fce7f3';
+        ctx.fillStyle = '#e8f0dc';
         ctx.fillRect(cx - crossW / 2, cy - crossH / 2 - size * 0.1, crossW, crossH);
         ctx.fillRect(cx - crossH / 2, cy - crossW / 2 - size * 0.1, crossH, crossW);
 
@@ -430,16 +416,16 @@ export class TileAtlas {
 
         // Dark void
         const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-        grad.addColorStop(0, '#000000');
-        grad.addColorStop(0.7, '#0a0a0f');
-        grad.addColorStop(1, 'rgba(10,10,15,0)');
+        grad.addColorStop(0, '#040303');
+        grad.addColorStop(0.7, '#0a0907');
+        grad.addColorStop(1, 'rgba(10,9,7,0)');
         ctx.fillStyle = grad;
         ctx.fillRect(0, 0, ts, ts);
 
         // Edge shadow ring
         ctx.beginPath();
         ctx.arc(cx, cy, r * 0.8, 0, Math.PI * 2);
-        ctx.strokeStyle = 'rgba(50,50,60,0.5)';
+        ctx.strokeStyle = 'rgba(90,75,55,0.5)';
         ctx.lineWidth = 3;
         ctx.stroke();
 
@@ -469,32 +455,32 @@ export class TileAtlas {
 
         // Gold coin with glow
         ctx.save();
-        ctx.shadowColor = '#fbbf24';
+        ctx.shadowColor = '#e6b562';
         ctx.shadowBlur = ts * 0.2;
 
         // Coin body
         ctx.beginPath();
         ctx.arc(cx, cy, r, 0, Math.PI * 2);
         const coinGrad = ctx.createRadialGradient(cx - r * 0.3, cy - r * 0.3, 0, cx, cy, r);
-        coinGrad.addColorStop(0, '#fde68a');
-        coinGrad.addColorStop(0.7, '#fbbf24');
-        coinGrad.addColorStop(1, '#d97706');
+        coinGrad.addColorStop(0, '#f0d79a');
+        coinGrad.addColorStop(0.7, '#e6b562');
+        coinGrad.addColorStop(1, '#c08a3a');
         ctx.fillStyle = coinGrad;
         ctx.fill();
-        ctx.strokeStyle = '#b45309';
+        ctx.strokeStyle = '#6a4a1f';
         ctx.lineWidth = 1.5;
         ctx.stroke();
         ctx.restore();
 
         // "$" symbol
-        ctx.fillStyle = '#78350f';
+        ctx.fillStyle = '#4a3010';
         ctx.font = `bold ${ts * 0.2}px monospace`;
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('$', cx, cy);
 
         // Sparkle
-        ctx.fillStyle = '#fef3c7';
+        ctx.fillStyle = '#f5e8c8';
         const sparkSize = ts * 0.04;
         const sparkX = cx + r * 0.5;
         const sparkY = cy - r * 0.6;
@@ -509,9 +495,9 @@ export class TileAtlas {
         const ctx = c.getContext('2d');
         const cx = ts / 2, cy = ts / 2;
 
-        // Purple glow aura
+        // 괴물 — 그을린 암갈 실루엣 (보라 네온 제거)
         ctx.save();
-        ctx.shadowColor = '#9333ea';
+        ctx.shadowColor = '#8b3a1f';
         ctx.shadowBlur = ts * 0.25;
 
         // Skull/creature silhouette
@@ -520,7 +506,7 @@ export class TileAtlas {
         // Head
         ctx.beginPath();
         ctx.arc(cx, cy - headR * 0.2, headR, 0, Math.PI * 2);
-        ctx.fillStyle = '#7c3aed';
+        ctx.fillStyle = '#4a2c1e';
         ctx.fill();
 
         // Horns
@@ -541,9 +527,9 @@ export class TileAtlas {
 
         // Eyes (glowing red)
         ctx.save();
-        ctx.shadowColor = '#ef4444';
+        ctx.shadowColor = '#d05030';
         ctx.shadowBlur = 6;
-        ctx.fillStyle = '#ef4444';
+        ctx.fillStyle = '#d05030';
         const eyeR = headR * 0.18;
         ctx.beginPath();
         ctx.arc(cx - headR * 0.35, cy - headR * 0.35, eyeR, 0, Math.PI * 2);
@@ -554,7 +540,7 @@ export class TileAtlas {
         ctx.restore();
 
         // Mouth (jagged)
-        ctx.strokeStyle = '#4c1d95';
+        ctx.strokeStyle = '#2a1610';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(cx - headR * 0.4, cy + headR * 0.2);
@@ -573,7 +559,7 @@ export class TileAtlas {
 
     _buildFog(ts) {
         this._fogCache = [];
-        const fogColor = '#0a0a0f';
+        const fogColor = '#070604';
         const rgb = hexToRgb(fogColor);
 
         for (let i = 0; i < 5; i++) {
@@ -587,7 +573,7 @@ export class TileAtlas {
             // Question mark for full fog
             if (opacity >= 0.9) {
                 ctx.font = `${ts * 0.3}px monospace`;
-                ctx.fillStyle = '#333';
+                ctx.fillStyle = '#3a2d20';
                 ctx.textAlign = 'center';
                 ctx.textBaseline = 'middle';
                 ctx.fillText('?', ts / 2, ts / 2);

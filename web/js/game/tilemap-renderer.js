@@ -8,6 +8,7 @@ import { TileType } from './tiles.js';
 import { Action } from './agent.js';
 import { TileAtlas } from './tile-atlas.js';
 import { Tilemap, Layer } from './tilemap.js';
+import { PAL, drawCharacter } from './opening-art.js';   // 인던전 = 오프닝 비주얼 문법 (D-2026-06-10 bm)
 
 export class TilemapRenderer {
     constructor(canvas, tileSize = 64) {
@@ -25,6 +26,10 @@ export class TilemapRenderer {
 
         // Fog of War
         this.fogOfWar = false;
+
+        // 횃불 비네트 — 에이전트 중심의 따뜻한 광 + 가장자리 어둠(오프닝 P2~P4 문법).
+        // 시각 전용. Q-히트맵/정책 화살표가 켜지면(분석 뷰) 가독성을 위해 자동 생략.
+        this.torchVignette = true;
 
         // Treasure
         this.treasurePosition = null;
@@ -244,7 +249,7 @@ export class TilemapRenderer {
 
         // Clear (untransformed — fills the whole canvas regardless of camera)
         ctx.setTransform(1, 0, 0, 1, 0, 0);
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = PAL.bg;                       // 따뜻한 암흑 (#0a0907)
         ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
         if (!this.grid) return;
@@ -285,6 +290,9 @@ export class TilemapRenderer {
 
         // 8. Agent (entity layer)
         this._renderAgent();
+
+        // 8.5 횃불 비네트 (월드 좌표 — 카메라 변환 안에서 그려야 줌과 정합)
+        this._renderTorchVignette();
 
         // Reset transform so HUD/overlays draw in screen space.
         if (camActive) ctx.setTransform(1, 0, 0, 1, 0, 0);
@@ -331,7 +339,7 @@ export class TilemapRenderer {
             atlas.rebuild(ts);
         }
 
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = PAL.bg;
         ctx.fillRect(0, 0, this._staticBuffer.width, this._staticBuffer.height);
 
         for (let y = 0; y < this.grid.height; y++) {
@@ -424,25 +432,16 @@ export class TilemapRenderer {
 
         const centerX = x * ts + ts / 2;
         const centerY = cy * ts + ts / 2;
-        const radius = ts * 0.35;
 
-        // Body circle
+        // 발밑 그림자 — 스프라이트가 바닥에 '서 있게'
         ctx.beginPath();
-        ctx.arc(centerX, centerY, radius, 0, Math.PI * 2);
-        ctx.fillStyle = '#fbbf24';
+        ctx.ellipse(centerX, cy * ts + ts * 0.86, ts * 0.26, ts * 0.09, 0, 0, Math.PI * 2);
+        ctx.fillStyle = 'rgba(4, 3, 3, 0.45)';
         ctx.fill();
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 2;
-        ctx.stroke();
 
-        // Eyes
-        const eyeOffset = radius * 0.3;
-        const eyeRadius = radius * 0.15;
-        ctx.fillStyle = '#000';
-        ctx.beginPath();
-        ctx.arc(centerX - eyeOffset, centerY - eyeOffset * 0.5, eyeRadius, 0, Math.PI * 2);
-        ctx.arc(centerX + eyeOffset, centerY - eyeOffset * 0.5, eyeRadius, 0, Math.PI * 2);
-        ctx.fill();
+        // 픽셀 세르파 — 오프닝의 플레이어 스프라이트와 동일 문법(8px 그리드).
+        // tile 인자를 8의 배수로 스냅해 px 그리드를 정수화(서브픽셀 블러 방지).
+        drawCharacter(ctx, centerX, centerY, 'player', Math.max(8, Math.round(ts * 0.92 / 8) * 8));
 
         // HP bar
         const barWidth = ts * 0.8;
@@ -450,13 +449,52 @@ export class TilemapRenderer {
         const barX = x * ts + (ts - barWidth) / 2;
         const barY = cy * ts + 4;
 
-        ctx.fillStyle = '#333';
+        ctx.fillStyle = 'rgba(7, 6, 4, 0.7)';
         ctx.fillRect(barX, barY, barWidth, barHeight);
 
         const hpPercent = hp / maxHp;
-        const hpColor = hpPercent > 0.5 ? '#22c55e' : (hpPercent > 0.25 ? '#fbbf24' : '#ef4444');
+        const hpColor = hpPercent > 0.5 ? '#5a8f4e' : (hpPercent > 0.25 ? '#e6b562' : '#c0392b');
         ctx.fillStyle = hpColor;
         ctx.fillRect(barX, barY, barWidth * hpPercent, barHeight);
+    }
+
+    // ─── 횃불 비네트 (시각 전용 — sim/좌표 무접촉) ───────────────
+    //
+    // 오프닝 P2~P4 의 "플레이어가 빛을 들고 다닌다" 문법. 에이전트 주변은 따뜻한
+    // 횃불 광, 화면 가장자리는 어둠으로 가라앉는다. 분석 뷰(Q-히트맵/정책 화살표)
+    // 에서는 셀 가독성이 우선이므로 생략. fogOfWar(타일 단위 메커닉)와는 독립 —
+    // 포그가 켜져도 비네트는 분위기 레이어로 함께 동작한다.
+    _renderTorchVignette() {
+        if (!this.torchVignette || !this.agent || !this.grid) return;
+        if (this.showQValues || this.showPolicy) return;
+        const { ctx, tileSize: ts } = this;
+
+        const cx = (this.agent.x + 0.5) * ts;
+        const cy = (this.agent.y - this.viewportYOffset + 0.5) * ts;
+        // 커버 범위: 카메라 모드에선 뷰포트(월드 px), 아니면 그리드 전체 + 여백
+        const pad = ts * 2;
+        const x0 = (this.cameraEnabled ? this.camX : 0) - pad;
+        const y0 = (this.cameraEnabled ? this.camY : 0) - pad;
+        const cw = (this.cameraEnabled ? this.viewTiles * ts : this.grid.width * ts) + pad * 2;
+        const ch = (this.cameraEnabled ? this.viewTiles * ts
+                   : (this.viewportHeight != null ? this.viewportHeight : this.grid.height) * ts) + pad * 2;
+
+        const r = ts * 4.2;
+
+        // 1) 따뜻한 횃불 광 — 중심의 미세한 amber tint
+        let g = ctx.createRadialGradient(cx, cy, ts * 0.2, cx, cy, r * 0.55);
+        g.addColorStop(0, 'rgba(230, 181, 98, 0.10)');
+        g.addColorStop(1, 'rgba(230, 181, 98, 0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(x0, y0, cw, ch);
+
+        // 2) 가장자리 어둠 — 시야 밖은 온화하게 가라앉음 (오프닝 drawFog 의 순한 버전)
+        g = ctx.createRadialGradient(cx, cy, r * 0.45, cx, cy, r);
+        g.addColorStop(0, 'rgba(7, 6, 4, 0)');
+        g.addColorStop(0.7, 'rgba(7, 6, 4, 0.22)');
+        g.addColorStop(1, 'rgba(7, 6, 4, 0.5)');
+        ctx.fillStyle = g;
+        ctx.fillRect(x0, y0, cw, ch);
     }
 
     // ─── Treasure ───────────────────────────────────────────────
@@ -481,9 +519,9 @@ export class TilemapRenderer {
 
         // Diamond shape with golden glow
         ctx.save();
-        ctx.shadowColor = '#fbbf24';
+        ctx.shadowColor = '#e6b562';
         ctx.shadowBlur = 14;
-        ctx.fillStyle = '#fbbf24';
+        ctx.fillStyle = '#e6b562';
         ctx.beginPath();
         const s = ts * 0.25;
         ctx.moveTo(centerX, centerY - s);
@@ -492,14 +530,14 @@ export class TilemapRenderer {
         ctx.lineTo(centerX - s, centerY);
         ctx.closePath();
         ctx.fill();
-        ctx.strokeStyle = '#f59e0b';
+        ctx.strokeStyle = '#c08a3a';
         ctx.lineWidth = 2;
         ctx.stroke();
         ctx.shadowBlur = 0;
 
         // "T" label
         ctx.font = `bold ${ts * 0.25}px monospace`;
-        ctx.fillStyle = '#000';
+        ctx.fillStyle = '#3a2a14';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('T', centerX, centerY);
@@ -621,10 +659,10 @@ export class TilemapRenderer {
 
         const { ctx, tileSize: ts } = this;
         ctx.save();
-        ctx.strokeStyle = '#fbbf24';
+        ctx.strokeStyle = '#c08a3a';
         ctx.lineWidth = 3;
         ctx.setLineDash([6, 4]);
-        ctx.shadowColor = '#fbbf24';
+        ctx.shadowColor = '#c08a3a';
         ctx.shadowBlur = 4;
 
         for (let s = 1; s < total; s++) {
@@ -658,18 +696,18 @@ export class TilemapRenderer {
         const bx = this.canvas.width - w - 6;
         const by = 6;
 
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillStyle = 'rgba(10, 9, 7, 0.75)';
         ctx.beginPath();
         ctx.roundRect(bx, by, w, h, 4);
         ctx.fill();
 
-        ctx.strokeStyle = '#fbbf24';
+        ctx.strokeStyle = '#c08a3a';
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.roundRect(bx, by, w, h, 4);
         ctx.stroke();
 
-        ctx.fillStyle = '#fbbf24';
+        ctx.fillStyle = '#e6b562';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(label, bx + w / 2, by + h / 2);

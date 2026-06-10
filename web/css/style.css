@@ -2404,6 +2404,34 @@ body.editor-mode .dpad-container {
 #screen-play #sparkline-wrap,
 #screen-play #silent-q-placeholder { display: none; }
 
+/* 클린 플레이 = 오프닝 비주얼 문법 — 워밍 오버라이드 (D-2026-06-10 bm).
+   dev 워크벤치(공유 game-area 가 screen-dev 에 있을 땐 남색 테마 그대로)와 분리 —
+   #screen-play 스코프라 서브트리가 play-slot 으로 이동했을 때만 적용된다. */
+#screen-play { background: #0a0907; }
+#screen-play .game-area {
+    background: #15120e;
+    box-shadow: 0 6px 26px rgba(0, 0, 0, 0.55), inset 0 0 0 1px rgba(232, 220, 196, 0.05);
+}
+#screen-play #game-canvas { background: #0a0907; }
+#screen-play .stat-label { color: #8a7a59; }
+#screen-play .stat-value { color: #e8dcc4; }
+#screen-play .gold-value { color: #e6b562; }
+/* 식량 베이스만 워밍 — 경고 상태(.food-low/.food-critical)의 노랑/빨강 의미색은 유지.
+   원본이 !important(F2 가시성 픽스)라 여기도 !important 필요. */
+#screen-play .food-value { color: #c2c45e !important; text-shadow: 0 0 8px rgba(194, 196, 94, 0.35); }
+#screen-play .hp-bar { background: rgba(7, 6, 4, 0.7); }
+#screen-play .message {
+    background: rgba(28, 24, 19, 0.92);
+    border: 1px solid rgba(232, 220, 196, 0.07);
+    color: #e8dcc4;
+}
+#screen-play .btn-play-exit {
+    background: linear-gradient(180deg, #4a2f16, #3a2410);
+    border: 1px solid rgba(0, 0, 0, 0.5);
+    color: #e8cf96;
+    box-shadow: inset 0 1px 0 rgba(255, 226, 170, 0.14), 0 2px 5px rgba(0, 0, 0, 0.4);
+}
+
 /* Dip-to-black bridge for the opening → guild hand-off (opening.js _finish). */
 .transition-fade {
     position: fixed;
@@ -3286,98 +3314,269 @@ body.editor-mode .dpad-container {
 }
 .quest-empty { color: var(--text-secondary); font-size: 0.9rem; padding: 8px 0; }
 
-/* ── 미션 보드 (의뢰 게시판) ─────────────────────────────────────────────── */
+/* ── 미션 보드 (의뢰 게시판) — 나무 게시판 + 압정 종이 의뢰서 (D-2026-06-10 bm) ──
+   전부 절차적 CSS(외부 에셋 0): 판자 = repeating-gradient, 종이 = 그라디언트 + nth-child
+   기울기(결정론 — Math.random 금지), 압정/밀랍 = ::before/::after 원형 그라디언트. */
+
+/* 게시판 본체 — 의뢰 목록 모드에서만(준비실/파밍판은 별도 재질, main.js 가 토글) */
+#guild-tab-quest.mboard-mode {
+    position: relative;
+    padding: 24px 22px 28px;
+    border: 12px solid #38240f;
+    border-radius: 10px;
+    background:
+        repeating-linear-gradient(90deg, rgba(18, 9, 3, 0.25) 0 2px, rgba(255, 232, 190, 0.035) 2px 4px, transparent 4px 86px),
+        repeating-linear-gradient(0deg, rgba(255, 238, 205, 0.028) 0 2px, transparent 2px 6px, rgba(28, 14, 5, 0.06) 6px 9px),
+        linear-gradient(165deg, #6e4b29 0%, #5d3d20 55%, #4e3019 100%);
+    background-clip: padding-box;
+    box-shadow:
+        inset 0 2px 0 rgba(255, 224, 168, 0.07),
+        inset 0 0 30px rgba(0, 0, 0, 0.45),
+        0 12px 34px rgba(0, 0, 0, 0.55);
+}
+
+/* 챕터 머리 — 매달린 각인 명패 + 나무 화살표 */
 .mboard-head {
-    display: flex; align-items: center; justify-content: space-between;
-    gap: 8px; margin-bottom: 12px;
-    padding-bottom: 8px; border-bottom: 1px solid rgba(240, 192, 64, 0.25);
+    display: flex; align-items: center; justify-content: center;
+    gap: 14px; margin: -2px 0 18px;
 }
-.mboard-chtitle { font-size: 1.0rem; font-weight: 700; color: #e6b450; }
+.mboard-chtitle {
+    font-size: 1.0rem; font-weight: 700; color: #ecca7e;
+    background: linear-gradient(180deg, #4a2f16, #3a2410);
+    padding: 6px 24px; border-radius: 4px; letter-spacing: 1px;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.65);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 226, 170, 0.16),
+        inset 0 -3px 5px rgba(0, 0, 0, 0.4),
+        0 3px 7px rgba(0, 0, 0, 0.45);
+}
 .mboard-nav {
-    background: rgba(240, 192, 64, 0.12); border: 1px solid rgba(240, 192, 64, 0.4);
-    color: #e6b450; border-radius: 6px; width: 30px; height: 28px; cursor: pointer;
+    background: linear-gradient(180deg, #4a2f16, #3a2410);
+    border: 1px solid rgba(0, 0, 0, 0.5); border-radius: 5px;
+    color: #ecca7e; width: 32px; height: 30px; cursor: pointer;
     font-size: 1.1rem; line-height: 1;
+    box-shadow: inset 0 1px 0 rgba(255, 226, 170, 0.14), 0 2px 4px rgba(0, 0, 0, 0.4);
 }
-.mboard-nav.disabled { opacity: 0.25; border-color: rgba(255,255,255,0.12); color: var(--text-secondary); cursor: default; }
-.mboard-cards { display: flex; flex-direction: column; gap: 10px; }
-.mboard-more { color: var(--text-secondary); font-size: 0.82rem; padding: 4px 2px; font-style: italic; }
+.mboard-nav:hover { color: #ffe9b0; }
+.mboard-nav.disabled { opacity: 0.3; color: #b89a64; cursor: default; box-shadow: none; }
+
+/* 쪽지 그리드 — 보드에 핀으로 꽂힌 배열 */
+.mboard-cards {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(216px, 1fr));
+    gap: 18px 16px; align-items: stretch;
+}
+
+/* 의뢰서 = 낡은 종이 쪽지 */
+.mission-card {
+    position: relative;
+    background:
+        linear-gradient(8deg, rgba(120, 86, 40, 0.10), transparent 38%),
+        repeating-linear-gradient(0deg, rgba(140, 100, 50, 0.05) 0 1px, transparent 1px 4px),
+        linear-gradient(180deg, #f0e3bf 0%, #e7d6a9 70%, #dcc792 100%);
+    border: 1px solid rgba(110, 80, 40, 0.45);
+    border-radius: 2px;
+    padding: 22px 14px 12px;                 /* 윗쪽 = 압정 자리 */
+    cursor: pointer; color: #3b2a16;
+    box-shadow: 0 3px 7px rgba(0, 0, 0, 0.42), 0 1px 2px rgba(0, 0, 0, 0.3);
+    transition: transform 0.12s, box-shadow 0.12s, border-color 0.12s;
+}
+/* 살짝 기울어진 종이 — 카드마다 다른 각도(nth-child = 결정론) */
+.mboard-cards > .mission-card:nth-child(3n+1) { transform: rotate(-1.1deg); }
+.mboard-cards > .mission-card:nth-child(3n+2) { transform: rotate(0.9deg); }
+.mboard-cards > .mission-card:nth-child(3n)   { transform: rotate(-0.4deg); }
+.mission-card:hover:not(.locked) {
+    transform: rotate(0deg) translateY(-2px);
+    border-color: #8a6430;
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.35);
+}
+/* 압정 */
+.mission-card::before {
+    content: ''; position: absolute; top: 7px; left: 50%; margin-left: -5px;
+    width: 10px; height: 10px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #f08a78, #c0392b 55%, #7e1d12);
+    box-shadow: 0 2px 3px rgba(0, 0, 0, 0.45);
+}
+.mission-card.cleared { opacity: 0.93; }
+.mission-card.locked { cursor: default; opacity: 0.62; filter: saturate(0.55); }
+
+/* 보스 의뢰서 — 더 어두운 종이 + 붉은 밀랍 봉인 */
+.mission-card.boss {
+    background:
+        linear-gradient(8deg, rgba(110, 60, 25, 0.14), transparent 40%),
+        repeating-linear-gradient(0deg, rgba(120, 70, 30, 0.06) 0 1px, transparent 1px 4px),
+        linear-gradient(180deg, #e4d0a1 0%, #d7bd86 70%, #c7a96d 100%);
+    border-color: rgba(130, 60, 30, 0.5);
+}
+.mission-card.boss { padding-right: 44px; }   /* 봉인 자리 — 텍스트와 겹침 방지 */
+.mission-card.boss::after {
+    content: ''; position: absolute; right: 10px; bottom: 10px;
+    width: 22px; height: 22px; border-radius: 50%;
+    background: radial-gradient(circle at 38% 32%, #d96553, #a02818 60%, #6f150a);
+    box-shadow:
+        inset 0 0 0 3px rgba(120, 25, 12, 0.55),
+        inset 2px 3px 4px rgba(255, 170, 140, 0.35),
+        0 2px 4px rgba(0, 0, 0, 0.4);
+}
+
+.mission-card-head { display: flex; align-items: center; gap: 8px; }
+.mission-card-name { font-weight: 700; color: #3b2a16; flex: 1; }
+.mission-card-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 0.85rem; color: #6d5430; }
+.mission-stars { color: #a8722a; letter-spacing: 1px; }
+.mission-card-flavor { margin-top: 6px; font-size: 0.82rem; color: #6d5430; font-style: italic; }
+.mission-card-sub { margin-top: 6px; font-size: 0.8rem; color: #6d5430; }
+
+/* 상태 배지 = 잉크 도장(스탬프) */
+.mission-badge {
+    font-size: 0.66rem; font-weight: 800; padding: 2px 8px;
+    border: 2px solid currentColor; border-radius: 3px;
+    background: transparent; letter-spacing: 1px;
+    transform: rotate(-6deg); opacity: 0.85;
+    mix-blend-mode: multiply;
+}
+.mission-badge.new { color: #b3301f; }
+.mission-badge.clear { color: #3f6f2e; }
+.mission-badge.farming { color: #6b5d49; }
+.mission-badge.boss { color: #8a1d12; }
+
+/* 빈 자리 — 떼어간 자국 + 메모 스크랩 */
+.mboard-more {
+    position: relative;
+    background: linear-gradient(180deg, rgba(238, 224, 185, 0.4), rgba(218, 197, 146, 0.35));
+    border: 1px dashed rgba(60, 40, 18, 0.55);
+    border-radius: 2px; padding: 18px 12px 8px;
+    color: rgba(46, 32, 16, 0.75); font-size: 0.76rem; font-style: italic;
+    transform: rotate(0.8deg);
+    display: flex; align-items: center; justify-content: center; text-align: center;
+}
+.mboard-more::before {
+    content: ''; position: absolute; top: 6px; left: 50%; margin-left: -4px;
+    width: 8px; height: 8px; border-radius: 50%;
+    background: radial-gradient(circle at 35% 30%, #c8c2b4, #8d8678 60%, #57523f);
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+}
+
+/* 보스 구분선 — 보드에 새긴 붉은 띠 */
 .mboard-boss-sep {
-    text-align: center; color: #c0392b; font-size: 0.8rem; letter-spacing: 2px;
-    margin: 14px 0 10px; position: relative;
+    text-align: center; color: #f5d9a6; font-size: 0.88rem; font-weight: 700;
+    letter-spacing: 5px; text-indent: 5px;   /* letter-spacing 끝글자 보정 */
+    margin: 18px 0 12px; position: relative;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.7), 0 1px 1px rgba(255, 220, 160, 0.12);
 }
 .mboard-boss-sep::before, .mboard-boss-sep::after {
     content: ''; position: absolute; top: 50%; width: 32%;
-    border-top: 1px solid rgba(192, 57, 43, 0.4);
+    border-top: 2px solid rgba(150, 45, 26, 0.6);
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.35);
 }
 .mboard-boss-sep::before { left: 0; } .mboard-boss-sep::after { right: 0; }
 
-.mission-card {
-    background: rgba(20, 16, 11, 0.85); border: 1px solid rgba(240, 192, 64, 0.28);
-    border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: border-color 0.15s, transform 0.1s;
+/* ── 준비실 — 출정 서류(양피지) — 게시판과 같은 재질 언어 (D-2026-06-10 bm) ──
+   의뢰서를 떼어 와 책상에 펼친 '서류 한 장' 메타포. 미니맵 = 잉크 스케치 지도
+   (_renderPrepMinimap 세피아 팔레트와 세트). */
+.prep-room {
+    position: relative;
+    max-width: 540px; margin: 4px auto 0;
+    padding: 24px 26px 22px;
+    color: #3b2a16;
+    background:
+        linear-gradient(6deg, rgba(120, 86, 40, 0.08), transparent 42%),
+        repeating-linear-gradient(0deg, rgba(140, 100, 50, 0.045) 0 1px, transparent 1px 4px),
+        linear-gradient(180deg, #f0e3bf 0%, #e8d7ab 65%, #ddc996 100%);
+    border: 1px solid rgba(110, 80, 40, 0.5);
+    border-radius: 3px;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.55), 0 2px 5px rgba(0, 0, 0, 0.35);
 }
-.mission-card:hover:not(.locked) { border-color: #e6b450; transform: translateY(-1px); }
-.mission-card.cleared { opacity: 0.92; }
-.mission-card.locked { cursor: default; opacity: 0.55; border-style: dashed; }
-.mission-card.boss { border-color: rgba(192, 57, 43, 0.55); background: rgba(28, 14, 11, 0.85); }
-.mission-card-head { display: flex; align-items: center; gap: 8px; }
-.mission-card-name { font-weight: 700; color: var(--text-primary); flex: 1; }
-.mission-card-meta { display: flex; justify-content: space-between; align-items: center; margin-top: 6px; font-size: 0.85rem; color: var(--text-secondary); }
-.mission-stars { color: #e6b450; letter-spacing: 1px; }
-.mission-card-flavor { margin-top: 6px; font-size: 0.82rem; color: var(--text-secondary); font-style: italic; }
-.mission-card-sub { margin-top: 6px; font-size: 0.8rem; color: var(--text-secondary); }
-.mission-badge { font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px; }
-.mission-badge.new { background: #c0392b; color: #fff; }
-.mission-badge.clear { background: rgba(90, 143, 78, 0.85); color: #fff; }
-.mission-badge.farming { background: rgba(120, 120, 120, 0.5); color: #ddd; }
-.mission-badge.boss { background: #6b1f17; color: #f0c0a0; }
+/* 오른쪽 아래 모서리 접힘 */
+.prep-room::after {
+    content: ''; position: absolute; right: -1px; bottom: -1px;
+    width: 0; height: 0; border-style: solid; border-width: 0 0 18px 18px;
+    border-color: transparent transparent rgba(58, 36, 18, 0.85) transparent;
+    filter: drop-shadow(-2px -2px 2px rgba(0, 0, 0, 0.18));
+}
 
-/* ── 준비실 ───────────────────────────────────────────────────────────────── */
 .prep-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
 .prep-tab {
-    font-size: 0.85rem; padding: 6px 14px; border-radius: 6px 6px 0 0;
-    border: 1px solid rgba(240, 192, 64, 0.3); border-bottom: none; background: rgba(20, 16, 11, 0.6);
-    color: var(--text-secondary);
+    font-size: 0.85rem; padding: 6px 14px; border-radius: 4px 4px 0 0;
+    border: 1px solid rgba(110, 80, 40, 0.4); border-bottom: none;
+    background: rgba(120, 86, 40, 0.08); color: #6d5430;
 }
-.prep-tab.active { background: rgba(240, 192, 64, 0.15); color: #e6b450; font-weight: 700; cursor: pointer; }
+.prep-tab.active { background: rgba(120, 86, 40, 0.18); color: #3b2a16; font-weight: 700; cursor: pointer; }
 .prep-tab.locked { opacity: 0.4; }
+
+/* 미니맵 = 잉크 스케치 지도 (세피아 — 팔레트는 _renderPrepMinimap) */
 .prep-minimap {
     display: block; margin: 0 auto 14px; image-rendering: pixelated;
-    border: 1px solid rgba(240, 192, 64, 0.3); border-radius: 6px; background: #0c0a08;
-    max-width: 100%;
+    border: 2px solid rgba(90, 64, 30, 0.55); border-radius: 2px;
+    background: #e8d7ab; max-width: 100%;
+    box-shadow: 0 0 0 1px rgba(244, 232, 196, 0.8), inset 0 0 8px rgba(90, 64, 30, 0.2);
 }
-.prep-info { font-size: 0.85rem; color: var(--text-secondary); padding: 4px 0; }
-.prep-flavor { font-size: 0.85rem; font-style: italic; color: var(--text-primary); margin: 4px 0 12px; }
-.prep-hint-buy { font-style: normal; font-size: 0.75rem; color: var(--text-secondary); border: 1px solid rgba(255,255,255,0.15); border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
-.prep-mode-row { display: flex; gap: 8px; margin-bottom: 12px; }
-.prep-mode { font-size: 0.82rem; padding: 6px 12px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.15); color: var(--text-secondary); }
-.prep-mode.active { border-color: #e6b450; color: #e6b450; background: rgba(240, 192, 64, 0.1); }
-.prep-mode.locked { opacity: 0.4; }
-.prep-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
-.prep-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; padding-bottom: 6px; border-bottom: 1px solid rgba(255,255,255,0.06); }
-.prep-gold { color: #e6b450; font-weight: 700; }
-.prep-reward { color: #5a8f4e; font-weight: 700; }
-.food-stepper { display: flex; align-items: center; gap: 8px; }
-.food-stepper button { width: 26px; height: 26px; border-radius: 5px; border: 1px solid rgba(240,192,64,0.4); background: rgba(240,192,64,0.12); color: #e6b450; cursor: pointer; font-size: 1rem; line-height: 1; }
-.food-stepper b { min-width: 36px; text-align: center; color: var(--text-primary); }
-.food-stepper small { color: var(--text-secondary); }
-.prep-actions { display: flex; justify-content: flex-end; gap: 10px; }
-.btn-prep-back, .btn-prep-deploy { padding: 9px 20px; border-radius: 7px; font-weight: 700; cursor: pointer; border: none; }
-.btn-prep-back { background: rgba(40, 50, 70, 0.9); color: #cdd6e6; }
-.btn-prep-deploy { background: #5a8f4e; color: #fff; }
-.btn-prep-deploy:disabled { opacity: 0.4; cursor: default; }
 
-/* 파밍 통제판 (답파 던전 대기실 변신 — 방치형 누적) */
+.prep-info { font-size: 0.85rem; color: #6d5430; padding: 4px 0; }
+.prep-flavor { font-size: 0.85rem; font-style: italic; color: #4a371d; margin: 4px 0 12px; }
+.prep-hint-buy { font-style: normal; font-size: 0.75rem; color: #6d5430; border: 1px solid rgba(110, 80, 40, 0.4); border-radius: 4px; padding: 1px 6px; margin-left: 6px; }
+.prep-mode-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.prep-mode { font-size: 0.82rem; padding: 6px 12px; border-radius: 4px; border: 1px solid rgba(110, 80, 40, 0.35); color: #6d5430; }
+.prep-mode.active { border-color: #8a6430; color: #3b2a16; background: rgba(120, 86, 40, 0.14); }
+.prep-mode.locked { opacity: 0.4; }
+
+/* 항목 행 = 잉크 괘선 */
+.prep-rows { display: flex; flex-direction: column; gap: 8px; margin-bottom: 16px; }
+.prep-row { display: flex; justify-content: space-between; align-items: center; font-size: 0.9rem; padding-bottom: 6px; border-bottom: 1px solid rgba(110, 80, 40, 0.28); }
+.prep-gold { color: #8a5d1d; font-weight: 700; }
+.prep-reward { color: #3f6f2e; font-weight: 700; }
+.food-stepper { display: flex; align-items: center; gap: 8px; }
+.food-stepper button {
+    width: 26px; height: 26px; border-radius: 4px; cursor: pointer;
+    border: 1px solid rgba(0, 0, 0, 0.45);
+    background: linear-gradient(180deg, #4a2f16, #3a2410); color: #ecca7e;
+    font-size: 1rem; line-height: 1;
+    box-shadow: inset 0 1px 0 rgba(255, 226, 170, 0.14), 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+.food-stepper button:disabled { opacity: 0.35; cursor: default; box-shadow: none; }
+.food-stepper b { min-width: 36px; text-align: center; color: #3b2a16; }
+.food-stepper small { color: #6d5430; }
+
+/* 행동 버튼 — 취소 = 나무, 출발 = 길드 인장(녹색) */
+.prep-actions { display: flex; justify-content: flex-end; gap: 10px; }
+.btn-prep-back, .btn-prep-deploy { padding: 9px 20px; border-radius: 5px; font-weight: 700; cursor: pointer; border: 1px solid rgba(0, 0, 0, 0.45); }
+.btn-prep-back {
+    background: linear-gradient(180deg, #4a2f16, #3a2410); color: #e8cf96;
+    box-shadow: inset 0 1px 0 rgba(255, 226, 170, 0.14), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+.btn-prep-deploy {
+    background: linear-gradient(180deg, #5e9450, #467a3a); color: #fff;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.35);
+    box-shadow: inset 0 1px 0 rgba(220, 255, 200, 0.25), 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+.btn-prep-deploy:disabled { opacity: 0.45; cursor: default; box-shadow: none; }
+
+/* 파밍 통제판 (답파 던전 대기실 변신 — 방치형 누적) — 같은 양피지 위 잉크 */
 .farm-assigned, .farm-assign { display: flex; flex-direction: column; gap: 6px; padding: 4px 0 12px; }
-.farm-who { font-weight: 700; color: var(--text-primary); }
-.farm-rate, .farm-cap { font-size: 0.85rem; color: var(--text-secondary); }
-.farm-exclusive { font-size: 0.85rem; color: #e6b450; font-weight: 700; }
-.farm-accrued { margin-top: 6px; font-size: 1.05rem; font-weight: 700; color: #e6b450; }
-.farm-assign-title { font-weight: 700; color: var(--text-primary); }
-.farm-assign-hint { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4; }
-.farm-serpa-select { margin-top: 4px; padding: 8px; border-radius: 6px; background: rgba(40,50,70,0.9); color: #cdd6e6; border: 1px solid rgba(255,255,255,0.12); }
-.farm-empty { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.5; padding: 8px 0 16px; }
-.btn-farm-unassign { padding: 9px 16px; border-radius: 7px; font-weight: 700; cursor: pointer; border: none; background: rgba(120, 60, 50, 0.9); color: #f0cabf; }
-.btn-farm-collect:disabled { opacity: 0.4; cursor: default; }
+.farm-who { font-weight: 700; color: #3b2a16; }
+.farm-rate, .farm-cap { font-size: 0.85rem; color: #6d5430; }
+.farm-exclusive { font-size: 0.85rem; color: #8a5d1d; font-weight: 700; }
+.farm-accrued { margin-top: 6px; font-size: 1.05rem; font-weight: 700; color: #8a5d1d; }
+.farm-assign-title { font-weight: 700; color: #3b2a16; }
+.farm-assign-hint { font-size: 0.82rem; color: #6d5430; line-height: 1.4; }
+/* 게시판(나무 보드) 위의 레플리 안내 = 밝은 쪽지 한 줄 */
+.mboard-mode .farm-assign-hint {
+    color: #2e2010;
+    background: linear-gradient(180deg, rgba(240, 227, 191, 0.94), rgba(224, 205, 158, 0.92));
+    border: 1px solid rgba(110, 80, 40, 0.45); border-radius: 2px;
+    padding: 8px 12px; margin: -6px 0 14px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+.farm-serpa-select {
+    margin-top: 4px; padding: 8px; border-radius: 4px;
+    background: #f2e7c6; color: #3b2a16; border: 1px solid rgba(110, 80, 40, 0.5);
+}
+.farm-empty { font-size: 0.85rem; color: #6d5430; line-height: 1.5; padding: 8px 0 16px; }
+.btn-farm-unassign {
+    padding: 9px 16px; border-radius: 5px; font-weight: 700; cursor: pointer;
+    border: 1px solid rgba(0, 0, 0, 0.45);
+    background: linear-gradient(180deg, #7c3a2c, #61291e); color: #f3d9c8;
+    box-shadow: inset 0 1px 0 rgba(255, 200, 170, 0.16), 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+.btn-farm-collect:disabled { opacity: 0.45; cursor: default; }
 
 .quest-card {
     background: rgba(255, 255, 255, 0.03);

@@ -191,9 +191,9 @@ export const KO = {
 
     // === Game area ===
     'game.minimap': '미니맵',
-    'game.step0_hint': '방향키로 세르파를 움직여 녹색 G 에 도달.',
+    'game.step0_hint': '방향키로 세르파를 움직여 금빛 G 에 도달.',
     'game.bump_toast': '벽! (-1)',
-    'game.reset_log': '던전 진입! 식량: {food}. 녹색 G 에 도달하라.',
+    'game.reset_log': '던전 진입! 식량: {food}. 금빛 G 에 도달하라.',
     'game.clear_repeat': '답파! +{reward}G (스텝: {steps}){treasure}',
     'game.first_clear.map_sold': '첫 답파! 지도 판매 +{earned}G',
     'game.first_clear.map_kept': '첫 답파! 지도 보관! 전용 파밍: {reward}G × {runs}회',
@@ -369,7 +369,7 @@ export const KO = {
     'bottom_tab.aria_label': '섹션 이동',
 
     // === Footer ===
-    'footer.controls_hint': '방향키로 이동 | R 키로 초기화 | 녹색 목표에 도달하세요!',
+    'footer.controls_hint': '방향키로 이동 | R 키로 초기화 | 금빛 목표에 도달하세요!',
 
     // === Modifier band (T2B-2) ===
     'modifier_band.this_run': '이번 런:',
@@ -453,7 +453,7 @@ export const KO = {
     'modifier.silent_q.desc': 'Q-value 히트맵과 학습 sparkline 이 숨겨집니다.',
 
     // === Tutorial steps (5개, 컨텍스트 트리거) ===
-    'tutorial.welcome': '환영합니다! 방향키로 세르파를 움직여 녹색 G (목표) 에 도달하세요.',
+    'tutorial.welcome': '환영합니다! 방향키로 세르파를 움직여 금빛 G (목표) 에 도달하세요.',
     'tutorial.first_dungeon': '첫 던전 클리어! 다음 던전으로 가거나, AI 학습 패널에서 세르파에게 길을 외우게 시켜보세요.',
     'tutorial.ai_training': '세르파는 던전을 반복 탐험하며 길을 익힙니다. 속도를 바꿔보세요 — 즉시가 가장 빠릅니다. 매 탐험마다 골드가 소비됩니다.',
     'tutorial.economy': '이제 던전 입장에 골드가 듭니다. 지도를 팔아 즉시 현금으로 바꾸거나, 보관해서 전용 파밍 런을 돌리세요.',

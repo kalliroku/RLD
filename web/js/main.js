@@ -944,6 +944,7 @@ class Game {
     _updateGuildQuests() {
         this._clearFarmTick();                          // 보드로 돌아오면 파밍 라이브 틱 정지
         const panel = document.getElementById('guild-tab-quest');
+        panel.classList.add('mboard-mode');             // 나무 게시판 재질(준비실/파밍판은 해제)
         const rs = this.runState;
         const cur = rs.getCurrentChapter();
         if (!this._questChapterView || this._questChapterView > cur) this._questChapterView = cur;
@@ -1104,6 +1105,7 @@ class Game {
         // 답파 완료 던전 = 파밍 통제판으로 변신 (방치형 누적 — 직접 재도전 없음, D-대기실변신).
         if (rs.clearedDungeons.has(dungeonId)) { this._renderFarmRoom(dungeonId); return; }
         const panel = document.getElementById('guild-tab-quest');
+        panel.classList.remove('mboard-mode');          // 준비실은 게시판 재질 해제
         const titleEl = document.getElementById('guild-popup-title');
         const config = DUNGEON_CONFIG[dungeonId] || { cost: 0, firstReward: 0, repeatReward: 0 };
         const lv = this.getDungeonLevel(dungeonId), name = this.getDungeonDisplayName(dungeonId);
@@ -1195,6 +1197,7 @@ class Game {
         const rs = this.runState;
         this._clearFarmTick();                          // 재진입/재렌더 시 이전 틱 정지(틱 누수 방지)
         const panel = document.getElementById('guild-tab-quest');
+        panel.classList.remove('mboard-mode');          // 파밍 통제판도 게시판 재질 해제
         const titleEl = document.getElementById('guild-popup-title');
         const lv = this.getDungeonLevel(dungeonId), name = this.getDungeonDisplayName(dungeonId);
         const config = DUNGEON_CONFIG[dungeonId] || { repeatReward: 0 };
@@ -1344,17 +1347,18 @@ class Game {
         canvas.width = w; canvas.height = h;
         const ctx = canvas.getContext('2d');
         ctx.imageSmoothingEnabled = false;
-        ctx.fillStyle = '#0c0a08'; ctx.fillRect(0, 0, w, h);
+        // 양피지 잉크 스케치 팔레트 — 준비실 서류(.prep-room) 재질과 세트.
+        ctx.fillStyle = '#e8d7ab'; ctx.fillRect(0, 0, w, h);
         for (let y = 0; y < g.height; y++) {
             for (let x = 0; x < g.width; x++) {
                 const tile = g.getTile(x, y);
-                let color = '#1d1813';                                  // floor/empty
-                if (tile === TileType.WALL) color = '#3a352d';
-                else if (tile === TileType.GOAL) color = '#5a8f4e';
-                else if (tile === TileType.GOLD) color = '#e6b450';
-                else if (tile === TileType.MONSTER || tile === TileType.TRAP) color = '#a83a2f';
-                else if (tile === TileType.HEAL) color = '#3a8f7a';
-                else if (tile === TileType.START) color = '#5b8fc2';
+                let color = '#dcc996';                                  // floor/empty — 빈 양피지
+                if (tile === TileType.WALL) color = '#5b4426';          // 먹선 벽
+                else if (tile === TileType.GOAL) color = '#3f6f2e';
+                else if (tile === TileType.GOLD) color = '#a8722a';
+                else if (tile === TileType.MONSTER || tile === TileType.TRAP) color = '#a02818';
+                else if (tile === TileType.HEAL) color = '#3a7a64';
+                else if (tile === TileType.START) color = '#3c5e8a';
                 ctx.fillStyle = color;
                 ctx.fillRect(x * cell, y * cell, cell, cell);
             }
