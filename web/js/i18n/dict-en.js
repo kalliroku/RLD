@@ -68,6 +68,7 @@ export const EN = {
     // === Guild onboarding dialogue (placeholder — pending tone review) ===
     'onboard.speaker.repli': 'Repli',
     'onboard.speaker.rika': 'Rika',
+    'onboard.speaker.qkun': 'Quinnie',
     'onboard.b1': "{master}, you're up. It's already midday.",
     'onboard.b2': '…Why did this job have to land on me, of all people.',
     'onboard.b3': "First day, so just one thing. This is the guild's money — G.",
@@ -85,6 +86,7 @@ export const EN = {
     'firstclear.b2': "That map was lent by the Adventurers' Guild. Later, you'll be able to sell maps you've cleared yourself.",
     'firstclear.b3': "I've pinned a few other requests to the board. Take a look!",
     'firstclear.b4': "Oh — Quinnie's back, just in time. Your first Serpa, {master}.",
+    'firstclear.qkun_hello': "I'm Quinnie! Happy to help — leave anything to me!",
     'firstclear.b5': "Leave stage 1 to Quinnie and she'll dig up gold while you're busy elsewhere. That's 'farming'.",
     'firstclear.b6': "While Quinnie farms, {master} can take the next request.",
     // Action beat — open the cleared stage 1 on the board and assign Quinnie (highlight-guided). Advances on assign.
@@ -139,12 +141,20 @@ export const EN = {
     'farm.no_serpa': "No Sherpa can take this on yet — you need one strong enough for this dungeon's shortest path.",
     'farm.assigned': '{name} is farming',
     'farm.rate': '+{n}G every {sec}s',
+    'farm.rate_preview': '+{n}G every {sec}s · ~{perHour}G/h · up to {h}h',
     'farm.cap_note': 'Accrues up to {h}h',
     'farm.exclusive': 'Exclusive map ×3 ({n} left)',
     'farm.accrued': 'Accrued +{n}G ({runs} runs)',
     'farm.collect': 'Collect +{n}G',
     'farm.collect_empty': 'Nothing yet',
     'farm.unassign': 'Recall',
+    'farm.redeploy': '⚔ Redeploy (re-attempt)',
+    'farm.recall_title': 'Recall Sherpa',
+    'farm.recall_detail': 'Recall now? The {gold}G accrued so far will be collected.',
+    'farm.recall_dont_show': "Don't show again",
+    'farm.recall_yes': 'Recall',
+    'farm.recall_no': 'Cancel',
+    'farm.recall_collected': 'Collected {gold}G.',
 
     // === Clean play screen ===
     'play.exit': 'Exit',

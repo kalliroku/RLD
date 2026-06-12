@@ -222,6 +222,19 @@
                     </div>
                 </div>
 
+                <!-- Recall (배치 해제) Confirm Overlay — 라벨/본문은 _confirmRecall 가 t() 로 동적 채움 -->
+                <div class="map-choice-overlay" id="recall-confirm-overlay" style="display:none;">
+                    <div class="map-choice-box">
+                        <div class="map-choice-dungeon" id="recall-confirm-title"></div>
+                        <div class="map-choice-details" id="recall-confirm-detail"></div>
+                        <label class="recall-dont-show"><input type="checkbox" id="recall-dont-show"><span id="recall-dont-show-label"></span></label>
+                        <div class="map-choice-buttons">
+                            <button class="btn-prep-back" id="btn-recall-cancel"></button>
+                            <button class="btn-keep-map" id="btn-recall-yes"></button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="dpad-container" id="dpad-container">
                     <div class="dpad">
                         <button class="dpad-btn dpad-up" data-action="0">&#9650;</button>

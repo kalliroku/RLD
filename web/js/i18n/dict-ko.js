@@ -79,6 +79,7 @@ export const KO = {
     // === 길드 온보딩 대사 (자리표시자 — 톤 검수 후 조정) ===
     'onboard.speaker.repli': '레플리',
     'onboard.speaker.rika': '리카',
+    'onboard.speaker.qkun': '퀴니',
     'onboard.b1': '{master}, 일어나셨군요. 벌써 한낮인걸요.',
     'onboard.b2': '…왜 하필 나한테 이 자리가 떨어진 걸까.',
     'onboard.b3': '첫날이니 딱 하나만요. 이게 길드 자금, G예요.',
@@ -96,6 +97,7 @@ export const KO = {
     'firstclear.b2': '그 지도는 모험가 길드가 내준 거예요. 나중엔 직접 답파한 지도를 길드에 팔 수도 있고요.',
     'firstclear.b3': '게시판에 다른 의뢰도 붙여 뒀어요. 한번 확인해 보세요!',
     'firstclear.b4': '아, 마침 퀴니가 돌아왔네요. {master}의 첫 세르파예요.',
+    'firstclear.qkun_hello': '퀴니예요! 잘 부탁드려요. 뭐든 맡겨만 주세요!',
     'firstclear.b5': '퀴니한테 1관을 맡겨 두면, 다른 일을 보는 동안 골드를 캐 와요. 이게 ‘파밍’이에요.',
     'firstclear.b6': '퀴니가 골드 캐는 동안, 다음 의뢰는 {master}가 다녀오죠.',
     // 액션 비트 — 게시판에서 답파한 1관을 열어 퀴니 배치(하이라이트 유도). 배치 완료 시 assign_done 으로.
@@ -151,12 +153,20 @@ export const KO = {
     'farm.no_serpa': '아직 맡길 수 있는 세르파가 없어요. 이 던전 최단 경로를 감당할 만큼 강한 세르파가 필요해요.',
     'farm.assigned': '{name} 파밍 중',
     'farm.rate': '{sec}초마다 +{n}G',
+    'farm.rate_preview': '{sec}초마다 +{n}G · 시간당 약 {perHour}G · 최대 {h}h 누적',
     'farm.cap_note': '최대 {h}시간까지 누적',
     'farm.exclusive': '독점 지도 ×3 ({n}회 남음)',
     'farm.accrued': '쌓인 보상 +{n}G ({runs}회)',
     'farm.collect': '수금 +{n}G',
     'farm.collect_empty': '아직 쌓이지 않음',
     'farm.unassign': '배치 해제',
+    'farm.redeploy': '⚔ 재출격 (전투 재도전)',
+    'farm.recall_title': '세르파 불러오기',
+    'farm.recall_detail': '그만하고 불러올까요? 지금까지 쌓인 {gold}G를 회수합니다.',
+    'farm.recall_dont_show': '다시 보지 않기',
+    'farm.recall_yes': '불러오기',
+    'farm.recall_no': '취소',
+    'farm.recall_collected': '{gold}G를 회수했어요.',
 
     // === 클린 플레이 화면 ===
     'play.exit': '나가기',

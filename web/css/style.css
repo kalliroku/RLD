@@ -1563,6 +1563,20 @@ body.editor-mode .dpad-container {
     justify-content: center;
 }
 
+/* 배치 해제 확인창 — '다시 보지 않기' 체크 행 */
+.recall-dont-show {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+    margin-bottom: 16px;
+    cursor: pointer;
+    user-select: none;
+}
+.recall-dont-show input { cursor: pointer; }
+
 .btn-sell-map {
     background: var(--warning);
     color: #000;
@@ -3398,6 +3412,8 @@ body.editor-mode .dpad-container {
 }
 .mission-card.cleared { opacity: 0.93; }
 .mission-card.locked { cursor: default; opacity: 0.62; filter: saturate(0.55); }
+/* 튜토리얼 강제 — 대상 외 의뢰는 비활성(클릭 불가, 딤). 배치/수금 끝나면 정상 복귀 */
+.mission-card.tutor-locked { cursor: default; opacity: 0.4; filter: saturate(0.4); pointer-events: none; }
 
 /* 보스 의뢰서 — 더 어두운 종이 + 붉은 밀랍 봉인 */
 .mission-card.boss {
@@ -3557,6 +3573,18 @@ body.editor-mode .dpad-container {
 .farm-accrued { margin-top: 6px; font-size: 1.05rem; font-weight: 700; color: #8a5d1d; }
 .farm-assign-title { font-weight: 700; color: #3b2a16; }
 .farm-assign-hint { font-size: 0.82rem; color: #6d5430; line-height: 1.4; }
+/* 배치 전 보상 미리보기 — 선택 세르파 기준 회차/시간당 골드 + 상한 */
+.farm-rate-preview { margin-top: 7px; font-size: 0.85rem; font-weight: 700; color: #8a5d1d; }
+/* 재출격 — 답파 던전 전투 재도전 버튼(파밍 통제판 상단). 전투색(rust) — 첫 출정(녹색)과 구분 */
+.btn-redeploy {
+    display: block; width: 100%; margin: 2px 0 12px;
+    padding: 9px 16px; border-radius: 5px; font-weight: 700; cursor: pointer;
+    border: 1px solid rgba(0, 0, 0, 0.45);
+    background: linear-gradient(180deg, #8b4a2f, #6e3621); color: #f7e4d4;
+    text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.35);
+    box-shadow: inset 0 1px 0 rgba(255, 210, 180, 0.18), 0 2px 5px rgba(0, 0, 0, 0.35);
+}
+.btn-redeploy:hover { filter: brightness(1.08); }
 /* 게시판(나무 보드) 위의 레플리 안내 = 밝은 쪽지 한 줄 */
 .mboard-mode .farm-assign-hint {
     color: #2e2010;

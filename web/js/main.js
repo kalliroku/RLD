@@ -43,6 +43,8 @@ const TUTORIAL_DONE_KEY = 'rld_tutorial_done';
 const FIRSTCLEAR_SEEN_KEY = 'rld_firstclear_seen';
 // 2관(함정) 클리어 후 길드 복귀 시 대화(GUILD_SECONDCLEAR_BEATS) 1회 재생 마커. 영속.
 const SECONDCLEAR_SEEN_KEY = 'rld_secondclear_seen';
+// 파밍 세르파 '불러오기'(배치 해제) 시 보상 회수 안내창 — '다시 보지 않기' 영속 끔 마커.
+const RECALL_WARN_OFF_KEY = 'rld_recall_warn_off';
 // 비트 시퀀스 모드 → 종료 시 박는 1회성 시드키 (_finishGuildOnboarding 분기 SSOT).
 const BEAT_MODE_SEEN_KEY = {
     onboard: GUILD_ONBOARD_KEY,
@@ -51,6 +53,9 @@ const BEAT_MODE_SEEN_KEY = {
 };
 // 액션 비트 태스크 — 현재 전부 의뢰판 경유(팝업 닫기/ESC 시 보드 마커를 복원해 재유도).
 const TUTOR_TASKS_VIA_BOARD = ['farm-assign', 'farm-collect'];
+// 보스 슬롯 노출 토글 — 보스전 자동학습 연출([Q-learning-viz])이 별도 세션이라 미완.
+// 완성 전까지 게시판에서 보스 슬롯(구분선+카드)을 통째로 숨겨 빈 공간으로 둔다(잠금 카드도 빈 약속). bm 2026-06-12.
+const SHOW_BOSS_SLOT = false;
 // 액션 비트 사전조건 — 렌더 시점에 false 면 액션 비트(+skipNext 로 묶인 확인 비트)를 통째로 건너뜀
 // → 행동 대상이 없는데 관련 카피("골드를 캐 뒀어요" 류)가 노출되는 것 방지. 무장 시점 재검사는 폴백.
 const TUTOR_TASK_PRECONDITION = {
@@ -102,6 +107,8 @@ const GUILD_FIRSTCLEAR_BEATS = [
     { side: 'npc', who: 'rika', speakerKey: 'onboard.speaker.rika', textKey: 'firstclear.b3', reveal: 'quest' },
     // 퀴니 합류 — 레플리가 소개하는 비트에서 무대 등장(enter, 발화 없음 — 이후 장면 끝까지 체류).
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.b4', enter: 'qkun' },
+    // 퀴니 첫 발화 — 합류 직후 인사(밝고 씩씩). 무대엔 b4 의 enter 로 이미 올라와 있어 active 전환만.
+    { side: 'npc', who: 'qkun', speakerKey: 'onboard.speaker.qkun', textKey: 'firstclear.qkun_hello' },
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.b5' },
     // 액션 비트 — 대사 후 클릭하면 'farm-assign' 태스크 무장(대사 닫고 하이라이트). 퀴니 1관 배치 완료 시 다음으로.
     { side: 'npc', who: 'repli', speakerKey: 'onboard.speaker.repli', textKey: 'firstclear.assign', action: 'farm-assign' },
@@ -448,6 +455,8 @@ class Game {
         document.querySelectorAll('.guild-hotspot').forEach(spot => {
             spot.addEventListener('click', () => {
                 if (this._guildOnboarding && !this._tutorTask) return;  // 태스크 무장 중엔 핫스팟 클릭 허용(보드 열기)
+                // 보드 경유 튜토(배치/수금) 무장 중엔 의뢰판만 — 상점/지도/파티로 새어 잠긴 팝업에 갇히는 이탈 차단(튜토리얼 강제).
+                if (TUTOR_TASKS_VIA_BOARD.includes(this._tutorTask) && spot.dataset.popup !== 'quest') return;
                 const key = spot.dataset.popup;
                 this._openGuildPopup(key, t('guild.tab.' + key));
             });
@@ -974,17 +983,19 @@ class Game {
         }
         html += `</div>`;
 
-        // 보스 슬롯 — 일반 의뢰 모두 답파 시 해금
-        html += `<div class="mboard-boss-sep">${t('mission.boss_sep')}</div>`;
-        const bossOpen = normals.every(d => rs.clearedDungeons.has(d));
-        if (rs.clearedDungeons.has(bossId) || (bossOpen && rs.unlockedDungeons.has(bossId))) {
-            html += this._renderMissionCard(bossId, true);
-        } else {
-            const lv = this.getDungeonLevel(bossId), bn = this.getDungeonDisplayName(bossId);
-            html += `<div class="mission-card boss locked">
-                <div class="mission-card-head"><span class="mission-card-name">🔒 Lv.${lv} ${bn}</span><span class="mission-badge boss">${t('mission.badge.boss')}</span></div>
-                <div class="mission-card-sub">${t('mission.board.boss_locked')}</div>
-            </div>`;
+        // 보스 슬롯 — 일반 의뢰 모두 답파 시 해금. (SHOW_BOSS_SLOT=false 동안 통째 숨김 = 빈 공간)
+        if (SHOW_BOSS_SLOT) {
+            html += `<div class="mboard-boss-sep">${t('mission.boss_sep')}</div>`;
+            const bossOpen = normals.every(d => rs.clearedDungeons.has(d));
+            if (rs.clearedDungeons.has(bossId) || (bossOpen && rs.unlockedDungeons.has(bossId))) {
+                html += this._renderMissionCard(bossId, true);
+            } else {
+                const lv = this.getDungeonLevel(bossId), bn = this.getDungeonDisplayName(bossId);
+                html += `<div class="mission-card boss locked">
+                    <div class="mission-card-head"><span class="mission-card-name">🔒 Lv.${lv} ${bn}</span><span class="mission-badge boss">${t('mission.badge.boss')}</span></div>
+                    <div class="mission-card-sub">${t('mission.board.boss_locked')}</div>
+                </div>`;
+            }
         }
 
         panel.innerHTML = html;
@@ -993,9 +1004,19 @@ class Game {
             this._questChapterView = parseInt(b.dataset.chnav, 10);
             this._updateGuildQuests();
         }));
+        // 보드 경유 튜토(배치/수금) 중엔 대상 의뢰 카드 1장만 진입 가능 — 다른 의뢰로 출정해
+        // 배치/수금을 건너뛰는 이탈 차단(튜토리얼 강제). 비대상 카드는 비활성(딤).
+        const boardTutorTarget = this._tutorTask === 'farm-assign' ? 'level_01_easy'
+            : this._tutorTask === 'farm-collect' ? this.runState.getFarmingDungeon('qkun')
+            : null;
         panel.querySelectorAll('.mission-card[data-dungeon]').forEach(card => {
-            if (card.classList.contains('locked')) return;   // 잠김/파밍중은 클릭 불가
-            card.addEventListener('click', () => this._renderPrepRoom(card.dataset.dungeon));
+            if (card.classList.contains('locked')) return;   // 잠김 카드(보스)는 클릭 불가
+            const did = card.dataset.dungeon;
+            if (boardTutorTarget && did !== boardTutorTarget) {
+                card.classList.add('tutor-locked');          // 튜토 대상 외 의뢰는 비활성
+                return;
+            }
+            card.addEventListener('click', () => this._renderPrepRoom(did));
         });
         // 파밍 튜토리얼(배치/수금) — 대상 던전 카드 글로우(클릭 유도).
         if (this._tutorTask === 'farm-assign') {
@@ -1099,11 +1120,12 @@ class Game {
     // ── 준비실 — 미션 카드 선택 시 같은 팝업 면에 렌더(모달/dev 화면 안 거침). ──────
     // 정보줄(적응형) + 힌트(2단) + 출정 방식 + 식량/입장료 + 출발. 세르파·아이템 탭은 잠김.
     // 출발 시에만 클린 플레이 화면(screen-play)으로 전환 → tryEnterDungeon. (briefing.onDeploy 선례)
-    _renderPrepRoom(dungeonId) {
+    _renderPrepRoom(dungeonId, opts = {}) {
         const rs = this.runState;
         this._clearFarmTick();                          // 면 전환 시 이전 파밍 틱 정지
-        // 답파 완료 던전 = 파밍 통제판으로 변신 (방치형 누적 — 직접 재도전 없음, D-대기실변신).
-        if (rs.clearedDungeons.has(dungeonId)) { this._renderFarmRoom(dungeonId); return; }
+        // 답파 던전 = 기본은 파밍 통제판으로 변신. 단 재출격(opts.redeploy)이면 전투 준비실로 진입 —
+        // 반복 보상(repeatReward), 첫클리어 연출 미재생(클리어 핸들러 isFirstClear=false 분기가 처리).
+        if (rs.clearedDungeons.has(dungeonId) && !opts.redeploy) { this._renderFarmRoom(dungeonId); return; }
         const panel = document.getElementById('guild-tab-quest');
         panel.classList.remove('mboard-mode');          // 준비실은 게시판 재질 해제
         const titleEl = document.getElementById('guild-popup-title');
@@ -1251,6 +1273,7 @@ class Game {
                         <div class="farm-assign-title">${t('farm.assign_title')}</div>
                         <div class="farm-assign-hint">${t('farm.assign_hint')}</div>
                         <select class="farm-serpa-select">${opts}</select>
+                        <div class="farm-rate-preview" id="farm-rate-preview"></div>
                         ${exclusiveRow}
                     </div>
                     <div class="prep-actions">
@@ -1265,6 +1288,7 @@ class Game {
                 <canvas id="prep-minimap" class="prep-minimap"></canvas>
                 <div class="prep-info">${info}</div>
                 <div class="prep-flavor">"${this._dungeonFlavor(dungeonId)}"</div>
+                ${!this._tutorTask ? `<button class="btn-redeploy">${t('farm.redeploy')}</button>` : ''}
                 ${body}
             </div>`;
         this._renderPrepMinimap(document.getElementById('prep-minimap'), dungeonId);
@@ -1272,6 +1296,10 @@ class Game {
         panel.querySelector('.btn-prep-back').addEventListener('click', () => {
             if (titleEl) titleEl.textContent = t('guild.tab.quest');
             this._updateGuildQuests();                  // 보드로 복귀(_clearFarmTick 포함)
+        });
+        // 재출격 — 답파 던전을 전투로 재도전(반복 보상). 튜토 무장 중엔 버튼 미노출(강제 흐름 보존).
+        panel.querySelector('.btn-redeploy')?.addEventListener('click', () => {
+            this._renderPrepRoom(dungeonId, { redeploy: true });
         });
 
         if (farmer) {
@@ -1299,8 +1327,7 @@ class Game {
                 this._renderFarmRoom(dungeonId);             // 누적 리셋 후 재렌더(틱 재시작)
             });
             panel.querySelector('.btn-farm-unassign').addEventListener('click', () => {
-                rs.removeFarming(farmer);
-                this._renderFarmRoom(dungeonId);             // 피커 상태로 재렌더
+                this._confirmRecall(farmer, dungeonId);      // 누적 회수 + 확인창(다시 안 보기 시 즉시)
             });
             // 파밍 수금 튜토리얼 — 퀴니 통제판 한정: 수금 버튼 글로우(클릭 유도).
             if (this._tutorTask === 'farm-collect' && farmer === 'qkun') {
@@ -1310,8 +1337,25 @@ class Game {
             }
         } else {
             const assignBtn = panel.querySelector('.btn-farm-assign');
+            const sel = panel.querySelector('.farm-serpa-select');
+            // 파밍 배치 튜토리얼 — 1관 한정: 퀴니 프리셀렉트 + 배치 버튼 글로우(클릭 유도). (미리보기 전에 선택 확정)
+            if (this._tutorTask === 'farm-assign' && dungeonId === 'level_01_easy') {
+                if (sel && [...sel.options].some(o => o.value === 'qkun')) sel.value = 'qkun';
+                assignBtn?.classList.add('tutor-glow');
+            }
+            // 배치 전 보상 미리보기 — 선택 세르파 기준 회차당/시간당 골드 + 누적 상한(선택 바뀌면 갱신).
+            const preview = document.getElementById('farm-rate-preview');
+            const updatePreview = () => {
+                if (!sel || !preview) return;
+                const nm = sel.value;
+                const sec = Math.max(1, Math.round(rs.getFarmIntervalMs(nm) / 1000));
+                const capH = +(rs.getFarmCapMs(nm) / 3600000).toFixed(1);
+                const perHour = Math.round((3600 / sec) * config.repeatReward);
+                preview.textContent = t('farm.rate_preview', { sec, n: config.repeatReward, perHour, h: capH });
+            };
+            updatePreview();
+            sel?.addEventListener('change', updatePreview);
             if (assignBtn) assignBtn.addEventListener('click', () => {
-                const sel = panel.querySelector('.farm-serpa-select');
                 const nm = sel && sel.value;
                 if (nm && rs.assignFarming(nm, dungeonId, DUNGEON_CONFIG, Date.now())) {
                     // 파밍 배치 튜토리얼 완료 — 퀴니를 1관에 배치하면 다음(확인) 비트로.
@@ -1322,12 +1366,6 @@ class Game {
                     }
                 }
             });
-            // 파밍 배치 튜토리얼 — 1관 한정: 퀴니 프리셀렉트 + 배치 버튼 글로우(클릭 유도).
-            if (this._tutorTask === 'farm-assign' && dungeonId === 'level_01_easy') {
-                const sel = panel.querySelector('.farm-serpa-select');
-                if (sel && [...sel.options].some(o => o.value === 'qkun')) sel.value = 'qkun';
-                assignBtn?.classList.add('tutor-glow');
-            }
         }
     }
 
@@ -4162,6 +4200,8 @@ class Game {
             this.showMessage(t('game.clear_repeat', { reward, steps: this.steps, treasure: treasureMsg }), 'success');
             this.saveProgress();
             this.renderer.flash('rgba(34, 197, 94, 0.4)');
+            // 클린 플로우(재출격) — 반복 클리어 후 길드 자동 복귀(토스트 본 뒤). dev 워크벤치는 화면 유지.
+            if (this.screenManager?.current === 'screen-play') setTimeout(() => this._exitPlayToGuild(), 1400);
         }
 
         this.updateUI();
@@ -4276,6 +4316,45 @@ class Game {
         };
 
         overlay.style.display = 'flex';
+    }
+
+    /** 파밍 세르파 불러오기(배치 해제) — 누적 보상을 회수한 뒤 해제. 누적(>0G)이 있고
+     *  '다시 보지 않기' 미설정이면 확인창(보상 회수 안내)을 먼저 띄운다. */
+    _confirmRecall(farmer, dungeonId) {
+        const overlay = document.getElementById('recall-confirm-overlay');
+        const acc = this.runState.getFarmAccrual(farmer, DUNGEON_CONFIG, Date.now());
+        const pending = acc ? acc.gold : 0;
+        // 회수할 게 없거나(0G) 안내를 끈 경우, 또는 오버레이 부재 시 곧장 해제.
+        if (pending <= 0 || localStorage.getItem(RECALL_WARN_OFF_KEY) === '1' || !overlay) {
+            this._doRecall(farmer, dungeonId);
+            return;
+        }
+        document.getElementById('recall-confirm-title').textContent = t('farm.recall_title');
+        document.getElementById('recall-confirm-detail').textContent = t('farm.recall_detail', { gold: pending });
+        document.getElementById('recall-dont-show-label').textContent = t('farm.recall_dont_show');
+        const chk = document.getElementById('recall-dont-show');
+        chk.checked = false;
+        const yes = document.getElementById('btn-recall-yes');
+        const no = document.getElementById('btn-recall-cancel');
+        yes.textContent = t('farm.recall_yes');
+        no.textContent = t('farm.recall_no');
+        yes.onclick = () => {
+            if (chk.checked) localStorage.setItem(RECALL_WARN_OFF_KEY, '1');
+            overlay.style.display = 'none';
+            this._doRecall(farmer, dungeonId);
+        };
+        no.onclick = () => { overlay.style.display = 'none'; };
+        overlay.style.display = 'flex';
+    }
+
+    /** 실제 해제 — 누적 보상 회수(골드 적립) 후 배치 해제 + 재렌더. */
+    _doRecall(farmer, dungeonId) {
+        const r = this.runState.collectFarmAccrual(farmer, DUNGEON_CONFIG, Date.now());
+        this.runState.removeFarming(farmer);
+        if (r && r.gold > 0) { this.showMessage(t('farm.recall_collected', { gold: r.gold }), 'success'); this._updateGuildResources?.(); }
+        this._renderFarmRoom(dungeonId);             // 피커 상태로 재렌더
+        this.updateUI?.();
+        this.updateFarmingUI?.();
     }
 
     // ========== First Clear Tutorial Chain (Task #5: sequenced) ==========
