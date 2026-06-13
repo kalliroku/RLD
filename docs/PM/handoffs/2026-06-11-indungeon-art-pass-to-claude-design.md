@@ -1,5 +1,7 @@
 # 인던전 타일/스프라이트 아트 패스 인계 (Claude Design)
 
+> ⚠️ **SUPERSEDED (2026-06-13)** → `docs/PM/handoffs/2026-06-13-indungeon-stage-visual-to-claude-design.md` 로 대체. 범위가 "오브젝트+질감 패스"에서 "스테이지 비주얼 전체(바닥·벽·오브젝트·조명)"로 확대됨. 이 문서는 이력 보존용 — 작업은 신규 브리프 기준.
+
 > 작성: Claude Code (통합 담당) · 2026-06-11
 > 채널: 비동기 — `design/` 에 절차 드로잉 함수 + 미리보기 HTML 산출, Claude Code 가 `web/js/game/tile-atlas.js` / `tilemap-renderer.js` 로 이식.
 
