@@ -52,14 +52,15 @@ export class TilemapRenderer {
         this._camSettled = true;  // true when cam reached its target (stops the RAF tick)
         this._camInit = false;    // snap to target on the first frame after enabling
         this._camRafPending = false;
-        // Dynamic zoom: viewTiles is the world width (in tiles) shown across the
-        // viewport. Starts narrow (5 = zoomed in); raise targetViewTiles later to
-        // zoom OUT. Lerped toward targetViewTiles so zoom changes are smooth.
+        // Dynamic zoom: viewTiles is the world HEIGHT (in tiles) shown top-to-bottom.
+        // Starts at 5 (zoomed in); raise targetViewTiles to zoom OUT. Lerped for smooth zoom.
         this.viewTiles = 5;
         this.targetViewTiles = 5;
-        // Fixed canvas render resolution (independent of zoom) so sharpness stays
-        // constant — zoom comes purely from scale = displayPx / (viewTiles*ts).
-        this.displayPx = 9 * tileSize;  // 576px square
+        // 와이드스크린 카메라 — 오프닝 시네마틱 형태(16:9 풀블리드). 줌은 세로(displayH) 기준,
+        // 가로는 aspect 만큼 더 보여줌. 캔버스 해상도 고정(줌은 순수 scale).
+        this.aspect = 16 / 9;
+        this.displayH = 9 * tileSize;                            // 576 — 세로 해상도
+        this.displayW = Math.round(this.displayH * this.aspect); // 1024 — 가로(16:9)
         this.camLerp = 0.18;
 
         // Tilemap system
@@ -131,10 +132,10 @@ export class TilemapRenderer {
                 this.viewTiles = viewTiles;
                 this._camInit = true;
             }
-            // Canvas resolution is fixed (this.displayPx); zoom is pure scale.
-            if (this.canvas.width !== this.displayPx || this.canvas.height !== this.displayPx) {
-                this.canvas.width = this.displayPx;
-                this.canvas.height = this.displayPx;
+            // Canvas resolution is fixed (displayW×displayH, 16:9); zoom is pure scale.
+            if (this.canvas.width !== this.displayW || this.canvas.height !== this.displayH) {
+                this.canvas.width = this.displayW;
+                this.canvas.height = this.displayH;
             }
             this.cameraEnabled = true;
         } else {
@@ -174,8 +175,9 @@ export class TilemapRenderer {
 
         // Lerp the zoom (tiles-across) first; it feeds the scale + view width.
         this.viewTiles += (this.targetViewTiles - this.viewTiles) * this.camLerp;
-        const viewW = this.viewTiles * ts;          // world px visible across
-        this._camScale = this.displayPx / viewW;
+        const viewH = this.viewTiles * ts;            // world px visible vertically (줌 기준)
+        this._camScale = this.displayH / viewH;
+        const viewW = this.displayW / this._camScale; // world px visible horizontally (와이드)
 
         // Target top-left so the agent sits centered, in world px.
         const ax = (this.agent.x + 0.5) * ts;
@@ -189,10 +191,10 @@ export class TilemapRenderer {
         // edges shows the dark clear color). Set cameraClamp=true to stop at map
         // bounds instead (only meaningful on maps larger than the viewport).
         let tx = ax - viewW / 2;
-        let ty = ay - viewW / 2;                     // square viewport (viewH = viewW)
+        let ty = ay - viewH / 2;                     // widescreen: viewW(가로) ≠ viewH(세로)
         if (this.cameraClamp) {
             tx = mapW > viewW ? Math.max(0, Math.min(tx, mapW - viewW)) : -(viewW - mapW) / 2;
-            ty = mapH > viewW ? Math.max(0, Math.min(ty, mapH - viewW)) : -(viewW - mapH) / 2;
+            ty = mapH > viewH ? Math.max(0, Math.min(ty, mapH - viewH)) : -(viewH - mapH) / 2;
         }
 
         if (this._camInit) {
@@ -200,7 +202,7 @@ export class TilemapRenderer {
             this.camX = tx;
             this.camY = ty;
             this.viewTiles = this.targetViewTiles;
-            this._camScale = this.displayPx / (this.viewTiles * ts);
+            this._camScale = this.displayH / (this.viewTiles * ts);
             this._camInit = false;
         } else {
             this.camX += (tx - this.camX) * this.camLerp;
@@ -475,24 +477,24 @@ export class TilemapRenderer {
         const pad = ts * 2;
         const x0 = (this.cameraEnabled ? this.camX : 0) - pad;
         const y0 = (this.cameraEnabled ? this.camY : 0) - pad;
-        const cw = (this.cameraEnabled ? this.viewTiles * ts : this.grid.width * ts) + pad * 2;
+        const cw = (this.cameraEnabled ? this.viewTiles * ts * this.aspect : this.grid.width * ts) + pad * 2;
         const ch = (this.cameraEnabled ? this.viewTiles * ts
                    : (this.viewportHeight != null ? this.viewportHeight : this.grid.height) * ts) + pad * 2;
 
-        const r = ts * 4.2;
+        const r = ts * 3.6;
 
         // 1) 따뜻한 횃불 광 — 중심의 미세한 amber tint
-        let g = ctx.createRadialGradient(cx, cy, ts * 0.2, cx, cy, r * 0.55);
-        g.addColorStop(0, 'rgba(230, 181, 98, 0.10)');
+        let g = ctx.createRadialGradient(cx, cy, ts * 0.2, cx, cy, r * 0.5);
+        g.addColorStop(0, 'rgba(230, 181, 98, 0.12)');
         g.addColorStop(1, 'rgba(230, 181, 98, 0)');
         ctx.fillStyle = g;
         ctx.fillRect(x0, y0, cw, ch);
 
-        // 2) 가장자리 어둠 — 시야 밖은 온화하게 가라앉음 (오프닝 drawFog 의 순한 버전)
-        g = ctx.createRadialGradient(cx, cy, r * 0.45, cx, cy, r);
-        g.addColorStop(0, 'rgba(7, 6, 4, 0)');
-        g.addColorStop(0.7, 'rgba(7, 6, 4, 0.22)');
-        g.addColorStop(1, 'rgba(7, 6, 4, 0.5)');
+        // 2) 가장자리 어둠 — 오프닝 시네마틱(짙은 어둠). 최종 조명은 Claude Design drawFogRadial 로 교체 예정(interim).
+        g = ctx.createRadialGradient(cx, cy, r * 0.4, cx, cy, r);
+        g.addColorStop(0, 'rgba(5, 4, 7, 0)');
+        g.addColorStop(0.55, 'rgba(5, 4, 7, 0.45)');
+        g.addColorStop(1, 'rgba(5, 4, 7, 0.92)');
         ctx.fillStyle = g;
         ctx.fillRect(x0, y0, cw, ch);
     }

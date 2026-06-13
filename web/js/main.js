@@ -3917,6 +3917,8 @@ class Game {
 
     /** 클린 플레이 세션 종료 → 길드 복귀. 나가기 버튼 + 첫클리어 보상 확인(자동 복귀) 공용. */
     _exitPlayToGuild() {
+        // 재출격 auto-return 타이머가 살아있으면 취소 (수동 나가기와 경합 방지, W1)
+        if (this._autoReturnTimer) { clearTimeout(this._autoReturnTimer); this._autoReturnTimer = null; }
         // 게임오버 오버레이가 뜬 채 나가면 재출발 시 stale 잔존 → 여기서 정리
         if (this.isGameOver) {
             this.isGameOver = false;
@@ -4201,7 +4203,7 @@ class Game {
             this.saveProgress();
             this.renderer.flash('rgba(34, 197, 94, 0.4)');
             // 클린 플로우(재출격) — 반복 클리어 후 길드 자동 복귀(토스트 본 뒤). dev 워크벤치는 화면 유지.
-            if (this.screenManager?.current === 'screen-play') setTimeout(() => this._exitPlayToGuild(), 1400);
+            if (this.screenManager?.current === 'screen-play') this._autoReturnTimer = setTimeout(() => this._exitPlayToGuild(), 1400);
         }
 
         this.updateUI();
