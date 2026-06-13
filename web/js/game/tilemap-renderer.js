@@ -9,6 +9,8 @@ import { Action } from './agent.js';
 import { TileAtlas } from './tile-atlas.js';
 import { Tilemap, Layer } from './tilemap.js';
 import { PAL, drawCharacter } from './opening-art.js';   // 인던전 = 오프닝 비주얼 문법 (D-2026-06-10 bm)
+import { drawFloorTile, drawWall, coordHash,
+         OPEN_N, OPEN_E, OPEN_S, OPEN_W, WALL_N, WALL_E, WALL_S, WALL_W } from './dungeon-art.js';
 
 export class TilemapRenderer {
     constructor(canvas, tileSize = 64) {
@@ -344,19 +346,32 @@ export class TilemapRenderer {
         ctx.fillStyle = PAL.bg;
         ctx.fillRect(0, 0, this._staticBuffer.width, this._staticBuffer.height);
 
-        for (let y = 0; y < this.grid.height; y++) {
-            for (let x = 0; x < this.grid.width; x++) {
-                const tile = this.grid.getTile(x, y);
-                const px = x * ts;
-                const py = y * ts;
+        // 바닥/벽 = dungeon-art 로 정적 버퍼에 직접 그림(1회 베이크). 셀마다 coordHash
+        // 시드로 per-tile grain, 이웃 벽 마스크로 seamless 면 + AO 를 만든다.
+        const g = this.grid, W = g.width, H = g.height;
+        const wallAt = (x, y) => (x < 0 || y < 0 || x >= W || y >= H)
+            ? true : g.getTile(x, y) === TileType.WALL;
 
-                if (tile === TileType.WALL) {
-                    // Draw wall with autotile
-                    const mask = this._tilemap.getWallMask(x, y);
-                    ctx.drawImage(atlas.getWall(mask), px, py);
+        for (let y = 0; y < H; y++) {
+            for (let x = 0; x < W; x++) {
+                const px = x * ts, py = y * ts;
+                const seed = coordHash(x, y);
+                if (g.getTile(x, y) === TileType.WALL) {
+                    // openMask = 바닥(=벽 아님)을 향한 면
+                    let open = 0;
+                    if (!wallAt(x, y - 1)) open |= OPEN_N;
+                    if (!wallAt(x + 1, y)) open |= OPEN_E;
+                    if (!wallAt(x, y + 1)) open |= OPEN_S;
+                    if (!wallAt(x - 1, y)) open |= OPEN_W;
+                    drawWall(ctx, px, py, ts, open, seed);
                 } else {
-                    // Draw floor
-                    ctx.drawImage(atlas.getFloor(x, y), px, py);
+                    // wallMask = 벽인 이웃(=AO 줄 변)
+                    let wm = 0;
+                    if (wallAt(x, y - 1)) wm |= WALL_N;
+                    if (wallAt(x + 1, y)) wm |= WALL_E;
+                    if (wallAt(x, y + 1)) wm |= WALL_S;
+                    if (wallAt(x - 1, y)) wm |= WALL_W;
+                    drawFloorTile(ctx, px, py, ts, seed, wm);
                 }
             }
         }
