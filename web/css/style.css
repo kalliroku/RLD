@@ -2428,7 +2428,9 @@ body.editor-mode .dpad-container {
     box-shadow: none;
 }
 /* 인던전 캔버스 = 와이드스크린 풀블리드 (오프닝 형태). 16:9, 폭을 채우되 높이 cap 으로 세로 넘침 차단. */
-#screen-play #game-canvas { background: #0a0907; width: min(96vw, calc(82vh * 16 / 9)); height: auto; max-width: 100%; display: block; margin: 0 auto; }
+/* 폭을 채우되, 높이 = (뷰포트 − 크롬: 나가기 버튼+스탯+메시지+셸 패딩 ≈ 150px) cap 으로
+   16:9 캔버스가 100vh 를 넘겨 세로 스크롤 나는 것 차단 (bm 2026-06-14). */
+#screen-play #game-canvas { background: #0a0907; width: min(96vw, calc((100vh - 150px) * 16 / 9)); height: auto; max-width: 100%; display: block; margin: 0 auto; }
 #screen-play .stat-label { color: #8a7a59; }
 #screen-play .stat-value { color: #e8dcc4; }
 #screen-play .gold-value { color: #e6b562; }

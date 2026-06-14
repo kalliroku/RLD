@@ -5528,7 +5528,13 @@ class Game {
             && this.currentMode !== 'editor'
             && !this.renderer.showQValues
             && !this.renderer.showPolicy;
-        this.renderer.setCameraFollow(follow);
+        // 적응형 줌: 뷰포트 세로 = 맵높이 + 여백 1타일(큰 맵은 13 상한). 작은 맵(예: level_01_easy
+        // 5×5)은 화면을 채우고, 큰 맵일수록 캐릭터가 상대적으로 작아져 오프닝 체감에 가까워진다.
+        // cameraClamp=true → 맵이 뷰포트보다 작으면 가운데 정렬(대칭 어둠 = 횃불 챔버 무드),
+        // 크면 경계까지 따라가다 멈춘다. (고정값은 5×5 에서 캐릭터 과대(5)/void 부유(11) — bm 2026-06-14)
+        const vt = Math.min((this.grid.height || 7) + 1, 13);
+        this.renderer.cameraClamp = true;
+        this.renderer.setCameraFollow(follow, vt);
     }
 
     render() {
