@@ -6,7 +6,7 @@ import { loadDungeon } from './game/grid.js';
 import { Grid } from './game/grid.js';
 import { Agent, Action } from './game/agent.js';
 import { Renderer } from './game/renderer.js';
-import { TilemapRenderer } from './game/tilemap-renderer.js';
+import { RendererRouter } from './game/renderer-router.js';
 import { TileType, TileProperties, isPassable, isLethal } from './game/tiles.js';
 import { sound } from './game/sound.js';
 import { music, MusicManager } from './game/music.js';
@@ -165,7 +165,8 @@ const SPEED_DELAYS = {
 class Game {
     constructor() {
         this.canvas = document.getElementById('game-canvas');
-        this.renderer = new TilemapRenderer(this.canvas);
+        // 단일 렌더러 표면 뒤에서 단일스테이지 play=SceneRenderer / 그 외=TilemapRenderer 로 라우팅.
+        this.renderer = new RendererRouter(this.canvas);
 
         // B-201: minimap (mobile, large dungeons ≥ 25 wide/tall)
         this.minimapCanvas = document.getElementById('minimap-canvas');
@@ -347,6 +348,11 @@ class Game {
         this.screenManager.onTransition((screenId) => {
             if (screenId === 'screen-play') this._relocateGameArea('play');
             else if (screenId === 'screen-dev') this._relocateGameArea('dev');
+            // 렌더러 라우팅: screen-play 단일스테이지만 SceneRenderer. 비-play 화면(dev/composer/
+            // editor/title)으로 나가면 즉시 해제 → stale scene 이 dev 프리뷰를 가로채지 못하게.
+            // (단일↔멀티 세부는 reset→syncCamera 가 같은 공식으로 재확정)
+            const multiStage = this.grid && this.grid.getTotalStages && this.grid.getTotalStages() > 1;
+            this.renderer.setScene(screenId === 'screen-play' && !multiStage && !this.isTraining);
         });
 
         this.setupEventListeners();
@@ -2999,54 +3005,79 @@ class Game {
         this.loadDungeon(this.currentDungeon);
     }
 
-    // B-201: minimap render — only large dungeons (≥25 in either dim).
-    // CSS keeps the wrap hidden on desktop; data-active gates display on mobile.
+    // 인게임 미니맵 (오른쪽 상단) — 메인뷰가 횃불 반경만 보이는 대신, "지나온 길"을 여기에
+    // 누적해 길찾기를 돕는다. 전체 맵을 미리 드러내지 않음(탐색 보존): 밟은 칸 ∪ 인접칸만
+    // 채워지고, 밟은 경로는 amber trail 로 강조. screen-play 단일스테이지(SceneRenderer)에서만 —
+    // 오프닝(자체 렌더러)·dev·멀티스테이지에는 안 나온다. onAfterRender 훅으로 매 렌더 후 호출.
     _renderMinimap() {
         if (!this.minimapWrap || !this.minimapCtx) return;
         const g = this.grid;
-        const THRESHOLD = 25;
-        if (!g || (g.width < THRESHOLD && g.height < THRESHOLD)) {
+        const inScenePlay = g && this.screenManager.current === 'screen-play'
+            && !(g.getTotalStages && g.getTotalStages() > 1);
+        if (!inScenePlay) {
             if (this.minimapWrap.dataset.active !== 'false') this.minimapWrap.dataset.active = 'false';
             return;
         }
         if (this.minimapWrap.dataset.active !== 'true') this.minimapWrap.dataset.active = 'true';
 
-        const maxDim = 120;
-        const cell = Math.max(1, Math.floor(maxDim / Math.max(g.width, g.height)));
-        const w = g.width * cell;
-        const h = g.height * cell;
+        // 지나온 길 누적 — 현재 칸 추가 (render 마다 = 매 이동 후 호출되므로 trail 이 쌓인다)
+        if (!this.visited) this.visited = new Set();
+        if (this.agent && typeof this.agent.x === 'number') {
+            this.visited.add(this.agent.x + ',' + this.agent.y);
+        }
+
+        const maxDim = 132;
+        const cell = Math.max(2, Math.floor(maxDim / Math.max(g.width, g.height)));
+        const w = g.width * cell, h = g.height * cell;
         if (this.minimapCanvas.width !== w || this.minimapCanvas.height !== h) {
             this.minimapCanvas.width = w;
             this.minimapCanvas.height = h;
         }
         const ctx = this.minimapCtx;
-        ctx.fillStyle = '#000';
+        ctx.clearRect(0, 0, w, h);
+        ctx.fillStyle = '#0a0907';
         ctx.fillRect(0, 0, w, h);
 
-        for (let y = 0; y < g.height; y++) {
-            for (let x = 0; x < g.width; x++) {
-                // i18n t() shadowing 방지 — `tile` 사용 (i18n 1차 마이그레이션 후속, I1 리뷰)
-                const tile = g.getTile(x, y);
-                let color = null;
-                if (tile === TileType.WALL) color = '#4a4a4a';
-                else if (tile === TileType.GOAL) color = '#22c55e';
-                else if (tile === TileType.GOLD) color = '#facc15';
-                else if (tile === TileType.MONSTER || tile === TileType.TRAP) color = '#ef4444';
-                else if (tile === TileType.HEAL) color = '#10b981';
-                else if (tile === TileType.START) color = '#3b82f6';
-                if (color) {
-                    ctx.fillStyle = color;
-                    ctx.fillRect(x * cell, y * cell, cell, cell);
-                }
-            }
+        // 탐색 영역 = 지나온 칸 ∪ 4-인접칸 (지나며 본 벽·구조가 미니맵에 채워짐)
+        const explored = new Set(this.visited);
+        for (const key of this.visited) {
+            const [vx, vy] = key.split(',').map(Number);
+            explored.add((vx + 1) + ',' + vy); explored.add((vx - 1) + ',' + vy);
+            explored.add(vx + ',' + (vy + 1)); explored.add(vx + ',' + (vy - 1));
+        }
+        for (const key of explored) {
+            const [x, y] = key.split(',').map(Number);
+            if (x < 0 || y < 0 || x >= g.width || y >= g.height) continue;
+            const tile = g.getTile(x, y);
+            let color;
+            if (tile === TileType.WALL) color = '#46403a';
+            else if (tile === TileType.GOLD) color = '#e6b562';
+            else if (tile === TileType.MONSTER || tile === TileType.TRAP) color = '#b0473a';
+            else if (tile === TileType.HEAL) color = '#d96fa0';
+            else if (tile === TileType.PIT) color = '#000';
+            else color = '#241f1a';                          // explored floor
+            ctx.fillStyle = color;
+            ctx.fillRect(x * cell, y * cell, cell, cell);
         }
 
+        // 지나온 길 trail — 밟은 칸을 따뜻한 amber 로 강조
+        ctx.fillStyle = 'rgba(192, 138, 58, 0.55)';
+        for (const key of this.visited) {
+            const [x, y] = key.split(',').map(Number);
+            ctx.fillRect(x * cell, y * cell, cell, cell);
+        }
+
+        // 골 — 항상 표시 (목표 랜드마크, 메인뷰 골 비콘과 정합)
+        if (g.goalPos) {
+            ctx.fillStyle = '#6fbf6a';
+            ctx.fillRect(g.goalPos.x * cell, g.goalPos.y * cell, cell, cell);
+        }
+
+        // 현재 위치 — bone white, 약간 크게
         if (this.agent && typeof this.agent.x === 'number') {
-            ctx.fillStyle = '#fff';
-            const size = Math.max(cell * 2, 3);
-            const cx = this.agent.x * cell + cell / 2 - size / 2;
-            const cy = this.agent.y * cell + cell / 2 - size / 2;
-            ctx.fillRect(Math.max(0, cx), Math.max(0, cy), size, size);
+            const s = Math.max(cell, 3);
+            ctx.fillStyle = '#f4ecd4';
+            ctx.fillRect(this.agent.x * cell + cell / 2 - s / 2, this.agent.y * cell + cell / 2 - s / 2, s, s);
         }
     }
 
@@ -3636,6 +3667,8 @@ class Game {
         }
 
         this.renderer.setAgent(this.agent);
+        // 미니맵 "지나온 길" 누적 — 매 런 초기화 후 시작 칸 시드 (이후 render 마다 현재 칸 추가)
+        this.visited = new Set([x + ',' + y]);
         this.steps = 0;
         this.done = false;
         this.pendingGold = 0;
@@ -5535,6 +5568,10 @@ class Game {
         const vt = Math.min((this.grid.height || 7) + 1, 13);
         this.renderer.cameraClamp = true;
         this.renderer.setCameraFollow(follow, vt);
+        // SceneRenderer 라우팅 = 클린 플레이 화면(screen-play)의 단일스테이지. dev 워크벤치/
+        // 멀티스테이지/training/editor 는 TilemapRenderer 유지. (오프닝=정식 플레이, 2단계)
+        // Q-viz 체크박스(dev 기본 on)에 묶인 follow 와 달리 화면+단일스테이지로만 판정.
+        this.renderer.setScene(this.screenManager.current === 'screen-play' && !multiStage && !this.isTraining);
     }
 
     render() {

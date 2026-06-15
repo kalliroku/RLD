@@ -2426,11 +2426,39 @@ body.editor-mode .dpad-container {
     /* 오프닝 풀블리드 — 장식 패널 프레임 제거(시네마틱). 어둠은 화면 bg 가 담당. */
     background: transparent;
     box-shadow: none;
+    position: relative;            /* 미니맵 절대배치 앵커 */
+}
+/* 인게임 미니맵 — 오른쪽 상단 HUD 오버레이. screen-play 에서만(데스크탑 포함) 노출.
+   기본 .minimap-wrap 은 데스크탑에서 display:none 이므로 여기서 명시적으로 켠다. */
+#screen-play .minimap-wrap[data-active="true"] {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    margin: 0;
+    z-index: 6;
+    gap: 4px;
+    padding: 5px 7px;
+    background: rgba(10, 9, 7, 0.72);
+    border: 1px solid rgba(138, 122, 89, 0.28);
+    border-radius: 6px;
+}
+#screen-play .minimap-label { font-size: 0.7rem; color: #8a7a59; letter-spacing: 0.02em; }
+/* 모바일(작은 화면) — 우상단은 유지하되 컴팩트 배지로 축소해 게임 화면을 덜 덮는다.
+   (desktop 규칙과 동일 특정성 + 더 뒤 소스순서라 ≤700px 에서 우선) */
+@media (max-width: 700px) {
+    #screen-play .minimap-wrap[data-active="true"] { top: 8px; right: 8px; padding: 3px 4px; gap: 2px; }
+    #screen-play #minimap-canvas { width: 64px; height: auto; }
+    #screen-play .minimap-label { display: none; }
 }
 /* 인던전 캔버스 = 와이드스크린 풀블리드 (오프닝 형태). 16:9, 폭을 채우되 높이 cap 으로 세로 넘침 차단. */
 /* 폭을 채우되, 높이 = (뷰포트 − 크롬: 나가기 버튼+스탯+메시지+셸 패딩 ≈ 150px) cap 으로
    16:9 캔버스가 100vh 를 넘겨 세로 스크롤 나는 것 차단 (bm 2026-06-14). */
-#screen-play #game-canvas { background: #0a0907; width: min(96vw, calc((100vh - 150px) * 16 / 9)); height: auto; max-width: 100%; display: block; margin: 0 auto; }
+/* image-rendering:pixelated — SceneRenderer(480×270 픽셀아트)를 ~2.4x 업스케일 시 또렷하게.
+   (오프닝 프로토 _scene-proto.html 과 동일 규약. 부드러운 보간이면 도트가 뭉개짐) */
+#screen-play #game-canvas { background: #0a0907; width: min(96vw, calc((100vh - 150px) * 16 / 9)); height: auto; max-width: 100%; display: block; margin: 0 auto; image-rendering: pixelated; }
 #screen-play .stat-label { color: #8a7a59; }
 #screen-play .stat-value { color: #e8dcc4; }
 #screen-play .gold-value { color: #e6b562; }

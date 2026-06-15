@@ -46,6 +46,11 @@ export class SceneRenderer {
         this.floor = PAL.stone;
         this.floorLight = PAL.stoneLight;
         this.floorHi = PAL.stoneHi;
+        // RendererRouter 가 전달하는 호환 프로퍼티 (3단계 전까지는 보관만 — 시각 미반영).
+        this.fogOfWar = false;            // 메커닉 포그(탐색 메모리) — 3단계에서 분위기 포그 위 레이어로
+        this.carryingTreasure = false;
+        this.treasurePosition = null;
+        this.onAfterRender = null;        // 미니맵 훅 (mobile)
     }
 
     setGrid(grid) { this.grid = grid; }
@@ -60,6 +65,11 @@ export class SceneRenderer {
 
     render(now = 0) {
         const { ctx, canvas, tile: ts } = this;
+        // 캔버스 소유권 재확보 — 같은 #game-canvas 를 공유하는 TilemapRenderer 가 직전에
+        // grid 기반 크기로 바꿔놨을 수 있으므로 오프닝 스케일(480×270)로 되돌린다.
+        // (canvas.width/height 대입은 비트맵을 리셋하지만, render() 가 어차피 전체 재도색)
+        if (canvas.width !== BASE_W) canvas.width = BASE_W;
+        if (canvas.height !== BASE_H) canvas.height = BASE_H;
         const w = canvas.width, h = canvas.height;
 
         // 1. 백드롭 — 카메라 밖/포그 너머는 깊은 흑색
@@ -101,6 +111,22 @@ export class SceneRenderer {
                 if (this._isWall(c + 1, r)) this._rim(x, y, 'right', (c * 19 + r * 2) | 1);
             }
         }
+        // 4.5 오브젝트 — 바닥 위·분위기 포그 아래에 그린다. 반경 밖이면 포그가 가리고,
+        // 다가가면 횃불에 드러난다(탐색 연출). 수집된 골드/처치 몬스터는 grid.tiles 가 이미
+        // EMPTY 로 바뀌어 있어(reset 시 복원) 별도 가시성 상태 없이 grid 만 읽으면 정합.
+        const g = this.grid;
+        for (let r = rMin; r <= rMax; r++) {
+            if (r < 0 || r >= g.height) continue;
+            for (let c = cMin; c <= cMax; c++) {
+                if (c < 0 || c >= g.width) continue;
+                const t = g.tiles[r][c];
+                if (t >= TileType.TRAP) this._drawObject(t, c * ts + ts / 2, r * ts + ts / 2, ts, now);
+            }
+        }
+        // 4.6 보물 — treasurePosition (안 든 상태에서만). grid 타일이 아닌 별도 좌표.
+        if (this.treasurePosition && !this.carryingTreasure) {
+            this._drawTreasureGem((this.treasurePosition.x + 0.5) * ts, (this.treasurePosition.y + 0.5) * ts, ts, now);
+        }
         ctx.restore();
 
         // 5. 분위기 포그 — 반경 밖을 어둠으로 녹임 (화면 좌표, 중앙 = 플레이어)
@@ -125,6 +151,9 @@ export class SceneRenderer {
             ctx.fillRect(gx - 44, gy - 44, 88, 88);
             drawCharacter(ctx, gx, gy, 'goal', ts);
         }
+
+        // 9. 렌더 후 훅 — 미니맵 동기화(mobile). TilemapRenderer 와 동일 규약.
+        if (this.onAfterRender) this.onAfterRender();
     }
 
     _drawFloorTile(c, r, x, y, ts) {
@@ -153,5 +182,84 @@ export class SceneRenderer {
             else if (side === 'left') ctx.fillRect(x, y + i, d, 2);
             else if (side === 'right') ctx.fillRect(x + ts - d, y + i, d, 2);
         }
+    }
+
+    // 작은 방사 글로우 (오브젝트 강조 — gold/heal/monster/treasure 공용)
+    _glow(cx, cy, rad, rgb, alpha) {
+        const ctx = this.ctx;
+        const g = ctx.createRadialGradient(cx, cy, 1, cx, cy, rad);
+        g.addColorStop(0, `rgba(${rgb},${alpha})`);
+        g.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = g;
+        ctx.fillRect(cx - rad, cy - rad, rad * 2, rad * 2);
+    }
+
+    // 오브젝트 도트 — opening-art idiom(8px 그리드, 솔리드 토널 블록 + 글린트). 결정론:
+    // 좌표/시드 노이즈 없이 고정 형태 + now 기반 sin 글로우만(오프닝 횃불·골 비콘과 동일 규약).
+    _drawObject(type, cx, cy, ts, now) {
+        const ctx = this.ctx, px = ts / 8;
+        const x0 = Math.floor(cx - ts / 2), y0 = Math.floor(cy - ts / 2);
+        const R = (x, y, w, h, c) => { ctx.fillStyle = c; ctx.fillRect(Math.round(x), Math.round(y), Math.max(1, Math.round(w)), Math.max(1, Math.round(h))); };
+
+        if (type === TileType.GOLD) {                       // 금화 더미 (+10)
+            const pulse = 0.8 + 0.2 * Math.sin(now / 260);
+            this._glow(cx, cy + px, ts * 0.5, '230,200,120', 0.26 * pulse);
+            R(x0 + 2 * px, y0 + 5 * px, 4 * px, 1.5 * px, PAL.accentDim);
+            R(x0 + 2 * px, y0 + 4 * px, 4 * px, 1.5 * px, PAL.accent);
+            R(x0 + 3 * px, y0 + 3 * px, 2 * px, 1.2 * px, PAL.accentHi);
+            R(x0 + 3.5 * px, y0 + 3 * px, px, px, '#fff7e0');               // glint
+        } else if (type === TileType.TRAP) {                // 금속 스파이크 (-10, 비치명)
+            R(x0 + 2 * px, y0 + 5 * px, 4 * px, px, PAL.stoneHi);           // base plate
+            R(x0 + 2 * px, y0 + 5.8 * px, 4 * px, 0.6 * px, PAL.bgDeep);
+            R(x0 + 2 * px, y0 + 3 * px, px, 2 * px, '#9a4636');             // spikes (rust-red)
+            R(x0 + 3.5 * px, y0 + 2.5 * px, px, 2.5 * px, '#9a4636');
+            R(x0 + 5 * px, y0 + 3 * px, px, 2 * px, '#9a4636');
+            R(x0 + 3.5 * px, y0 + 2.5 * px, 0.5 * px, px, '#c86a55');       // lit edge
+        } else if (type === TileType.PIT) {                 // 즉사 구덩이 — 바닥의 검은 구멍
+            R(x0 + 1.5 * px, y0 + 2 * px, 5 * px, 4.5 * px, PAL.bgDeep);    // rim
+            ctx.fillStyle = PAL.black;
+            ctx.beginPath();
+            ctx.ellipse(cx, cy + 0.3 * px, 2.3 * px, 1.9 * px, 0, 0, Math.PI * 2);
+            ctx.fill();
+            R(x0 + 2.2 * px, y0 + 2.1 * px, 2 * px, 0.5 * px, '#2a211a');   // faint top rim light
+        } else if (type === TileType.HEAL) {                // 분홍 회복 크리스탈
+            const pulse = 0.7 + 0.3 * Math.sin(now / 300);
+            this._glow(cx, cy, ts * 0.55, '244,160,200', 0.2 * pulse);
+            R(x0 + 3 * px, y0 + 2.5 * px, 2 * px, 4 * px, '#d96fa0');       // vertical
+            R(x0 + 2 * px, y0 + 3.5 * px, 4 * px, 2 * px, '#d96fa0');       // horizontal (+ 표식)
+            R(x0 + 3 * px, y0 + 2.5 * px, px, 4 * px, '#f4a8cc');           // lit
+            R(x0 + 3 * px, y0 + 5.5 * px, 2 * px, px, '#a04a73');           // shadow
+        } else if (type === TileType.MONSTER) {             // 작은 위협 생물 (데미지 30)
+            const eg = 0.7 + 0.3 * Math.sin(now / 180);
+            R(x0 + 2 * px, y0 + 3 * px, 4 * px, 4 * px, '#3a2746');         // body
+            R(x0 + 2 * px, y0 + 6 * px, 4 * px, px, '#251830');            // bottom shadow
+            R(x0 + 1.5 * px, y0 + 3.5 * px, px, 2 * px, '#3a2746');         // bulges
+            R(x0 + 5.5 * px, y0 + 3.5 * px, px, 2 * px, '#3a2746');
+            R(x0 + 2.5 * px, y0 + 2 * px, px, px, '#251830');              // horns
+            R(x0 + 4.5 * px, y0 + 2 * px, px, px, '#251830');
+            R(x0 + 3 * px, y0 + 4 * px, px, px, '#d06ae0');                // glowing eyes
+            R(x0 + 4.5 * px, y0 + 4 * px, px, px, '#d06ae0');
+            this._glow(cx, cy, ts * 0.4, '160,80,200', 0.15 * eg);
+        }
+    }
+
+    // 보물 보석 — 골드 다이아몬드 + 강한 글로우 ("저기 보물이 있다" 랜드마크).
+    _drawTreasureGem(cx, cy, ts, now) {
+        const ctx = this.ctx, px = ts / 8;
+        const pulse = 0.6 + 0.4 * Math.sin(now / 300);
+        this._glow(cx, cy, ts * 0.9, '230,181,98', 0.5 * pulse);
+        ctx.save();
+        ctx.translate(Math.round(cx), Math.round(cy));
+        ctx.fillStyle = PAL.accentHi;
+        ctx.beginPath();
+        ctx.moveTo(0, -3 * px); ctx.lineTo(2.4 * px, 0); ctx.lineTo(0, 3 * px); ctx.lineTo(-2.4 * px, 0); ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = PAL.accent;                                       // facet (어두운 절반)
+        ctx.beginPath();
+        ctx.moveTo(0, -3 * px); ctx.lineTo(2.4 * px, 0); ctx.lineTo(0, 0); ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = '#fff7e0';
+        ctx.fillRect(Math.round(-0.5 * px), Math.round(-2 * px), Math.max(1, Math.round(px)), Math.max(1, Math.round(px)));
+        ctx.restore();
     }
 }
