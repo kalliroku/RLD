@@ -7,13 +7,16 @@
  * 쓰고(호출부 무변경), 라우팅·캔버스 소유권 충돌 방지는 전부 이 래퍼 안에 격리한다.
  * → 점진 교체이자 되돌리기 쉬움(이 파일 제거 + 생성자 1줄 환원이면 원복).
  *
- * 라우팅 신호 = syncCamera 의 setCameraFollow(follow). follow===true ⟺
- *   "단일스테이지 && !training && !editor && !showQ && !showPolicy" = SceneRenderer 케이스.
- * TilemapRenderer 의 follow 카메라(자체 RAF)는 영구 비활성으로 고정 → 두 렌더러가
- *   같은 캔버스를 두고 RAF 로 덧그리며 다투는 일이 없다.
+ * 라우팅 신호 = syncCamera·화면전환 훅의 setScene(useScene). useScene===true ⟺
+ *   "screen-play && !멀티스테이지 && !training" = SceneRenderer 케이스. (Q-viz 체크박스·
+ *   follow·showQ·showPolicy 와 무관 — dev 기본 ON 인 Q-viz 에 묶이지 않게 분리한 게 핵심.)
+ * follow(setCameraFollow)는 이제 TilemapRenderer 시네마틱 카메라(dev 단일스테이지)만 제어하고,
+ *   scene 활성 동안 _syncTile 이 그 follow 를 꺼서 두 렌더러가 같은 #game-canvas 를 두고
+ *   RAF 로 덧그리며 다투지 못하게 한다.
  *
- * 범위(2단계): 단일스테이지 play 의 그리기만 SceneRenderer. 메커닉 포그/오브젝트/
- *   Q오버레이/멀티스테이지는 3단계에서 SceneRenderer 에 이식 (그때까지 해당 경로는 TilemapRenderer).
+ * 범위(현행): 단일스테이지 play = SceneRenderer (바닥/벽/림 + 분위기 포그 + 횃불 + 오브젝트 +
+ *   보물 + 미니맵 훅, 2091c89). 멀티스테이지 크롭·RL Q오버레이·메커닉(탐색-메모리) 포그는 아직
+ *   TilemapRenderer 전용 — SceneRenderer 포팅은 후속(blocker 아님).
  */
 
 import { TilemapRenderer } from './tilemap-renderer.js';
