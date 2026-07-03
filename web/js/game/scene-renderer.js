@@ -13,7 +13,9 @@
  * 넘기는 now(시각) 의 sin 함수만 — 시드 노이즈와 무관 (오프닝과 동일 규약).
  *
  * 범위(현행): 바닥/벽/림 + 분위기 포그 + 횃불 + 캐릭터 + 골 비콘 + 오브젝트(골드/함정/몬스터/
- * 힐/구덩이/보물). 메커닉(탐색-메모리) 포그·Q오버레이·멀티스테이지는 아직 TilemapRenderer 전용.
+ * 힐/구덩이/보물). heavy_fog·dim_torch 의 시야 축소는 횃불 반경으로 표현(_visionRadius —
+ * 기본 시야면 132 그대로, 좁으면 횃불이 조여든다). 탐색-메모리 '?' 트레일 포그·Q오버레이·
+ * 멀티스테이지는 아직 TilemapRenderer 전용.
  */
 
 import { TileType } from './tiles.js';
@@ -40,14 +42,17 @@ export class SceneRenderer {
         this.canvas.height = BASE_H;         // 270
         this.grid = null;
         this.agent = null;
-        // 시야 반경(px). 오프닝 기본 132 ≈ 5.5타일 ("real game's default vision").
+        // 시야 반경(px) 기준값 = 기본 시야(visibilityRange 5). 132 ≈ 5.5타일(132/TILE)이지만,
+        // _visionRadius() 의 스케일은 "visibilityRange 1단위당 px"로 다룬다(타일 수가 아님).
+        // 실제 렌더 반경은 _visionRadius() 가 에이전트 visibilityRange 에 연동해 산출(heavy_fog↓).
         this.fogRadius = 132;
         // 바닥 팔레트 (오프닝 stone 계열)
         this.floor = PAL.stone;
         this.floorLight = PAL.stoneLight;
         this.floorHi = PAL.stoneHi;
         // RendererRouter 가 전달하는 호환 프로퍼티 (3단계 전까지는 보관만 — 시각 미반영).
-        this.fogOfWar = false;            // 메커닉 포그(탐색 메모리) — 3단계에서 분위기 포그 위 레이어로
+        this.fogOfWar = false;            // 라우터 호환용 보관. SceneRenderer 는 이 플래그가 아니라
+                                          // agent.visibilityRange 로 시야를 좁힌다(_visionRadius). 트레일-메모리 '?' 포그는 미구현.
         this.carryingTreasure = false;
         this.treasurePosition = null;
         this.onAfterRender = null;        // 미니맵 훅 (mobile)
@@ -55,6 +60,16 @@ export class SceneRenderer {
 
     setGrid(grid) { this.grid = grid; }
     setAgent(agent) { this.agent = agent; }
+
+    // 분위기 포그 반경(px) — 에이전트 visibilityRange(타일)에 연동. 기본 5 → fogRadius(132) 그대로라
+    // 정상 플레이는 바이트동일. heavy_fog(3)·dim_torch(2)면 횃불이 조여들어 "시야가 좁다"가 그림에
+    // 드러난다("dim torch" 판타지 = 좁은 횃불). 하한은 횃불 글로우(≈60px)가 숨쉴 여유.
+    // ★ 렌더 전용 — visibilityRange 는 이미 sim(에이전트)이 쓰는 값이라 여기선 읽기만. PPO/결정론/발란스 불변.
+    _visionRadius() {
+        const range = (this.agent && this.agent.visibilityRange) || 5;
+        const pxPerRange = this.fogRadius / 5;           // visibilityRange 1단위당 px (기본 range 5 = 132)
+        return Math.max(64, Math.min(this.fogRadius, range * pxPerRange));
+    }
 
     // 그리드 밖 또는 WALL 타일 = 벽. 밖을 벽으로 처리해 프레임을 던전으로 메운다.
     _isWall(c, r) {
@@ -129,8 +144,9 @@ export class SceneRenderer {
         }
         ctx.restore();
 
-        // 5. 분위기 포그 — 반경 밖을 어둠으로 녹임 (화면 좌표, 중앙 = 플레이어)
-        drawFog(ctx, w, h, { x: w / 2, y: h / 2 }, this.fogRadius);
+        // 5. 분위기 포그 — 반경 밖을 어둠으로 녹임 (화면 좌표, 중앙 = 플레이어).
+        //    반경은 시야(visibilityRange)에 연동 → heavy_fog 면 횃불이 조여든다.
+        drawFog(ctx, w, h, { x: w / 2, y: h / 2 }, this._visionRadius());
 
         // 6. 횃불 — 플레이어가 든 빛 (포그를 뚫는 따뜻한 광). 시간 기반 깜빡임만.
         const flick = 0.92 + 0.1 * Math.sin(now / 140);
